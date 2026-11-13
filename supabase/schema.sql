@@ -1,3 +1,4 @@
+-- Base schema: new installs must also apply supabase/migrations/001_trip_history.sql.
 -- Run once in the Supabase SQL editor. Uses only the public anon/publishable key on clients.
 begin;
 
