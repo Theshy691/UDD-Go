@@ -15,7 +15,7 @@ Open the local URL printed in the terminal, normally **http://127.0.0.1:5173**. 
 
 The demo includes six buses, four Dagupan-area routes, five drivers, and 24 fictional students. All records are sample data, and coordinates are illustrative. Changes persist in this browser. A second tab receives boarding, trip, and fleet updates over `BroadcastChannel`. Settings → Reset demo restores the starting records. Demo role selection is for exploration; live mode uses authenticated roles enforced by PostgreSQL.
 
-Try the driver view: `UDD-0005` and `UDD-0006` are assigned to the first route and have not boarded. `UDD-0001` has already boarded and will be rejected as a duplicate. `UDD-0007` belongs to another route and will be rejected. End the route, then start it again to reset its boarding list.
+Try the driver view: `UDD-0005` and `UDD-0006` are assigned to the first route and have not boarded. `UDD-0001` has already boarded and will be rejected as a duplicate. `UDD-0007` belongs to another route and will be rejected. Open Trips & history to manage the active journey. Record individual drop-offs, confirm the cabin check, and complete the trip. Prepare another dated trip to get a new manifest; the old manifest remains saved.
 
 ## Included workflows
 
@@ -27,7 +27,8 @@ Try the driver view: `UDD-0005` and `UDD-0006` are assigned to the first route a
 | Students | Create profiles; assign/unassign routes and pickup stops with capacity enforcement |
 | Drivers | Create profiles and view route/vehicle assignments |
 | Maintenance | Odometer thresholds; overdue/due-soon alerts; record completed service |
-| Driver portal | Start trip, share device GPS, validate boarding IDs, end trip with final odometer |
+| Driver portal | Review/start a prepared dated trip, share device GPS, record boarding and individual drop-offs, complete cabin check and final odometer |
+| Trips & history | Prepare dated snapshots, inspect passenger records, search dates, cancel scheduled trips with a reason, export a passenger CSV |
 | Student portal | Assigned bus, driver contact, pickup stop, route map, boarding ID/status |
 | Settings | Role preview in demo, trip notifications, connection guidance, refresh/reset |
 
@@ -36,7 +37,7 @@ Routes are directed adjacency lists, connected in stop sequence. Lines connect s
 ## Connect Supabase
 
 1. Create your Supabase project.
-2. Run **`supabase/schema.sql` once** in the SQL editor on a new project. It creates tables, indexes, RLS policies, guarded mutation functions, and private Broadcast authorization. The script is a fresh-install migration, not an idempotent update script.
+2. Run **`supabase/schema.sql` once**, then **`supabase/migrations/001_trip_history.sql` once**, in that order in the SQL editor on a new project. Together they create fleet/trip tables, indexes, RLS policies, guarded mutation functions, and private Broadcast authorization. For an existing installation, finish active routes and apply only the new migration. Do not rerun the fresh-install schema.
 3. In Supabase Realtime settings, **disable “Allow public access.”** All fleet channels use `config: { private: true }`.
 4. Copy `.env.example` to `.env`. For Node development or static hosting, set:
 
@@ -142,11 +143,11 @@ Trip alerts use private Realtime messages and browser/local native notifications
 - **Durable state:** PostgreSQL holds users, buses, routes, graph stops, student assignments, and activity.
 - **Transient GPS:** Drivers publish private `route:<uuid>` Broadcast messages. GPS updates do not create database writes. Admin/student subscribers update Leaflet markers in place.
 - **Live records:** Database triggers publish lightweight `data_changed` invalidations. Clients refresh only after durable changes. Private `user:<uuid>` topics let newly assigned students/drivers discover their first route.
-- **Trip lifecycle:** Database triggers announce start/completion to route subscribers. Demo uses `BroadcastChannel` instead.
+- **Trip lifecycle:** Dated trips snapshot route stops, resources, and passengers. Passenger events and audit entries survive completion. Transactional operations use request IDs for safe retries. Database triggers announce start/completion to route subscribers. Demo uses `BroadcastChannel` invalidations.
 - **Boarding:** Demo builds a JavaScript `Map` for the current route snapshot in O(N), then performs an expected O(1) ID lookup. Live validation uses indexed PostgreSQL student-code and assignment lookups and a transaction.
 - **Capacity:** Demo counts matching active assignments in O(N). Live assignment/boarding locks the route row and enforces capacity inside the mutation transaction, preventing concurrent requests from overbooking.
 - **RBAC:** Anonymous users have no fleet access. Admins manage records. Drivers access their route/passengers and trip operations. Students see their own assignment and route/bus/driver. An aggregate RPC provides occupancy without disclosing classmates' identities. Browser roles cannot write directly to tables or change account roles.
-- **Maintenance:** Alerts are derived from odometer thresholds; no external scheduler is needed. Service history is recorded in activity. This version does not include workshop scheduling or emailed maintenance alerts.
+- **Maintenance:** Alerts are derived from odometer thresholds; no external scheduler is needed. Service history is recorded in activity. New mutations also record structured audit entries. This version does not include workshop scheduling or emailed maintenance alerts.
 - **CSV:** Exported values are escaped, including spreadsheet-formula prefixes.
 
 Private channels restrict who can subscribe and publish. The driver is the trusted location publisher. GPS is not persisted; newly connected viewers wait for the next driver update. This version does not provide location history or background GPS.
@@ -165,15 +166,31 @@ The tests cover domain algorithms and run the actual SQL migration/functions/RLS
 ```text
 src/main.js          Views, dialogs, navigation, driver GPS and notifications
 src/store.js         Demo persistence, auth, Supabase queries/RPC and Broadcast
+src/trips.js         Trip snapshot and demo lifecycle rules
+src/trip-views.js    Trip directory, history, manifest actions and export
 src/domain.js        Capacity, boarding, route graph, maintenance, escaping
 src/map.js           Leaflet maps, markers, routes and stop editor
 src/styles.css       Design tokens, responsive UI and compiled Tailwind entry
 src/seed.js          Fictional local sample records
 public/api/index.php PHP configuration and authenticated REST/RPC middleware
 supabase/schema.sql Database, RLS, transactional mutations and Broadcast policies
+supabase/migrations/ Incremental upgrades after the base schema
 tests/              Domain and actual PostgreSQL security/workflow tests
 capacitor.config.json Native shell configuration
 Dockerfile          Node build → PHP/Apache runtime
 ```
 
 Technical references: [Supabase Realtime authorization](https://supabase.com/docs/guides/realtime/authorization), [Broadcast](https://supabase.com/docs/guides/realtime/broadcast), [Auth getUser](https://supabase.com/docs/reference/javascript/auth-getuser), and [Leaflet reference](https://leafletjs.com/reference).
+
+
+## Trip foundation rollout
+
+The first roadmap stage is implemented; see [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for completed work and remaining stages.
+
+- Existing Supabase installations: finish every active legacy route, back up the database, and apply `supabase/migrations/001_trip_history.sql` once before using this frontend. Its transaction refuses an active-route cutover without applying changes. If your SQL client leaves an aborted transaction open after a refused cutover, issue `ROLLBACK` before retrying.
+- New installations: run `schema.sql`, then the migration. The original schema alone supports only the previous frontend.
+- Demo: existing local records are preserved. Current active demo routes receive imported manifests; unknown start/boarding times remain unset and are labeled. Past journeys are not reconstructed from prose activity.
+- Admin: assign students first, then prepare a dated trip from Trips & history. Preparation fixes that trip's passenger list. Later assignment changes affect future preparations.
+- Driver: open today's prepared trip, start it, and record each pickup/drop-off. Completion requires no passengers left on board, the cabin check, and a valid final odometer. Expected students who never boarded remain explicitly expected in history; absence/no-show resolution belongs to the next stage.
+- History: current loading covers seven days either side of today plus any active journey. Date searches are server-filtered and capped at 200 results with an explicit error for larger ranges. A manifest is bounded by the 100-seat vehicle limit. Students receive only their own passenger rows; audit data is admin-only.
+- GPS remains transient and foreground-only. Samples include the current trip ID so late samples cannot move a later journey's marker. Scheduling calendars, invitations, remote push, background GPS, offline live recording, guardian accounts, and other later-stage features are not yet implemented.
