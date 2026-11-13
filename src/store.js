@@ -1,0 +1,330 @@
+import { createClient } from '@supabase/supabase-js';
+import { Capacitor } from '@capacitor/core';
+import { makeSeed } from './seed.js';
+import { buildBoardingIndex, capacityFor, validateBoarding, validCoordinates } from './domain.js';
+
+const DATA_KEY = 'udd-go-demo-v1';
+const PREF_KEY = 'udd-go-preferences';
+const emptyData = () => ({ users:[], buses:[], routes:[], route_stops:[], student_assignments:[], activity:[] });
+let savedPreferences = {};
+try {savedPreferences = JSON.parse(localStorage.getItem(PREF_KEY) || '{}');} catch { /* Restore defaults if browser settings were corrupted. */ }
+export const preferences = savedPreferences || {};
+export function savePreferences(values) {
+  Object.assign(preferences, values);
+  localStorage.setItem(PREF_KEY, JSON.stringify(preferences));
+}
+
+class FleetStore extends EventTarget {
+  data = emptyData();
+  profile = null;
+  mode = 'demo';
+  client = null;
+  config = {};
+  routeSummaries = new Map();
+  channels = new Map();
+  connected = false;
+  subscriptionKey = '';
+  refreshTimer = null;
+  channelStates = new Map();
+  constructor() {
+    super();
+    this.localChannel = new BroadcastChannel('udd-go-fleet');
+    this.localChannel.onmessage = ({data}) => {
+      if (this.mode !== 'demo') return;
+      if (data.type === 'position') this.position(data.payload, false);
+      if (data.type === 'change') { this.loadDemo(); this.emit(); }
+      if (data.type === 'trip') this.dispatchEvent(new CustomEvent('trip', { detail:data.payload }));
+    };
+    window.addEventListener('storage', event => {
+      if (event.key === DATA_KEY && this.mode === 'demo') { this.loadDemo(); this.emit(); }
+    });
+  }
+  async init() {
+    let config = { url:import.meta.env.VITE_SUPABASE_URL, key:import.meta.env.VITE_SUPABASE_ANON_KEY, cartoKey:import.meta.env.VITE_CARTO_API_KEY };
+    if (!config.url) {
+      try {
+        const response = await fetch('/api/index.php?action=config');
+        if (response.ok && response.headers.get('content-type')?.includes('application/json')) config = await response.json();
+      } catch { /* A static development server supports the demo without PHP. */ }
+    }
+    this.config = config;
+    if (config.url && config.key) {
+      this.mode = 'live';
+      this.client = createClient(config.url, config.key);
+      const { data, error } = await this.client.auth.getSession();
+      if (error) throw error;
+      if (data.session) await this.loadLive();
+      this.client.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_OUT') {
+          this.profile = null; this.data = emptyData(); this.unsubscribe(); this.emit();
+        }
+      });
+    } else {
+      this.loadDemo();
+      this.setDemoRole(preferences.demoRole || (Capacitor.isNativePlatform() ? 'driver' : 'admin'), false);
+      this.connected = true;
+    }
+  }
+  loadDemo() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(DATA_KEY));
+      this.data = saved?.version === 1 ? saved : makeSeed();
+    } catch { this.data = makeSeed(); }
+    localStorage.setItem(DATA_KEY, JSON.stringify(this.data));
+  }
+  setDemoRole(role, emit = true) {
+    if (this.mode !== 'demo' || !['admin','driver','student'].includes(role)) return;
+    this.profile = this.data.users.find(u => u.role === role);
+    savePreferences({demoRole:role});
+    if (emit) this.emit();
+  }
+  async login(email, password) {
+    const { error } = await this.client.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    await this.loadLive(); this.emit();
+  }
+  async logout() {
+    if (this.mode === 'live') {
+      const { error } = await this.client.auth.signOut();
+      if (error) throw error;
+    }
+  }
+  async loadLive() {
+    const { data:{user}, error } = await this.client.auth.getUser();
+    if (error) throw error;
+    if (!user) throw new Error('Please sign in to continue.');
+    const {data:profile, error:profileError} = await this.client.from('users').select('*').eq('auth_id',user.id).single();
+    if (profileError) throw new Error('Your account needs a fleet profile. Ask your administrator to link your Auth user ID.');
+    this.profile = profile;
+    const names = Object.keys(emptyData());
+    const positions = new Map(this.data.buses.filter(bus=>bus.position_at).map(bus=>[bus.id,{current_lat:bus.current_lat,current_lng:bus.current_lng,position_at:bus.position_at}]));
+    const results = await Promise.all(names.map(name => this.readTable(name)));
+    results.forEach((result,i) => { if (result.error) throw result.error; this.data[names[i]] = result.data; });
+    this.data.buses.forEach(bus=>{if(positions.has(bus.id))Object.assign(bus,positions.get(bus.id));});
+    this.routeSummaries.clear();
+    if (this.profile.role === 'student') {
+      await Promise.all(this.data.routes.map(async route => {
+        const {data,error} = await this.client.rpc('fleet_route_capacity',{p_route_id:route.id});
+        if(error)throw error;
+        this.routeSummaries.set(route.id,data);
+      }));
+    }
+    await this.subscribe();
+  }
+  async readTable(name) {
+    if(name === 'activity')return this.client.from(name).select('*').order('created_at',{ascending:false}).limit(200);
+    const records=[];
+    let total=Infinity;
+    while(records.length<total){
+      const {data,error,count}=await this.client.from(name).select('*',{count:'exact'}).order('id').range(records.length,records.length+999);
+      if(error)return {error};
+      if(count>10000)return {error:new Error('This workspace exceeds the 10,000-record limit. Add server-side directory pagination before using this fleet size.')};
+      total=count ?? 0;
+      if(!data.length && records.length<total)return {error:new Error('Fleet records changed while loading. Refresh to try again.')};
+      records.push(...data);
+    }
+    return {data:records,error:null};
+  }
+  async subscribe() {
+    const key = [this.profile.id,...this.data.routes.map(r=>r.id).sort()].join(':');
+    if (this.subscriptionKey === key) return;
+    this.unsubscribe();
+    this.subscriptionKey = key;
+    await this.client.realtime.setAuth();
+    const topics = this.data.routes.map(route => ({topic:`route:${route.id}`,id:route.id}));
+    topics.push({topic:`user:${this.profile.id}`,id:'profile'});
+    if(this.profile.role === 'admin') topics.push({topic:'fleet:admin',id:'admin'});
+    this.channelStates = new Map(topics.map(topic=>[topic.id,'CONNECTING']));
+    const queueRefresh = () => {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = setTimeout(() => this.refresh().catch(error => this.dispatchEvent(new CustomEvent('connectionerror',{detail:error.message}))),200);
+    };
+    for (const topic of topics) {
+      const channel = this.client.channel(topic.topic, { config:{ private:true, broadcast:{ self:false, ack:true } } });
+      channel.on('broadcast', {event:'position'}, ({payload}) => this.position(payload, false));
+      channel.on('broadcast', {event:'data_changed'}, queueRefresh);
+      channel.on('broadcast', {event:'trip'}, ({payload}) => {
+        this.dispatchEvent(new CustomEvent('trip', {detail:payload}));
+        this.refresh().catch(error => this.dispatchEvent(new CustomEvent('connectionerror', {detail:error.message})));
+      });
+      channel.subscribe(status => {
+        this.channelStates.set(topic.id,status);
+        this.connected = [...this.channelStates.values()].every(value=>value==='SUBSCRIBED');
+        this.dispatchEvent(new CustomEvent('connection', {detail:status}));
+      });
+      this.channels.set(topic.id,channel);
+    }
+  }
+  unsubscribe() {
+    for (const channel of this.channels.values()) this.client?.removeChannel(channel);
+    this.channels.clear(); this.connected = false;
+    this.subscriptionKey = '';
+    this.channelStates.clear();
+  }
+  async refresh() {
+    if (this.mode === 'demo') this.loadDemo();
+    else await this.loadLive();
+    this.emit();
+  }
+  emit() { this.dispatchEvent(new Event('change')); }
+  position(payload, publish = true) {
+    if (!payload || !validCoordinates(payload.lat,payload.lng) || !Number.isFinite(payload.at) || payload.at>Date.now()+60000) return;
+    const route = this.data.routes.find(r => r.id === payload.route_id);
+    const bus = this.data.buses.find(b => b.id === route?.bus_id);
+    if (!bus || route.status !== 'active') return;
+    if (bus.position_at && payload.at < bus.position_at) return;
+    Object.assign(bus,{current_lat:payload.lat,current_lng:payload.lng,position_at:payload.at});
+    this.dispatchEvent(new CustomEvent('position',{detail:{...payload,bus_id:bus.id}}));
+    if (publish && this.mode === 'demo') this.localChannel.postMessage({type:'position',payload});
+  }
+  async publishPosition(routeId, coords) {
+    const payload = {route_id:routeId,lat:coords.latitude,lng:coords.longitude,at:Date.now()};
+    if (this.mode === 'live') {
+      const channel = this.channels.get(routeId);
+      if (!channel || await channel.send({type:'broadcast',event:'position',payload}) !== 'ok') throw new Error('GPS broadcast disconnected. Check your internet connection.');
+    }
+    this.position(payload);
+  }
+  async announceTrip(route, status) {
+    const payload = {route_id:route.id,route_name:route.route_name,status};
+    if (this.mode === 'demo') this.localChannel.postMessage({type:'trip',payload});
+    // Hosted trips are announced by the transaction's database trigger.
+    if(this.mode === 'demo')this.dispatchEvent(new CustomEvent('trip',{detail:payload}));
+  }
+  async action(action, payload) {
+    if (this.mode === 'live') {
+      if(this.config.middleware) {
+        const {data:{session}} = await this.client.auth.getSession();
+        const response = await fetch('/api/index.php?action=mutate',{
+          method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session?.access_token || ''}`},
+          body:JSON.stringify({p_action:action,p_payload:payload}),
+        });
+        const result = await response.json();
+        if(!response.ok)throw new Error(result.message || result.error || 'Your change could not be saved.');
+      } else {
+        const {error} = await this.client.rpc('fleet_action',{p_action:action,p_payload:payload});
+        if (error) throw new Error(error.message);
+      }
+      await this.refresh(); return;
+    }
+    this.loadDemo();
+    const admin = this.profile.role === 'admin';
+    if (!admin && !['start_route','end_route','board_student'].includes(action)) throw new Error('Only administrators can make this change.');
+    const id = () => crypto.randomUUID();
+    const bus = this.data.buses.find(b => b.id === payload.bus_id);
+    const route = this.data.routes.find(r => r.id === payload.route_id);
+    const routeBus = this.data.buses.find(b => b.id === route?.bus_id);
+    if (['start_route','end_route','board_student'].includes(action)) {
+      if (!route || (!admin && route.driver_id !== this.profile.id)) throw new Error('You are not assigned to this route.');
+    }
+    let message = '', type = 'update', detail = '';
+    switch(action) {
+      case 'add_bus':
+      case 'update_bus': {
+        if(!payload.label?.trim() || !payload.plate_number?.trim())throw new Error('Enter a vehicle name and plate number.');
+        if (this.data.buses.some(b => b.id !== payload.bus_id && b.plate_number.toUpperCase() === payload.plate_number.toUpperCase())) throw new Error('A bus with this plate number already exists.');
+        if (!(payload.capacity > 0) || payload.capacity > 100 || payload.next_service_mileage <= 0) throw new Error('Check the capacity and next service mileage.');
+        if (action === 'add_bus') {
+          if (payload.next_service_mileage <= payload.current_mileage) throw new Error('Next service must be after the current odometer.');
+          this.data.buses.push({id:id(),...payload,status:'idle',current_lat:16.0436,current_lng:120.3417});
+          message = `${payload.label} added to the fleet`;
+        } else {
+          if(!bus)throw new Error('Bus not found.');
+          if(bus.status === 'active')throw new Error('End the active trip before editing this bus.');
+          const assignedRoute = this.data.routes.find(r => r.bus_id === bus.id);
+          if(assignedRoute && capacityFor(bus,assignedRoute.id,this.data.student_assignments).assigned > payload.capacity)throw new Error('Capacity cannot be lower than the number of assigned students.');
+          if(payload.current_mileage < bus.current_mileage)throw new Error('The odometer cannot move backwards.');
+          if(!['idle','maintenance'].includes(payload.status))throw new Error('Choose an available or maintenance status.');
+          const {bus_id,...values} = payload;Object.assign(bus,values);message = `${bus.label} details updated`;
+        }
+        break;
+      }
+      case 'delete_bus': {
+        if (!bus) throw new Error('Bus not found.');
+        if (this.data.routes.some(r => r.bus_id === bus.id)) throw new Error('This bus is assigned to a route and cannot be removed.');
+        this.data.buses = this.data.buses.filter(b => b.id !== bus.id); message = `${bus.label} removed`; break;
+      }
+      case 'add_person': {
+        if(!payload.name?.trim())throw new Error('Enter a full name.');
+        if (!['driver','student'].includes(payload.role)) throw new Error('Invalid role.');
+        if(payload.role==='student' && !payload.student_code?.trim())throw new Error('Enter a student ID.');
+        const personId = payload.role === 'student' ? payload.student_code.toUpperCase() : id();
+        if (this.data.users.some(u => u.id === personId)) throw new Error('This student ID already exists.');
+        this.data.users.push({id:personId,...payload}); message = `${payload.name} added`; break;
+      }
+      case 'add_route': {
+        if(!payload.route_name?.trim() || payload.stops.some(stop=>!stop.stop_name.trim()))throw new Error('Give the route and every stop a name.');
+        if (!bus || bus.status === 'maintenance') throw new Error('Choose an available bus.');
+        if (this.data.routes.some(r => r.bus_id === bus.id || r.driver_id === payload.driver_id)) throw new Error('This bus or driver is already assigned to a route.');
+        if (payload.stops.length < 2) throw new Error('Add at least two route stops.');
+        const routeId = id();
+        const {stops,...values} = payload;
+        this.data.routes.push({id:routeId,...values,status:'scheduled'});
+        stops.forEach((s,i) => this.data.route_stops.push({...s,id:id(),route_id:routeId,stop_sequence:i+1}));
+        message = `New route: ${payload.route_name}`; type = 'route'; break;
+      }
+      case 'assign_student': {
+        if (!route || !this.data.users.some(u => u.id === payload.student_id && u.role === 'student')) throw new Error('Choose a student and route.');
+        if (this.data.student_assignments.some(a => a.student_id === payload.student_id && a.status !== 'cancelled')) throw new Error('This student already has a route assignment.');
+        if (capacityFor(routeBus,route.id,this.data.student_assignments).available <= 0) throw new Error('This route is full. Choose a bus with available seats.');
+        if (!this.data.route_stops.some(s => s.id === payload.stop_id && s.route_id === route.id)) throw new Error('Choose a stop on this route.');
+        this.data.student_assignments.push({id:id(),...payload,status:'assigned'}); message = 'Student assigned to route'; break;
+      }
+      case 'delete_route': {
+        if(!route)throw new Error('Route not found.');
+        if(route.status === 'active')throw new Error('End the active trip before removing this route.');
+        this.data.student_assignments = this.data.student_assignments.filter(a=>a.route_id !== route.id);
+        this.data.route_stops = this.data.route_stops.filter(s=>s.route_id !== route.id);
+        this.data.routes = this.data.routes.filter(r=>r.id !== route.id);
+        if(routeBus.status !== 'maintenance')routeBus.status = 'idle';
+        message = `${route.route_name} removed`;type = 'route';break;
+      }
+      case 'unassign_student': {
+        const assignment = this.data.student_assignments.find(a => a.id === payload.assignment_id);
+        if (!assignment) throw new Error('Assignment not found.');
+        if (assignment.status === 'boarded') throw new Error('End the trip before removing a boarded student.');
+        this.data.student_assignments = this.data.student_assignments.filter(a => a.id !== assignment.id); message = 'Student route assignment removed'; break;
+      }
+      case 'start_route': {
+        if (route.status === 'active') throw new Error('This route is already active.');
+        if (routeBus.status === 'maintenance') throw new Error('This bus is in maintenance.');
+        route.status = 'active'; routeBus.status = 'active';
+        this.data.student_assignments.filter(a => a.route_id === route.id).forEach(a => {a.status = 'assigned';});
+        message = `${routeBus.label} started its route`; detail = route.route_name; type = 'route'; break;
+      }
+      case 'board_student': {
+        if (route.status !== 'active') throw new Error('Start your route before boarding students.');
+        const index = buildBoardingIndex(this.data.student_assignments,route.id);
+        const onboard = capacityFor(routeBus,route.id,this.data.student_assignments).boarded;
+        const assignment = validateBoarding(index,payload.student_code,routeBus,onboard);
+        assignment.status = 'boarded';
+        message = `${this.data.users.find(u => u.id === assignment.student_id)?.name} boarded ${routeBus.label}`; detail = route.route_name; type = 'boarding'; break;
+      }
+      case 'end_route': {
+        if (route.status !== 'active') throw new Error('This route is not active.');
+        if (!Number.isFinite(payload.mileage) || payload.mileage < routeBus.current_mileage) throw new Error('Final mileage cannot be lower than the current odometer.');
+        route.status = 'completed'; routeBus.status = 'idle'; routeBus.current_mileage = payload.mileage;
+        this.data.student_assignments.filter(a => a.route_id === route.id && a.status === 'boarded').forEach(a => {a.status = 'assigned';});
+        message = `${routeBus.label} completed its route`; detail = `${payload.mileage.toLocaleString()} km on the odometer`; type = 'route'; break;
+      }
+      case 'service_bus': {
+        if (!bus) throw new Error('Bus not found.');
+        if (bus.status === 'active') throw new Error('End the active trip before recording maintenance.');
+        if (payload.mileage < bus.current_mileage || payload.next_service_mileage <= payload.mileage) throw new Error('Check the odometer and next service mileage.');
+        Object.assign(bus,{current_mileage:payload.mileage,next_service_mileage:payload.next_service_mileage,status:'idle'});
+        message = `${bus.label} maintenance completed`; type = 'maintenance'; break;
+      }
+      default: throw new Error('Unknown fleet action.');
+    }
+    this.data.activity.unshift({id:id(),message,detail,type,created_at:new Date().toISOString()});
+    this.data.activity = this.data.activity.slice(0,200);
+    localStorage.setItem(DATA_KEY,JSON.stringify(this.data));
+    this.localChannel.postMessage({type:'change'}); this.emit();
+  }
+  reset() {
+    if (this.mode !== 'demo') return;
+    localStorage.removeItem(DATA_KEY); this.loadDemo(); this.setDemoRole('admin');
+    this.localChannel.postMessage({type:'change'});
+  }
+}
+export const store = new FleetStore();
