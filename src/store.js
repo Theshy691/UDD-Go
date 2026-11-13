@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { makeSeed } from './seed.js';
-import { buildBoardingIndex, capacityFor, validateBoarding, validCoordinates } from './domain.js';
+import { TRIP_ACTIONS, schoolDate, upgradeDemoTrips, applyDemoTripAction } from './trips.js';
+import { capacityFor, validCoordinates } from './domain.js';
 
 const DATA_KEY = 'udd-go-demo-v1';
 const PREF_KEY = 'udd-go-preferences';
-const emptyData = () => ({ users:[], buses:[], routes:[], route_stops:[], student_assignments:[], activity:[] });
+const emptyData = () => ({ users:[], buses:[], routes:[], route_stops:[], student_assignments:[], activity:[], trips:[], trip_passengers:[] });
 let savedPreferences = {};
 try {savedPreferences = JSON.parse(localStorage.getItem(PREF_KEY) || '{}');} catch { /* Restore defaults if browser settings were corrupted. */ }
 export const preferences = savedPreferences || {};
@@ -70,6 +71,7 @@ class FleetStore extends EventTarget {
       const saved = JSON.parse(localStorage.getItem(DATA_KEY));
       this.data = saved?.version === 1 ? saved : makeSeed();
     } catch { this.data = makeSeed(); }
+    upgradeDemoTrips(this.data);
     localStorage.setItem(DATA_KEY, JSON.stringify(this.data));
   }
   setDemoRole(role, emit = true) {
@@ -96,8 +98,8 @@ class FleetStore extends EventTarget {
     const {data:profile, error:profileError} = await this.client.from('users').select('*').eq('auth_id',user.id).single();
     if (profileError) throw new Error('Your account needs a fleet profile. Ask your administrator to link your Auth user ID.');
     this.profile = profile;
-    const names = Object.keys(emptyData());
-    const positions = new Map(this.data.buses.filter(bus=>bus.position_at).map(bus=>[bus.id,{current_lat:bus.current_lat,current_lng:bus.current_lng,position_at:bus.position_at}]));
+    const names = ['users','buses','routes','route_stops','student_assignments','activity'];
+    const positions = new Map(this.data.buses.filter(bus=>bus.position_at).map(bus=>[bus.id,{current_lat:bus.current_lat,current_lng:bus.current_lng,position_at:bus.position_at,position_trip_id:bus.position_trip_id}]));
     const results = await Promise.all(names.map(name => this.readTable(name)));
     results.forEach((result,i) => { if (result.error) throw result.error; this.data[names[i]] = result.data; });
     this.data.buses.forEach(bus=>{if(positions.has(bus.id))Object.assign(bus,positions.get(bus.id));});
@@ -109,7 +111,37 @@ class FleetStore extends EventTarget {
         this.routeSummaries.set(route.id,data);
       }));
     }
+    await this.loadTrips();
+    for(const bus of this.data.buses)if(!this.data.trips.some(t=>t.id===bus.position_trip_id && t.status==='active')){delete bus.position_at;delete bus.position_trip_id;}
     await this.subscribe();
+  }
+  async loadTrips() {
+    const today=schoolDate(), from=schoolDate(new Date(Date.now()-7*86400000)), to=schoolDate(new Date(Date.now()+7*86400000));
+    const {data,error}=await this.client.from('trips').select('*').or(`status.eq.active,and(service_date.gte.${from},service_date.lte.${to})`).order('planned_at',{ascending:false}).limit(201);
+    if(error)throw new Error(`Trips could not be loaded. Confirm you applied supabase/migrations/001_trip_history.sql. ${error.message}`);
+    if(data.length>200)throw new Error('More than 200 trips in this window. Narrow server-side trip loading before continuing.');
+    this.data.trips=data;
+    this.data.trip_passengers=[];
+    // Each manifest is bounded by the enforced maximum vehicle capacity of 100.
+    await Promise.all(data.filter(t=>t.status==='active' || t.service_date===today).map(async trip=>{
+      const passengers=await this.tripManifest(trip.id);this.data.trip_passengers.push(...passengers);
+    }));
+  }
+  visibleTrips() {
+    return this.data.trips.filter(t=>this.profile?.role==='admin' || (this.profile?.role==='driver'?t.driver_id===this.profile.id:this.data.trip_passengers.some(p=>p.trip_id===t.id && p.student_id===this.profile?.id)));
+  }
+  async tripManifest(tripId) {
+    if(this.mode==='demo') {
+      if(!this.visibleTrips().some(t=>t.id===tripId))throw new Error('This trip is not available to your account.');
+      return this.data.trip_passengers.filter(p=>p.trip_id===tripId && (this.profile.role!=='student' || p.student_id===this.profile.id));
+    }
+    const {data,error}=await this.client.from('trip_passengers').select('*').eq('trip_id',tripId).order('student_name').limit(101);
+    if(error)throw error;if(data.length>100)throw new Error('Manifest exceeds supported vehicle capacity.');return data;
+  }
+  async tripHistory(from,to) {
+    if(this.mode==='demo')return this.visibleTrips().filter(t=>t.service_date>=from && t.service_date<=to).sort((a,b)=>b.planned_at.localeCompare(a.planned_at));
+    const {data,error}=await this.client.from('trips').select('*').gte('service_date',from).lte('service_date',to).order('planned_at',{ascending:false}).limit(201);
+    if(error)throw error;if(data.length>200)throw new Error('More than 200 trips match. Choose a shorter date range.');return data;
   }
   async readTable(name) {
     if(name === 'activity')return this.client.from(name).select('*').order('created_at',{ascending:false}).limit(200);
@@ -171,14 +203,17 @@ class FleetStore extends EventTarget {
     if (!payload || !validCoordinates(payload.lat,payload.lng) || !Number.isFinite(payload.at) || payload.at>Date.now()+60000) return;
     const route = this.data.routes.find(r => r.id === payload.route_id);
     const bus = this.data.buses.find(b => b.id === route?.bus_id);
-    if (!bus || route.status !== 'active') return;
-    if (bus.position_at && payload.at < bus.position_at) return;
-    Object.assign(bus,{current_lat:payload.lat,current_lng:payload.lng,position_at:payload.at});
+    const trip=this.data.trips.find(t=>t.route_id===route?.id && t.status==='active');
+    if (!bus || !trip || payload.trip_id!==trip.id || route.status !== 'active') return;
+    if (bus.position_trip_id===trip.id && bus.position_at && payload.at < bus.position_at) return;
+    Object.assign(bus,{current_lat:payload.lat,current_lng:payload.lng,position_at:payload.at,position_trip_id:trip.id});
     this.dispatchEvent(new CustomEvent('position',{detail:{...payload,bus_id:bus.id}}));
     if (publish && this.mode === 'demo') this.localChannel.postMessage({type:'position',payload});
   }
   async publishPosition(routeId, coords) {
-    const payload = {route_id:routeId,lat:coords.latitude,lng:coords.longitude,at:Date.now()};
+    const trip=this.data.trips.find(t=>t.route_id===routeId && t.status==='active');
+    if(!trip || (this.profile.role!=='admin' && trip.driver_id!==this.profile.id))throw new Error('An assigned active trip is required for location sharing.');
+    const payload = {route_id:routeId,trip_id:trip.id,lat:coords.latitude,lng:coords.longitude,at:Date.now()};
     if (this.mode === 'live') {
       const channel = this.channels.get(routeId);
       if (!channel || await channel.send({type:'broadcast',event:'position',payload}) !== 'ok') throw new Error('GPS broadcast disconnected. Check your internet connection.');
@@ -192,31 +227,49 @@ class FleetStore extends EventTarget {
     if(this.mode === 'demo')this.dispatchEvent(new CustomEvent('trip',{detail:payload}));
   }
   async action(action, payload) {
+    if (['start_route','end_route','board_student'].includes(action)) throw new Error('Use a dated trip for passenger operations.');
+    if (TRIP_ACTIONS.includes(action)) {
+      payload={...payload,operation_id:payload.operation_id || crypto.randomUUID()};
+      if(this.mode==='demo') {
+        const mutate=()=>{
+          this.loadDemo();const next=structuredClone(this.data);
+          const repeated=next.trip_operations.some(op=>op.id===payload.operation_id);
+          const result=applyDemoTripAction(next,this.profile,action,payload);
+          this.data=next;localStorage.setItem(DATA_KEY,JSON.stringify(next));
+          this.localChannel.postMessage({type:'change'});this.emit();
+          if(!repeated && ['start_trip','complete_trip'].includes(action)){const trip=next.trips.find(t=>t.id===result.id);this.announceTrip({id:trip.route_id,route_name:trip.route_name},trip.status);}
+          return result;
+        };
+        return navigator.locks ? navigator.locks.request('udd-go-demo-mutations',mutate) : mutate();
+      }
+    }
+
     if (this.mode === 'live') {
+      let mutationResult;
       if(this.config.middleware) {
         const {data:{session}} = await this.client.auth.getSession();
         const response = await fetch('/api/index.php?action=mutate',{
           method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session?.access_token || ''}`},
           body:JSON.stringify({p_action:action,p_payload:payload}),
         });
-        const result = await response.json();
+        const result = await response.json();mutationResult=result;
         if(!response.ok)throw new Error(result.message || result.error || 'Your change could not be saved.');
       } else {
-        const {error} = await this.client.rpc('fleet_action',{p_action:action,p_payload:payload});
+        const {data,error} = await this.client.rpc('fleet_action',{p_action:action,p_payload:payload});
         if (error) throw new Error(error.message);
+        mutationResult=data;
       }
-      await this.refresh(); return;
+      await this.refresh(); return mutationResult;
     }
     this.loadDemo();
+    if(['delete_route','update_bus','delete_bus'].includes(action) && this.data.trips.some(t=>['scheduled','active'].includes(t.status) && (action==='delete_route'?t.route_id===payload.route_id:t.bus_id===payload.bus_id)))throw new Error('Complete or cancel prepared trips before changing these resources.');
     const admin = this.profile.role === 'admin';
-    if (!admin && !['start_route','end_route','board_student'].includes(action)) throw new Error('Only administrators can make this change.');
+    if (!admin) throw new Error('Only administrators can make this change.');
     const id = () => crypto.randomUUID();
     const bus = this.data.buses.find(b => b.id === payload.bus_id);
     const route = this.data.routes.find(r => r.id === payload.route_id);
     const routeBus = this.data.buses.find(b => b.id === route?.bus_id);
-    if (['start_route','end_route','board_student'].includes(action)) {
-      if (!route || (!admin && route.driver_id !== this.profile.id)) throw new Error('You are not assigned to this route.');
-    }
+    const before=structuredClone({bus:bus || null,assignment:this.data.student_assignments.find(a=>a.id===payload.assignment_id) || null});
     let message = '', type = 'update', detail = '';
     switch(action) {
       case 'add_bus':
@@ -285,28 +338,6 @@ class FleetStore extends EventTarget {
         if (assignment.status === 'boarded') throw new Error('End the trip before removing a boarded student.');
         this.data.student_assignments = this.data.student_assignments.filter(a => a.id !== assignment.id); message = 'Student route assignment removed'; break;
       }
-      case 'start_route': {
-        if (route.status === 'active') throw new Error('This route is already active.');
-        if (routeBus.status === 'maintenance') throw new Error('This bus is in maintenance.');
-        route.status = 'active'; routeBus.status = 'active';
-        this.data.student_assignments.filter(a => a.route_id === route.id).forEach(a => {a.status = 'assigned';});
-        message = `${routeBus.label} started its route`; detail = route.route_name; type = 'route'; break;
-      }
-      case 'board_student': {
-        if (route.status !== 'active') throw new Error('Start your route before boarding students.');
-        const index = buildBoardingIndex(this.data.student_assignments,route.id);
-        const onboard = capacityFor(routeBus,route.id,this.data.student_assignments).boarded;
-        const assignment = validateBoarding(index,payload.student_code,routeBus,onboard);
-        assignment.status = 'boarded';
-        message = `${this.data.users.find(u => u.id === assignment.student_id)?.name} boarded ${routeBus.label}`; detail = route.route_name; type = 'boarding'; break;
-      }
-      case 'end_route': {
-        if (route.status !== 'active') throw new Error('This route is not active.');
-        if (!Number.isFinite(payload.mileage) || payload.mileage < routeBus.current_mileage) throw new Error('Final mileage cannot be lower than the current odometer.');
-        route.status = 'completed'; routeBus.status = 'idle'; routeBus.current_mileage = payload.mileage;
-        this.data.student_assignments.filter(a => a.route_id === route.id && a.status === 'boarded').forEach(a => {a.status = 'assigned';});
-        message = `${routeBus.label} completed its route`; detail = `${payload.mileage.toLocaleString()} km on the odometer`; type = 'route'; break;
-      }
       case 'service_bus': {
         if (!bus) throw new Error('Bus not found.');
         if (bus.status === 'active') throw new Error('End the active trip before recording maintenance.');
@@ -316,6 +347,7 @@ class FleetStore extends EventTarget {
       }
       default: throw new Error('Unknown fleet action.');
     }
+    this.data.audit_events.push({id:id(),actor_id:this.profile.id,action,created_at:new Date().toISOString(),detail:{request:payload,before}});
     this.data.activity.unshift({id:id(),message,detail,type,created_at:new Date().toISOString()});
     this.data.activity = this.data.activity.slice(0,200);
     localStorage.setItem(DATA_KEY,JSON.stringify(this.data));
