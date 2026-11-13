@@ -1,0 +1,8 @@
+{
+  "appId": "ph.edu.udd.go",
+  "appName": "UDD Go",
+  "webDir": "dist",
+  "plugins": {
+    "LocalNotifications": { "smallIcon": "ic_stat_icon_config_sample", "iconColor": "#38bdf8" }
+  }
+}

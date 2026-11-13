@@ -1,0 +1,32 @@
+{
+  "name": "udd-go",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "node --test tests/*.test.js",
+    "php": "php -S 127.0.0.1:8080 -t dist router.php",
+    "ios:setup": "npm run build && node scripts/setup-ios.mjs",
+    "ios:run": "npm run ios:setup && node scripts/run-ios.mjs",
+    "mobile:sync": "npm run build && cap sync"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/geolocation": "^7.0.0",
+    "@capacitor/ios": "^7.6.10",
+    "@capacitor/local-notifications": "^7.0.0",
+    "@supabase/supabase-js": "^2.80.0",
+    "leaflet": "^1.9.4",
+    "lucide": "^0.468.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0",
+    "@electric-sql/pglite": "^0.5.16",
+    "@tailwindcss/vite": "^4.1.0",
+    "tailwindcss": "^4.1.0",
+    "vite": "^7.0.0"
+  }
+}
