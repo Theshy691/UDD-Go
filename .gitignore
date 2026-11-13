@@ -1,0 +1,30 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.DS_Store
+.playwright-cli/
+output/
+
+# Native build and signing state
+android/
+ios/App/build/
+ios/App/Pods/
+ios/App/output/
+ios/App/App/public/
+ios/DerivedData/
+ios/**/xcuserdata/
+ios/**/*.xcuserstate
+ios/**/*.mobileprovision
+ios/**/*.p12
+ios/**/*.cer
+
+# Local Swift Package Manager and generated Capacitor metadata
+ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
+ios/App/App/capacitor.config.json
+ios/App/App/config.xml
+ios/capacitor-cordova-ios-plugins/
+
+# Local simulator/build captures
+output/
