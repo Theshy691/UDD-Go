@@ -62,3 +62,12 @@ Update: the native iOS simulator was subsequently configured and verified as des
 - Native demo mode defaults to the driver view; web demo mode continues to default to administrator.
 - Screenshot: `output/playwright/native-driver.png`. Native build output: `output/ios-build.log`.
 - This is a simulator launch/visual check. It does not establish that physical-device GPS, native notification delivery, background tracking, or hosted Supabase tracking work end to end.
+
+## Scheduling and route management — November 14, 2026
+
+- `npm test`: 42 passing tests. New PGlite checks execute migration 002 after the base schema and migration 001, using existing routes, assignments, and a historical trip. Added client/demo test for route version publishing and stop remapping.
+- Covered recurring AM/PM services, resource conflicts and turnaround, overnight effective dates, seat limits, student subscription conflicts, atomic/repeatable generation, holidays and extra days, route snapshots/remapping/version checks, archives, replacement capacity, active handovers, segment odometers, former-driver denial, private topic epochs, and aggregate passenger privacy.
+- `npm run build`: passed. Source syntax and `git diff --check` also passed.
+- WebKit browser checks on the production preview covered service creation, passenger subscription, seven-day generation, route publishing with unchanged prepared stops, calendar persistence after reload, active handover, removed former-driver controls, and student privacy. Phone-width checks and screenshots cover the service directory and student journey view.
+- A queued Leaflet resize callback could run after a map was destroyed during fast modal navigation. Map/editor cleanup now cancels or guards those callbacks; repeated opening/closing of route detail/editor dialogs was rechecked.
+- Hosted Supabase migrations, Auth/Realtime transport, physical-device handovers, native GPS, and distribution builds were not verified. Auth/Realtime primitives are stubbed in the SQL test harness. Generation is admin-triggered; no unattended scheduling job is installed.
