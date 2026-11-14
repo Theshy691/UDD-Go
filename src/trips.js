@@ -80,7 +80,8 @@ export function applyDemoTripAction(data, actor, action, payload) {
       bus.status='idle';bus.current_mileage=payload.mileage;if(route)route.status='completed';
     } else {
       if(trip.status!=='active')throw new Error('Start this trip before recording passenger movement.');
-      const passenger=passengers.find(p=>p.student_code===payload.student_code?.trim().toUpperCase());
+      const index=new Map(passengers.map(p=>[p.student_code,p]));
+      const passenger=index.get(payload.student_code?.trim().toUpperCase());
       if(!passenger)throw new Error('This student is not assigned to this trip.');
       if(action==='record_boarding' && passenger.status!=='expected')throw new Error('This student has already boarded.');
       if(action==='record_alighting' && passenger.status!=='boarded')throw new Error('Only a student on board can be dropped off.');
