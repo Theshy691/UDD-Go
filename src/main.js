@@ -1,7 +1,8 @@
 import './styles.css';
 import { createIcons, LayoutDashboard, BusFront, Route, GraduationCap, Users, Wrench, Settings, CircleHelp, ChevronDown, ChevronRight, ChevronLeft, ArrowUpRight, ArrowRight, Plus, Download, Search, Bell, CalendarDays, MapPin, Navigation, LocateFixed, Menu, X, LogOut, Radio, CircleCheck, CircleAlert, Check, Clock3, ShieldCheck, Leaf, School, MoreHorizontal, Play, Square, UserRoundCheck, Trash2, ExternalLink, Mail, RefreshCw, Phone, Info, Gauge } from 'lucide';
 import { store, preferences, savePreferences } from './store.js';
-import { tripPage, tripAction, activeTrip, filterTripHistory, resetTripHistory } from './trip-views.js';
+import { tripPage, tripAction, filterTripHistory, resetTripHistory } from './trip-views.js';
+import { schedulingPage, schedulingAction } from './scheduling-views.js';
 import { tripCounts, schoolDate } from './trips.js';
 import { capacityFor, maintenanceStatus, escapeHtml as esc, csvCell } from './domain.js';
 import { FleetMap, createStopEditor, configureMap } from './map.js';
@@ -17,16 +18,22 @@ const mountIcons = () => createIcons({icons:iconSet,attrs:{'aria-hidden':'true',
 const app = document.querySelector('#app');
 let page = 'overview', selectedBus = 'bus-1', routeFilter = '', busFilter = 'all', query = '';
 let fleetMap = null, modalMap = null, modalCleanup = null, modalReturnFocus = null, toastTimer, gpsWatch = null, gpsNative = false, gpsRouteId = null, simulatedStep = 0;
-let routeDraft = [];
-const titles = {overview:'Overview',trips:'Trips & history',fleet:'Fleet management',routes:'Routes & stops',students:'Students',drivers:'Drivers',maintenance:'Maintenance',activity:'Activity log',settings:'Settings',driver:'My route',student:'My journey'};
+let routeDraft = [],portalTripId='';
+const titles = {overview:'Overview',trips:'Trips & history',services:'Services & calendar',fleet:'Fleet management',routes:'Routes & stops',students:'Students',drivers:'Drivers',maintenance:'Maintenance',activity:'Activity log',settings:'Settings',driver:'My route',student:'My journey'};
 const statusNames = {active:'On route',idle:'Available',maintenance:'Maintenance',scheduled:'Scheduled',completed:'Completed',boarded:'On board',assigned:'Assigned',overdue:'Overdue',due_soon:'Due soon',healthy:'Up to date',expected:'Expected',alighted:'Dropped off',cancelled:'Cancelled'};
 const badge = status => `<span class="badge ${esc(status)}">${esc(statusNames[status] || status)}</span>`;
 const initials = name => name?.split(' ').map(n=>n[0]).slice(0,2).join('') || '?';
 const person = id => store.data.users.find(u => u.id === id);
-const routeByBus = id => store.data.routes.find(r => r.bus_id === id);
+const routeByBus = id => {const trip=store.data.trips.find(t=>t.bus_id===id && t.status==='active');return trip?{...store.data.routes.find(r=>r.id===trip.route_id),...trip,id:trip.route_id}:store.data.routes.find(r=>r.bus_id===id && !r.archived);};
 const stopsFor = id => store.data.route_stops.filter(s => s.route_id === id).sort((a,b)=>a.stop_sequence-b.stop_sequence);
 const formatNumber = n => Number(n || 0).toLocaleString('en-PH');
-const routeCapacity = (bus,routeId,assignments=store.data.student_assignments) => { const trip=activeTrip(routeId); return store.routeSummaries.get(routeId) || (trip?{...tripCounts(store.data.trip_passengers.filter(p=>p.trip_id===trip.id)),capacity:bus.capacity,available:Math.max(0,bus.capacity-store.data.trip_passengers.filter(p=>p.trip_id===trip.id).length)}:capacityFor(bus,routeId,assignments)); };
+const routeCapacity = (bus,routeId,assignments=store.data.student_assignments) => {
+  if(!bus)return {assigned:0,boarded:0,available:0,capacity:0};
+  const trip=store.data.trips.find(t=>t.route_id===routeId && t.bus_id===bus.id && t.status==='active');
+  const summary=trip?store.routeSummaries.get(trip.id):null;
+  if(summary)return {capacity:bus.capacity,available:Math.max(0,bus.capacity-(summary.boarded || 0)),...summary};
+  return trip?{...tripCounts(store.data.trip_passengers.filter(p=>p.trip_id===trip.id)),capacity:bus.capacity,available:Math.max(0,bus.capacity-store.data.trip_passengers.filter(p=>p.trip_id===trip.id).length)}:capacityFor(bus,routeId,assignments);
+};
 const date = () => new Intl.DateTimeFormat('en-PH',{weekday:'long',month:'long',day:'numeric',year:'numeric',timeZone:'Asia/Manila'}).format(new Date());
 const timeAgo = value => {const mins = Math.floor(Math.max(0,Date.now()-new Date(value).getTime())/60000);return mins < 1 ? 'Just now' : mins < 60 ? `${mins} min ago` : mins < 1440 ? `${Math.floor(mins/60)} hr ago` : `${Math.floor(mins/1440)} days ago`;};
 const departure = value => {const [h,m]=(value || '06:30').split(':').map(Number);return `${h%12 || 12}:${String(m).padStart(2,'0')} ${h>=12 ? 'PM' : 'AM'}`;};
@@ -49,7 +56,7 @@ function shell(content) {
   return `<div class="sidebar-overlay" data-action="close-menu"></div><aside class="sidebar" aria-label="Main navigation">
     <a class="brand" href="#" data-page="${admin ? 'overview' : store.profile.role}" aria-label="UDD Go home"><span class="brand-icon">${icon('BusFront')}</span><div>UDD<span> Go</span></div></a>
     <div class="campus-switch"><span class="campus-icon">${icon('School')}</span><div><strong>Universidad de Dagupan</strong><small>Main campus · Dagupan City</small></div>${icon('ChevronDown')}</div>
-    <div class="nav-label">Workspace</div><nav class="nav-list">${admin ? `${navItem('overview','Overview','LayoutDashboard')}${navItem('fleet','Fleet management','BusFront')}${navItem('routes','Routes & stops','Route')}${navItem('students','Students','GraduationCap')}${navItem('drivers','Drivers','Users')}${navItem('maintenance','Maintenance','Wrench',due)}` : navItem(store.profile.role,store.profile.role === 'driver' ? 'My route' : 'My journey',store.profile.role === 'driver' ? 'Route' : 'MapPin')}
+    <div class="nav-label">Workspace</div><nav class="nav-list">${admin ? `${navItem('overview','Overview','LayoutDashboard')}${navItem('fleet','Fleet management','BusFront')}${navItem('routes','Routes & stops','Route')}${navItem('services','Services & calendar','CalendarDays')}${navItem('students','Students','GraduationCap')}${navItem('drivers','Drivers','Users')}${navItem('maintenance','Maintenance','Wrench',due)}` : navItem(store.profile.role,store.profile.role === 'driver' ? 'My route' : 'My journey',store.profile.role === 'driver' ? 'Route' : 'MapPin')}
     </nav><div class="nav-separator"></div><div class="nav-label">Manage</div><nav class="nav-list">${admin ? navItem('activity','Activity log','Clock3') : ''}${navItem('trips','Trips & history','CalendarDays')}${navItem('settings','Settings','Settings')}</nav>
     <div class="sidebar-bottom"><div class="help-card"><div class="help-icon">${icon('Leaf')}</div><strong>A little care. A safer journey.</strong><p>Keep your fleet ready for the road.</p><button class="link-button" data-action="help">Visit the help center ${icon('ArrowUpRight')}</button></div>
     <div class="sidebar-profile"><div class="avatar">${esc(initials(store.profile.name))}</div><div><strong>${esc(store.profile.name)}</strong><small>${admin ? 'Fleet administrator' : store.profile.role === 'driver' ? 'School bus driver' : 'Student account'}</small></div><button class="icon-button" data-action="${store.mode === 'demo' ? 'profile' : 'logout'}" aria-label="${store.mode === 'demo' ? 'Switch demo role' : 'Sign out'}">${icon(store.mode === 'demo' ? 'MoreHorizontal' : 'LogOut')}</button></div></div>
@@ -65,7 +72,7 @@ function pageHeader(title, subtitle, actions='') {
 function stats() {
   const {buses,student_assignments,users,routes}=store.data;
   const active = buses.filter(b=>b.status==='active').length;
-  const boarded = student_assignments.filter(a=>a.status==='boarded').length;
+  const boarded = store.data.trip_passengers.filter(p=>p.status==='boarded' && store.data.trips.some(t=>t.id===p.trip_id && t.status==='active')).length;
   const students = users.filter(u=>u.role==='student').length;
   const due = buses.filter(b=>maintenanceStatus(b).status!=='healthy').length;
   return `<div class="summary-grid">
@@ -92,11 +99,12 @@ function timeline(stops, selectedStop='') {
   return stops.map((s,i)=>`<div class="stop-item ${(selectedStop ? s.id===selectedStop : i===0) ? 'current' : ''}"><span class="stop-dot"></span><div><strong>${esc(s.stop_name)}</strong><small>${selectedStop && s.id===selectedStop ? 'Your pickup stop' : i===stops.length-1 ? 'Route destination' : `Stop ${s.stop_sequence}`}</small></div></div>`).join('');
 }
 function mapToolbar(allowFilter=true) {
-  return `<div class="map-toolbar">${allowFilter ? `<select id="map-route-filter" aria-label="Filter map by route"><option value="">All routes</option>${store.data.routes.map(r=>`<option value="${esc(r.id)}" ${r.id===routeFilter?'selected':''}>${esc(r.route_name)}</option>`).join('')}</select>` : '<span></span>'}<button class="button" data-action="recenter" aria-label="Fit all route stops">${icon('LocateFixed')}</button></div>`;
+  return `<div class="map-toolbar">${allowFilter?`<label class="map-filter">${icon('Route')}<select id="map-route-filter" aria-label="Filter map by route"><option value="">All routes</option>${store.data.routes.filter(r=>!r.archived).map(r=>`<option value="${esc(r.id)}" ${r.id===routeFilter?'selected':''}>${esc(r.route_name)}</option>`).join('')}</select>${icon('ChevronDown')}</label>`:'<span></span>'}<button class="button map-fit-button" data-action="recenter" aria-label="Fit all route stops" title="Fit all route stops">${icon('LocateFixed')}</button></div>`;
 }
+
 function overview() {
   return `${pageHeader('Every journey, in view.','A little oversight. A safer way to school.',`${button('<span class="export-label">Export report</span>','export',{iconName:'Download',className:'export-button'})}${button('Add bus','add-bus',{primary:true,iconName:'Plus'})}`)}${stats()}
-    <section class="card tracking-card"><div class="card-head tracking-head"><div><h2>Live fleet tracking <span class="count">${store.data.buses.filter(b=>b.status==='active').length}</span></h2><p>A clear view of the road ahead.</p></div><span class="live-label" data-live-status><span class="live-dot"></span>${store.mode==='demo'?'Demo simulation':store.connected?'Connected':'Connecting…'}</span></div><div class="tracking-layout"><div class="map-wrap"><div id="fleet-map" class="fleet-map" aria-label="Interactive school bus route map"></div>${mapToolbar()}<div class="map-legend">${store.data.routes.slice(0,3).map(r=>`<span><i style="--c:${safeColor(r.color)}"></i>${esc(r.area || r.route_name)}</span>`).join('')}</div><div class="map-disclaimer">Stop connections · not road directions</div></div><aside class="tracking-detail" id="tracking-detail">${trackingDetail()}</aside></div></section>
+    <section class="card tracking-card"><div class="card-head tracking-head"><div><h2>Live fleet tracking <span class="count">${store.data.buses.filter(b=>b.status==='active').length}</span></h2><p>A clear view of the road ahead.</p></div><span class="live-label" data-live-status><span class="live-dot"></span>${store.mode==='demo'?'Demo simulation':store.connected?'Connected':'Connecting…'}</span></div><div class="tracking-layout"><div class="map-wrap"><div id="fleet-map" class="fleet-map" aria-label="Interactive school bus route map"></div>${mapToolbar()}</div><aside class="tracking-detail" id="tracking-detail">${trackingDetail()}</aside></div></section>
     <div class="bottom-grid"><section class="card"><div class="card-head"><h2>Your fleet <span class="count">${store.data.buses.length}</span></h2><button class="link-button" data-page="fleet">View all buses ${icon('ArrowUpRight')}</button></div>${busTable(store.data.buses.slice(0,4))}<div class="table-footer"><span>${Math.min(4,store.data.buses.length)} of ${store.data.buses.length} buses</span><span>Built for safer school runs</span></div></section><section class="card"><div class="card-head"><h2>Recent activity</h2><button class="icon-button" data-page="activity" aria-label="View all activity">${icon('MoreHorizontal')}</button></div><div class="activity-list">${activityItems(4)}</div></section></div>`;
 }
 function safeColor(value) { return /^#[0-9a-f]{6}$/i.test(value) ? value : '#38bdf8'; }
@@ -117,21 +125,20 @@ function fleet() {
   return `${pageHeader('A fleet you can count on.','Manage your buses and keep every school run moving.',`${button('Export fleet','export',{iconName:'Download'})}${button('Add bus','add-bus',{primary:true,iconName:'Plus'})}`)}${stats()}<section class="card"><div class="card-head"><h2>All vehicles <span class="count">${store.data.buses.length}</span></h2><span class="small muted">One place for your entire fleet</span></div><div class="table-toolbar"><div class="filter-tabs">${[['all','All buses'],['active','On route'],['idle','Available'],['maintenance','Maintenance']].map(([key,label])=>`<button class="filter-tab ${busFilter===key?'selected':''}" data-filter="${key}">${label}</button>`).join('')}</div><label class="table-search">${icon('Search')}<input id="table-search" aria-label="Search buses" placeholder="Search buses…" value="${esc(query)}"/></label></div><div id="bus-table-results">${busTable(buses,true)}</div><div class="table-footer">${buses.length} ${buses.length===1?'bus':'buses'} found <span>Capacity is checked before assignment</span></div></section>`;
 }
 function routes() {
-  return `${pageHeader('Better routes. Smoother mornings.','Connect your stops, buses, drivers, and students.',button('Create route','add-route',{primary:true,iconName:'Plus'}))}<div class="route-grid">${store.data.routes.map(route=>{
-    const bus=store.data.buses.find(b=>b.id===route.bus_id),driver=person(route.driver_id),cap=routeCapacity(bus,route.id,store.data.student_assignments);
-    return `<article class="card route-card" style="--route-color:${safeColor(route.color)}"><div class="between">${badge(route.status)}<span class="small muted">${stopsFor(route.id).length} stops</span></div><h3>${esc(route.route_name)}</h3><p>${esc(route.area || 'Dagupan City')} · ${departure(route.departure_time)} departure</p><div class="route-meta"><div><span>Assigned bus</span>${esc(bus?.label || 'Unassigned')}</div><div><span>Driver</span>${esc(driver?.name || 'Unassigned')}</div></div><div class="occupancy"><div class="between"><span>Students assigned</span><strong>${cap.assigned} / ${bus.capacity}</strong></div><div class="progress"><span style="background:${safeColor(route.color)};width:${cap.assigned/bus.capacity*100}%"></span></div></div><div class="between"><span class="small muted">${cap.available} seats available</span><button class="link-button" data-action="route-detail" data-id="${esc(route.id)}">View route ${icon('ArrowRight')}</button></div></article>`;
-  }).join('')}</div>${!store.data.routes.length?`<section class="card">${empty('Your first route starts here','Create a route and place at least two stops on the map.','Route')}</section>`:''}`;
+  const routes=store.data.routes.filter(r=>!r.archived);
+  return `${pageHeader('Better routes. Smoother mornings.','Publish stop versions; services determine daily departures and allocations.',button('Create route','add-route',{primary:true,iconName:'Plus'}))}<div class="route-grid">${routes.map(route=>`<article class="card route-card" style="--route-color:${safeColor(route.color)}"><div class="between">${badge(route.status)}<span class="small muted">Version ${route.version_no} · ${stopsFor(route.id).length} stops</span></div><h3>${esc(route.route_name)}</h3><p>${esc(route.area || 'Dagupan City')}</p><div class="route-meta"><div><span>Active services</span>${store.data.service_schedules.filter(s=>s.route_id===route.id && s.active).length}</div><div><span>Prepared trips</span>${store.data.trips.filter(t=>t.route_id===route.id && t.status==='scheduled').length}</div></div><div class="trip-actions">${button('View / edit route','route-detail',{id:route.id})}<button class="button" data-page="services">Services & calendar</button></div></article>`).join('')}</div>${!routes.length?`<section class="card">${empty('Your first route starts here','Create an ordered set of stops, then add a service.','Route')}</section>`:''}`;
 }
+
 function people(role) {
-  const students=role==='student';
-  const users=store.data.users.filter(u=>u.role===role && [u.name,u.student_code,u.id,u.contact_number].join(' ').toLowerCase().includes(query.toLowerCase()));
-  return `${pageHeader(students?'Every student, accounted for.':'The people behind every journey.',students?'Assign students to routes with room to spare.':'Manage driver profiles and route assignments.',button(students?'Add student':'Add driver',students?'add-student':'add-driver',{primary:true,iconName:'Plus'}))}<section class="card"><div class="card-head"><h2>${students?'Student directory':'Your drivers'} <span class="count">${users.length}</span></h2><label class="table-search">${icon('Search')}<input id="people-search" aria-label="Search ${role}s" placeholder="Search ${role}s…" value="${esc(query)}"/></label></div>${!users.length?empty('No matching profiles',`Add a ${role} or try another search.`,students?'GraduationCap':'Users'):`<div class="table-wrap"><table><thead><tr><th>${students?'Student':'Driver'}</th><th>Contact number</th><th>Assigned route</th><th>${students?'Pickup stop':'Vehicle'}</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>${users.map((user,i)=>{
-    const assignment=students?store.data.student_assignments.find(a=>a.student_id===user.id && a.status!=='cancelled'):null;
-    const route=students?store.data.routes.find(r=>r.id===assignment?.route_id):store.data.routes.find(r=>r.driver_id===user.id);
-    const bus=store.data.buses.find(b=>b.id===route?.bus_id),stop=store.data.route_stops.find(s=>s.id===assignment?.stop_id);
-    return `<tr><td><div class="table-person"><span class="avatar ${i%2?'lavender':'blue'}">${esc(initials(user.name))}</span><div><strong>${esc(user.name)}</strong><small>${students?esc(user.student_code || user.id):'School bus driver'}</small></div></div></td><td class="muted">${esc(user.contact_number || '—')}</td><td><span class="table-route">${route?`<i class="route-dot" style="--c:${safeColor(route.color)}"></i>${esc(route.route_name)}`:'Unassigned'}</span></td><td class="muted">${esc(students?stop?.stop_name || '—':bus?.label || '—')}</td><td>${badge(students?(assignment?.status || 'idle'):(route?.status==='active'?'active':'idle'))}</td><td>${students?(assignment?`<button class="icon-button" data-action="unassign-student" data-id="${esc(assignment.id)}" aria-label="Remove ${esc(user.name)} route assignment">${icon('X')}</button>`:`<button class="link-button" data-action="assign-student" data-id="${esc(user.id)}">Assign route ${icon('Plus')}</button>`):`<button class="icon-button" data-action="person-detail" data-id="${esc(user.id)}" aria-label="View ${esc(user.name)}">${icon('MoreHorizontal')}</button>`}</td></tr>`;
-  }).join('')}</tbody></table></div>`}<div class="table-footer"><span>${users.length} ${students?'students':'drivers'}</span><span>${students?'Boarding requires a valid route assignment':'Each driver is assigned to one route'}</span></div></section>`;
+  const students=role==='student',users=store.data.users.filter(u=>u.role===role && [u.name,u.student_code,u.contact_number].join(' ').toLowerCase().includes(query.toLowerCase()));
+  return `${pageHeader(students?'Every student, accounted for.':'The people behind every journey.',students?'Manage separate outbound and return service subscriptions.':'Drivers can serve multiple journeys when their allocations do not overlap.',button(students?'Add student':'Add driver',students?'add-student':'add-driver',{primary:true,iconName:'Plus'}))}<section class="card"><div class="card-head"><h2>${students?'Student directory':'Driver directory'}</h2><label class="table-search"><input id="people-search" aria-label="Search ${role}s" placeholder="Search…" value="${esc(query)}"></label></div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Contact</th><th>Services</th><th>Current trip</th><th>Actions</th></tr></thead><tbody>${users.map(user=>{
+    const subscriptions=students?store.data.student_subscriptions.filter(a=>a.student_id===user.id):[];
+    const services=students?store.data.service_schedules.filter(s=>subscriptions.some(a=>a.schedule_id===s.id)):store.data.service_schedules.filter(s=>s.driver_id===user.id);
+    const active=store.data.trips.find(t=>t.status==='active' && (students?store.data.trip_passengers.some(p=>p.trip_id===t.id && p.student_id===user.id):t.driver_id===user.id));
+    return `<tr><td><strong>${esc(user.name)}</strong><br><small>${esc(user.student_code || '')}</small></td><td>${esc(user.contact_number || '—')}</td><td>${services.map(service=>`<p>${esc(service.name)} · ${esc(service.departure_time.slice(0,5))}</p>`).join('') || 'No subscriptions'}</td><td>${active?button(active.route_name,'trip-detail',{id:active.id}):'—'}</td><td>${students?`${button('Add service','subscribe-service',{id:user.id})}${subscriptions.map(a=>`<p style="margin-top:8px">${button('Remove '+(store.data.service_schedules.find(s=>s.id===a.schedule_id)?.name || 'service'),'unsubscribe-service',{id:a.id})}</p>`).join('')}`:button('View driver','person-detail',{id:user.id})}</td></tr>`;
+  }).join('') || '<tr><td colspan="5">No profiles found.</td></tr>'}</tbody></table></div></section>`;
 }
+
 function maintenance() {
   const sorted=[...store.data.buses].sort((a,b)=>maintenanceStatus(a).remaining-maintenanceStatus(b).remaining);
   return `${pageHeader('Ready for the road.','Stay ahead of service intervals with odometer-based alerts.')}${stats()}<div class="maintenance-grid">${sorted.map(bus=>{
@@ -144,22 +151,18 @@ function settings() {
 }
 function portal() {
   const isDriver=store.profile.role==='driver';
-  const assignment=!isDriver?store.data.student_assignments.find(a=>a.student_id===store.profile.id && a.status!=='cancelled'):null;
-  const route=isDriver?store.data.routes.find(r=>r.driver_id===store.profile.id):store.data.routes.find(r=>r.id===assignment?.route_id);
-  const trip=route?activeTrip(route.id):null;
-  const passengers=trip?store.data.trip_passengers.filter(p=>p.trip_id===trip.id):[];
-  const myPassenger=passengers.find(p=>p.student_id===store.profile.id);
-  if(!route)return `${pageHeader(`Hello, ${esc(store.profile.name.split(' ')[0])}.`,'Your journey details appear once a route is assigned.')}<section class="card">${empty('No current route','Check Trips & history for saved journeys, or ask your administrator for an assignment.','Route')}</section>`;
-  const bus=store.data.buses.find(b=>b.id===route.bus_id),driver=person(route.driver_id),cap=routeCapacity(bus,route.id);
-  const scheduled=store.data.trips.find(t=>t.route_id===route.id && t.status==='scheduled' && t.service_date===schoolDate());
-  return `${pageHeader(isDriver?`Hello, ${esc(store.profile.name.split(' ')[0])}.`:'Your school journey, connected.','Every pickup and drop-off belongs to a saved trip.',button('Trips & history','open-trips',{iconName:'CalendarDays'}))}
-    <div class="portal-grid"><section class="card portal-map"><div class="card-head"><h2>${esc(route.route_name)}</h2>${badge(trip?.status || 'scheduled')}</div><div class="map-wrap"><div id="fleet-map" class="fleet-map" aria-label="Your assigned bus route map"></div>${mapToolbar(false)}<div class="map-disclaimer">${store.mode==='demo'?'Demo simulation · ':''}Stop connections · not road directions</div></div></section>
-    <div class="portal-sidebar"><section class="card trip-card"><h2>${trip?'Current trip':'Your next journey'}</h2><div class="bus-title"><span class="vehicle-icon">${icon('BusFront')}</span><div><h3>${esc(bus.label)}</h3><p>${esc(bus.plate_number)}</p></div>${badge(bus.status)}</div><div class="driver-mini"><span class="avatar peach">${esc(initials(driver?.name))}</span><div><strong>${esc(driver?.name)}</strong>${esc(driver?.contact_number || '')}</div></div>
-    <div class="trip-info"><div class="between"><span>Service date</span><strong>${esc(trip?.service_date || scheduled?.service_date || 'Awaiting preparation')}</strong></div><div class="between"><span>On board</span><strong>${cap.boarded} / ${bus.capacity}</strong></div>${!isDriver?`<div class="between"><span>Your trip status</span>${badge(myPassenger?.status || 'assigned')}</div>`:''}</div>
-    ${isDriver?`<div class="trip-actions">${trip?`${button('Enable GPS sharing','enable-gps',{primary:true,id:route.id,iconName:'LocateFixed'})}${button('Manage passengers','trip-detail',{id:trip.id})}${button('Complete trip','trip-detail',{id:trip.id,iconName:'Square'})}`:scheduled?button('Review and start trip','trip-detail',{primary:true,id:scheduled.id,iconName:'Play'}):'<div class="note">Ask your administrator to prepare today’s trip.</div>'}</div><p id="gps-status" class="muted small">${gpsWatch!==null?'Sharing this device’s location.':store.mode==='demo'?'Sample locations are simulated.':'Enable location sharing during your active trip.'}</p>`:`<div class="student-pass"><span>Your student boarding ID</span><strong>${esc(store.profile.student_code || store.profile.id)}</strong><p>Present this ID at your pickup stop.</p></div>${trip?button('View my trip record','trip-detail',{id:trip.id}):''}`}
-    </section><section class="card trip-card"><h2>Route stops</h2><div class="stop-timeline">${timeline(trip?.stops || stopsFor(route.id),assignment?.stop_id)}</div></section></div></div>
-    ${isDriver && trip?`<section class="card" style="margin-top:22px"><div class="card-head"><h2>Passenger manifest</h2><span class="small muted">${cap.boarded} on board · ${cap.alighted} dropped off</span></div><div class="table-wrap"><table><thead><tr><th>Student</th><th>Boarding ID</th><th>Pickup</th><th>Status</th></tr></thead><tbody>${passengers.map(p=>`<tr><td>${esc(p.student_name)}</td><td>${esc(p.student_code)}</td><td>${esc(p.pickup_name)}</td><td>${badge(p.status)}</td></tr>`).join('')}</tbody></table></div></section>`:''}`;
+  const choices=store.visibleTrips().filter(t=>t.service_date===schoolDate() || t.status==='active').sort((a,b)=>(b.status==='active')-(a.status==='active') || a.planned_at.localeCompare(b.planned_at));
+  const trip=choices.find(t=>t.id===portalTripId) || choices[0];portalTripId=trip?.id || '';
+  if(!trip)return `${pageHeader(`Hello, ${esc(store.profile?.name?.split(' ')[0] || 'there')}.`,'Your dated journeys appear here when prepared.',button('Trips & history','open-trips'))}<section class="card">${empty('No trips prepared for today','Your administrator can generate trips from the service calendar.','CalendarDays')}</section>`;
+  const passengers=store.data.trip_passengers.filter(p=>p.trip_id===trip.id),myPassenger=passengers.find(p=>p.student_id===store.profile.id);
+  const counts=store.routeSummaries.get(trip.id) || tripCounts(passengers);
+  const picker=`<section class="card" style="padding:16px;margin-bottom:20px"><div class="trip-actions">${choices.map(t=>button(`${t.direction==='return'?'Return':'Outbound'} · ${departure(new Date(t.planned_at).toLocaleTimeString('en-GB',{timeZone:'Asia/Manila',hour:'2-digit',minute:'2-digit'}))} · ${t.route_name}`,'choose-portal-trip',{id:t.id,primary:t.id===trip.id})).join('')}</div></section>`;
+  return `${pageHeader(isDriver?`Hello, ${esc(store.profile?.name?.split(' ')[0] || 'there')}.`:'Your school journeys, connected.','Choose your outbound or return trip.',button('Trips & history','open-trips',{iconName:'CalendarDays'}))}${picker}
+  <div class="portal-grid"><section class="card portal-map"><div class="card-head"><h2>${esc(trip.route_name)}</h2>${badge(trip.status)}</div><div class="map-wrap"><div id="fleet-map" class="fleet-map" aria-label="Your selected trip map"></div>${mapToolbar(false)}</div></section>
+  <div class="portal-sidebar"><section class="card trip-card"><h2>${esc(trip.direction==='return'?'Return journey':'Outbound journey')}</h2><div class="bus-title"><span class="vehicle-icon">${icon('BusFront')}</span><div><h3>${esc(trip.bus_label)}</h3><p>${esc(trip.plate_number)}</p></div></div><div class="driver-mini"><span class="avatar peach">${esc(initials(trip.driver_name))}</span><div><strong>${esc(trip.driver_name)}</strong>${esc(person(trip.driver_id)?.contact_number || '')}</div></div><div class="trip-info"><div class="between"><span>Service date</span><strong>${esc(trip.service_date)}</strong></div><div class="between"><span>On board</span><strong>${counts.boarded} / ${trip.capacity}</strong></div>${!isDriver?`<div class="between"><span>Your status</span>${badge(myPassenger?.status || 'expected')}</div>`:''}</div>
+  ${isDriver?`<div class="trip-actions">${trip.status==='active'?button('Enable GPS sharing','enable-gps',{primary:true,id:trip.id,iconName:'LocateFixed'}):''}${button(trip.status==='scheduled'?'Review and start trip':'View passengers / complete','trip-detail',{id:trip.id})}</div><p id="gps-status" class="muted small">${gpsWatch!==null?'Sharing this device’s location.':store.mode==='demo'?'Sample locations are simulated.':'Enable location sharing during your active trip.'}</p>`:`<div class="student-pass"><span>Your boarding ID</span><strong>${esc(store.profile.student_code || store.profile.id)}</strong><p>${esc(myPassenger?.pickup_name || '')} → ${esc(myPassenger?.dropoff_name || '')}</p></div>${button('View my trip record','trip-detail',{id:trip.id})}`}</section><section class="card trip-card"><h2>Trip stops</h2><div class="stop-timeline">${timeline(trip.stops,myPassenger?.pickup_stop_id)}</div></section></div></div>`;
 }
+
 const tripUI=()=>({pageHeader,button,badge,showModal,closeModal,toast,inputField,selectField,formFooter});
 
 function render() {
@@ -167,22 +170,27 @@ function render() {
   if(!store.profile) { renderLogin();return; }
   if(store.profile.role!=='admin' && ![store.profile.role,'settings','trips'].includes(page)) page=store.profile.role;
   if(store.profile.role==='admin' && ['driver','student'].includes(page)) page='overview';
-  const views={overview,trips:()=>tripPage(tripUI()),fleet,routes,students:()=>people('student'),drivers:()=>people('driver'),maintenance,settings,driver:portal,student:portal,activity:()=>`${pageHeader('The story of your school runs.','Boarding, trips, and fleet updates in one place.',button('Refresh','refresh',{iconName:'RefreshCw'}))}<section class="card"><div class="card-head"><h2>Fleet activity <span class="count">${store.data.activity.length}</span></h2></div><div class="activity-list">${activityItems()}</div></section>`};
+  const views={overview,services:()=>schedulingPage(tripUI()),trips:()=>tripPage(tripUI()),fleet,routes,students:()=>people('student'),drivers:()=>people('driver'),maintenance,settings,driver:portal,student:portal,activity:()=>`${pageHeader('The story of your school runs.','Boarding, trips, and fleet updates in one place.',button('Refresh','refresh',{iconName:'RefreshCw'}))}<section class="card"><div class="card-head"><h2>Fleet activity <span class="count">${store.data.activity.length}</span></h2></div><div class="activity-list">${activityItems()}</div></section>`};
   app.innerHTML=shell((views[page] || overview)());
   mountIcons();mountMap();
   document.title=`${titles[page]} · UDD Go`;
 }
+function fleetMapData({tripId='',routeId=''}={}) {
+  let trips=store.visibleTrips().filter(t=>tripId?t.id===tripId:t.status==='active' && (!routeId || t.route_id===routeId));
+  const routes=trips.map(t=>({...store.data.routes.find(r=>r.id===t.route_id),id:t.id,route_name:t.route_name,bus_id:t.bus_id,driver_id:t.driver_id,status:t.status,location_epoch:t.location_epoch}));
+  const route_stops=trips.flatMap(t=>(t.stops || []).map(stop=>({...stop,route_id:t.id})));
+  if(!trips.length && routeId){const route=store.data.routes.find(r=>r.id===routeId);if(route){routes.push(route);route_stops.push(...stopsFor(routeId));}}
+  const buses=store.data.buses.map(b=>{const trip=trips.find(t=>t.bus_id===b.id);return {...b,status:trip?.status==='active'?'active':'idle',...(!trip || (b.position_trip_id!==trip.id || b.position_epoch!==trip.location_epoch)?{position_at:null}:{} )};});
+  return {...store.data,routes,route_stops,buses};
+}
 function mountMap() {
-  const element=document.querySelector('#fleet-map');
-  if(!element)return;
-  let ownRoute=routeFilter;
-  if(store.profile.role==='driver')ownRoute=store.data.routes.find(r=>r.driver_id===store.profile.id)?.id;
-  if(store.profile.role==='student')ownRoute=store.data.student_assignments.find(a=>a.student_id===store.profile.id)?.route_id;
-  fleetMap=new FleetMap(element,store.data,{selected:selectedBus,demo:store.mode==='demo',routeId:page==='overview'?routeFilter:ownRoute,onSelect:id=>{
-    selectedBus=id;fleetMap.highlight(id);
-    const panel=document.querySelector('#tracking-detail');if(panel){panel.innerHTML=trackingDetail();mountIcons();}
+  const element=document.querySelector('#fleet-map');if(!element)return;
+  const data=fleetMapData(store.profile.role==='admin'?{routeId:routeFilter}:{tripId:portalTripId});
+  fleetMap=new FleetMap(element,data,{selected:selectedBus,demo:store.mode==='demo',onSelect:id=>{
+    selectedBus=id;fleetMap.highlight(id);const panel=document.querySelector('#tracking-detail');if(panel){panel.innerHTML=trackingDetail();mountIcons();}
   }});
 }
+
 function navigate(next) {
   page=next;query='';busFilter='all';routeFilter='';render();window.scrollTo({top:0,behavior:'instant'});
 }
@@ -219,43 +227,38 @@ function addBusModal(busId='') {
 function addPersonModal(role) {
   showModal(role==='driver'?'Meet your next driver.':'Welcome a student aboard.',role==='driver'?'Add a driver profile, then assign a route.':'Add a profile, then choose their route and pickup stop.',`<form>${inputField('Full name','name',{placeholder:role==='driver'?'e.g. Juan Dela Cruz':'e.g. Maria Santos'})}${role==='student'?inputField('Student ID','student_code',{placeholder:'e.g. UDD-0025'}):''}${inputField('Contact number','contact_number',{type:'tel',placeholder:'e.g. 0917 123 4567'})}${store.mode==='live'?'<div class="note">This creates a fleet profile. Link an existing Supabase Auth account to this profile using the setup guide to enable sign-in.</div>':''}${formFooter(role==='driver'?'Add driver':'Add student')}</form>`,{onSubmit:async f=>{await store.action('add_person',{role,name:f.get('name').trim(),contact_number:f.get('contact_number').trim(),student_code:role==='student'?f.get('student_code').trim().toUpperCase():null});closeModal();toast(`${role==='driver'?'Driver':'Student'} profile added.`);}});
 }
-function routeModal() {
-  routeDraft=[];
-  const buses=store.data.buses.filter(b=>b.status!=='maintenance' && !routeByBus(b.id));
-  const drivers=store.data.users.filter(u=>u.role==='driver' && !store.data.routes.some(r=>r.driver_id===u.id));
-  if(!buses.length || !drivers.length){showModal('Make room for a new route.','Every route needs its own bus and driver.',`<div class="note">${!buses.length?'Add an available bus. ':''}${!drivers.length?'Add an unassigned driver. ':''}Then return here to create your route.</div><div class="modal-footer">${button('Close','close-modal')}${!buses.length?button('Add bus','add-bus',{primary:true}):button('Add driver','add-driver',{primary:true})}</div>`);return;}
-  showModal('A better way to campus.','Name your route and click the map to place stops in travel order.',`<form><div class="route-editor"><div class="stack">${inputField('Route name','route_name',{placeholder:'e.g. Malasiqui morning loop'})}<div class="field-row">${inputField('Area','area',{placeholder:'e.g. Malasiqui'})}${inputField('Departure time','departure_time',{type:'time',value:'06:30'})}</div>${selectField('Assign bus','bus_id',buses.map(b=>`<option value="${esc(b.id)}">${esc(b.label)} · ${b.capacity} seats</option>`).join(''))}${selectField('Assign driver','driver_id',drivers.map(d=>`<option value="${esc(d.id)}">${esc(d.name)}</option>`).join(''))}${selectField('Route color','color','<option value="#2ba9e0">Sky blue</option><option value="#8b80cb">Lavender</option><option value="#4fa98d">Sage green</option><option value="#daaa52">Warm amber</option>')}<div class="note">Connect at least two stops. Lines show stop order; drivers should use road navigation for directions.</div></div><div><p class="stop-editor-heading">Click the map to add a stop. Use the campus button for UDD.</p><div id="stop-editor-map" class="stop-editor-map"></div><div class="between" style="margin-top:9px"><span class="small muted" id="stop-count">0 stops added</span><button class="link-button" data-action="add-campus">${icon('School')}Add UDD campus</button></div><div id="stop-editor-list" class="stop-editor-list"></div></div></div>${formFooter('Create route')}</form>`,{wide:true,onSubmit:async f=>{
-    if(routeDraft.length<2)throw new Error('Add at least two stops to the map.');
+function routeModal(routeId='') {
+  const editing=store.data.routes.find(r=>r.id===routeId);
+  const original=editing?stopsFor(routeId):[];
+  routeDraft=structuredClone(original);
+  const buses=store.data.buses.filter(b=>b.status!=='maintenance');
+  const drivers=store.data.users.filter(u=>u.role==='driver');
+  if(!editing && (!buses.length || !drivers.length)){showModal('Make room for a new route.','Choose default resources; service schedules determine their daily allocations.',`<div class="note">${!buses.length?'Add an available bus. ':''}${!drivers.length?'Add an unassigned driver. ':''}Then return here to create your route.</div><div class="modal-footer">${button('Close','close-modal')}${!buses.length?button('Add bus','add-bus',{primary:true}):button('Add driver','add-driver',{primary:true})}</div>`);return;}
+  showModal(editing?'Publish a new route version.':'A better way to campus.','Name your route and click the map to place stops in travel order. Prepared trips keep their snapshots.',`<form><div class="route-editor"><div class="stack">${inputField('Route name','route_name',{placeholder:'e.g. Malasiqui morning loop',value:editing?.route_name || ''})}<div class="field-row">${inputField('Area','area',{placeholder:'e.g. Malasiqui',value:editing?.area || ''})}${!editing?inputField('Departure time','departure_time',{type:'time',value:'06:30'}):''}</div>${!editing?`${selectField('Assign bus','bus_id',buses.map(b=>`<option value="${esc(b.id)}">${esc(b.label)} · ${b.capacity} seats</option>`).join(''))}${selectField('Assign driver','driver_id',drivers.map(d=>`<option value="${esc(d.id)}">${esc(d.name)}</option>`).join(''))}${selectField('Route color','color','<option value="#2ba9e0">Sky blue</option><option value="#8b80cb">Lavender</option><option value="#4fa98d">Sage green</option><option value="#daaa52">Warm amber</option>')}`:''}<div class="note">Connect at least two stops. Lines show stop order; drivers should use road navigation for directions.</div></div><div><p class="stop-editor-heading">Click the map to add a stop. Use the campus button for UDD.</p><div id="stop-editor-map" class="stop-editor-map"></div><div class="between" style="margin-top:9px"><span class="small muted" id="stop-count">0 stops added</span><button class="link-button" data-action="add-campus">${icon('School')}Add UDD campus</button></div><div id="stop-editor-list" class="stop-editor-list"></div><div id="stop-remapping"></div></div></div>${formFooter(editing?'Publish route version':'Create route')}</form>`,{wide:true,onSubmit:async f=>{
+    if(routeDraft.length<2 || routeDraft.length>200)throw new Error('Choose between two and 200 route stops.');
     if(routeDraft.some(s=>!s.stop_name.trim()))throw new Error('Give every stop a name.');
-    await store.action('add_route',{route_name:f.get('route_name').trim(),area:f.get('area').trim(),departure_time:f.get('departure_time'),bus_id:f.get('bus_id'),driver_id:f.get('driver_id'),color:f.get('color'),stops:routeDraft.map(s=>({...s,stop_name:s.stop_name.trim()}))});closeModal();toast('Route created. Time to welcome your students.');
+    const stop_remap=Object.fromEntries([...f.entries()].filter(([key])=>key.startsWith('remap:')).map(([key,value])=>[key.slice(6),value]));
+    await store.action(editing?'publish_route':'add_route',{...(editing?{route_id:editing.id,expected_version:editing.version_no,stop_remap}:{}),route_name:f.get('route_name').trim(),area:f.get('area').trim(),departure_time:f.get('departure_time'),bus_id:f.get('bus_id'),driver_id:f.get('driver_id'),color:f.get('color'),stops:routeDraft.map(s=>({...s,stop_name:s.stop_name.trim()}))});closeModal();toast(editing?'Route version published.':'Route created. Time to welcome your students.');
   }});
-  modalMap=createStopEditor(document.querySelector('#stop-editor-map'),(lat,lng)=>{routeDraft.push({stop_name:`Stop ${routeDraft.length+1}`,latitude:lat,longitude:lng});updateDraft();});
+  modalMap=createStopEditor(document.querySelector('#stop-editor-map'),(lat,lng)=>{routeDraft.push({id:crypto.randomUUID(),stop_name:`Stop ${routeDraft.length+1}`,latitude:lat,longitude:lng});updateDraft();});
+  routeDraft.originalStops=original;updateDraft();
 }
 function updateDraft() {
-  document.querySelector('#stop-editor-list').innerHTML=routeDraft.map((s,i)=>`<div class="stop-editor-row"><span>${i+1}</span><input data-stop-index="${i}" aria-label="Name for stop ${i+1}" value="${esc(s.stop_name)}" maxlength="100" required/><button type="button" class="icon-button" data-action="remove-stop" data-id="${i}" aria-label="Remove stop ${i+1}">${icon('X')}</button></div>`).join('');
+  document.querySelector('#stop-editor-list').innerHTML=routeDraft.map((s,i)=>`<div class="stop-editor-row"><span>${i+1}</span><input data-stop-index="${i}" aria-label="Name for stop ${i+1}" value="${esc(s.stop_name)}" maxlength="100" required/><button type="button" class="icon-button" data-action="remove-stop" data-id="${i}" aria-label="Remove stop ${i+1}">${icon('X')}</button><button type="button" class="icon-button" data-action="move-stop-up" data-id="${i}" aria-label="Move stop ${i+1} up">↑</button><button type="button" class="icon-button" data-action="move-stop-down" data-id="${i}" aria-label="Move stop ${i+1} down">↓</button></div>`).join('');
+  document.querySelector('#stop-remapping').innerHTML=(routeDraft.originalStops || []).filter(old=>!routeDraft.some(s=>s.id===old.id)).map(old=>selectField(`Remap removed stop: ${old.stop_name}`,`remap:${old.id}`,routeDraft.map(s=>`<option value="${esc(s.id)}">${esc(s.stop_name)}</option>`).join(''))).join('');
   document.querySelector('#stop-count').textContent=`${routeDraft.length} stops added`;modalMap.update(routeDraft);mountIcons();
-}
-function assignModal(studentId) {
-  const routes=store.data.routes.filter(r=>routeCapacity(store.data.buses.find(b=>b.id===r.bus_id),r.id,store.data.student_assignments).available>0);
-  if(!routes.length){showModal('A seat is worth waiting for.','There are no routes with available seats.',`<div class="note">Create a route with an available bus before assigning this student.</div><div class="modal-footer">${button('Close','close-modal')}${button('Create route','add-route',{primary:true})}</div>`);return;}
-  showModal('Find their way to school.',`Assign a route and pickup stop for ${esc(person(studentId)?.name)}.`,`<form>${selectField('Route','route_id',routes.map(r=>`<option value="${esc(r.id)}">${esc(r.route_name)}</option>`).join(''))}<div id="assign-stop-field"></div><div class="note" id="assignment-capacity"></div>${formFooter('Assign student')}</form>`,{onSubmit:async f=>{await store.action('assign_student',{student_id:studentId,route_id:f.get('route_id'),stop_id:f.get('stop_id')});closeModal();toast('Student assigned to their route.');}});
-  const update=()=>{
-    const routeId=document.querySelector('[name="route_id"]').value;
-    const route=store.data.routes.find(r=>r.id===routeId),bus=store.data.buses.find(b=>b.id===route.bus_id),cap=routeCapacity(bus,route.id,store.data.student_assignments);
-    document.querySelector('#assign-stop-field').innerHTML=selectField('Pickup stop','stop_id',stopsFor(routeId).map(s=>`<option value="${esc(s.id)}">${esc(s.stop_name)}</option>`).join(''));
-    document.querySelector('#assignment-capacity').textContent=`${bus.label} has ${cap.available} of ${bus.capacity} seats available.`;
-  };update();document.querySelector('[name="route_id"]').addEventListener('change',update);
 }
 function busDetail(id) {
   const bus=store.data.buses.find(b=>b.id===id);if(!bus)return;
   const route=routeByBus(id),driver=person(route?.driver_id),cap=route?routeCapacity(bus,route.id,store.data.student_assignments):{assigned:0,boarded:0};
-  showModal(esc(bus.label),esc(bus.plate_number),`<div class="bus-title"><span class="vehicle-icon">${icon('BusFront')}</span><div><h3>${esc(route?.route_name || 'Ready for an assignment')}</h3><p>${esc(driver?.name || 'No driver assigned')}</p></div>${badge(bus.status)}</div><div class="modal-detail-list">${[['Seat capacity',`${bus.capacity} seats`],['Students assigned',cap.assigned],['Students on board',cap.boarded],['Current odometer',`${formatNumber(bus.current_mileage)} km`],['Next service',`${formatNumber(bus.next_service_mileage)} km`],['Maintenance',statusNames[maintenanceStatus(bus).status]]].map(([k,v])=>`<div class="setting-row"><strong>${k}</strong><span>${esc(v)}</span></div>`).join('')}</div><div class="modal-footer">${store.profile.role==='admin'?`${!route?button('Remove bus','delete-bus',{id,iconName:'Trash2',className:'danger'}):button('View route','route-detail',{id:route.id,iconName:'Route'})}${bus.status!=='active'?button('Edit bus','edit-bus',{id,iconName:'Settings'}):''}${button('Record service','service-bus',{id,primary:true,iconName:'Wrench'})}`:button('Close','close-modal')}</div>`);
+  showModal(esc(bus.label),esc(bus.plate_number),`<div class="bus-title"><span class="vehicle-icon">${icon('BusFront')}</span><div><h3>${esc(route?.route_name || 'Ready for an assignment')}</h3><p>${esc(driver?.name || 'No driver assigned')}</p></div>${badge(bus.status)}</div><div class="modal-detail-list">${[['Seat capacity',`${bus.capacity} seats`],['Students assigned',cap.assigned],['Students on board',cap.boarded],['Current odometer',`${formatNumber(bus.current_mileage)} km`],['Next service',`${formatNumber(bus.next_service_mileage)} km`],['Maintenance',statusNames[maintenanceStatus(bus).status]]].map(([k,v])=>`<div class="setting-row"><strong>${k}</strong><span>${esc(v)}</span></div>`).join('')}</div><div class="modal-footer">${button('Close','close-modal')}${store.profile.role==='admin'?`${!route?button('Remove bus','delete-bus',{id,iconName:'Trash2',className:'danger'}):button('View route','route-detail',{id:route.id,iconName:'Route'})}${bus.status!=='active'?button('Edit bus','edit-bus',{id,iconName:'Settings'}):''}${button('Record service','service-bus',{id,primary:true,iconName:'Wrench'})}`:''}</div>`);
 }
 function routeDetail(id) {
   const route=store.data.routes.find(r=>r.id===id);if(!route)return;
   const bus=store.data.buses.find(b=>b.id===route.bus_id),cap=routeCapacity(bus,route.id,store.data.student_assignments);
-  showModal(esc(route.route_name),`${departure(route.departure_time)} departure · ${esc(bus?.label)} · ${cap.assigned} assigned students`,`<div class="detail-map" id="route-detail-map"></div><div class="stop-timeline">${timeline(stopsFor(id))}</div><div class="modal-footer">${store.profile.role==='admin' && route.status!=='active'?button('Remove route','delete-route',{id,iconName:'Trash2',className:'danger'}):button('Close','close-modal')}${store.profile.role==='admin'?button('Monitor route','monitor-route',{id,primary:true,iconName:'Navigation'}):''}</div>`,{cleanup:()=>detailMap.destroy()});
-  const detailMap=new FleetMap(document.querySelector('#route-detail-map'),store.data,{routeId:id,demo:store.mode==='demo'});
+  let detailMap=null;
+  showModal(esc(route.route_name),`${departure(route.departure_time)} departure · ${esc(bus?.label || 'Unassigned bus')} · ${cap.assigned} assigned students`,`<div class="detail-map" id="route-detail-map"></div><div class="stop-timeline">${timeline(stopsFor(id))}</div><div class="modal-footer">${button('Close','close-modal')}${store.profile.role==='admin' && route.status!=='active'?button('Archive route','archive-route',{id,iconName:'Trash2',className:'danger'}):''}${store.profile.role==='admin' && !route.archived?button('Edit route','edit-route',{id}):''}${store.profile.role==='admin'?button('Monitor route','monitor-route',{id,primary:true,iconName:'Navigation'}):''}</div>`,{cleanup:()=>detailMap?.destroy()});
+  detailMap=new FleetMap(document.querySelector('#route-detail-map'),{...store.data,routes:store.data.routes.filter(r=>r.id===id),buses:store.data.buses.map(b=>({...b,status:'idle'}))},{routeId:id,demo:store.mode==='demo',showVehicles:false});
 }
 function serviceModal(id) {
   const bus=store.data.buses.find(b=>b.id===id);
@@ -277,8 +280,9 @@ function exportFleet() {
 async function enableGPS(routeId) {
   if(gpsWatch!==null){toast('GPS sharing is already enabled.');return;}
   gpsRouteId=routeId;
+  const epoch=store.data.trips.find(t=>t.id===routeId)?.location_epoch;
   const publish=async position=>{
-    try{await store.publishPosition(routeId,position.coords);const status=document.querySelector('#gps-status');if(status)status.textContent=`Sharing GPS · last update ${new Date().toLocaleTimeString('en-PH',{timeZone:'Asia/Manila'})}`;}
+    try{if(store.data.trips.find(t=>t.id===routeId)?.location_epoch!==epoch){await stopGPS();throw new Error('Trip resources changed. Enable GPS on the current vehicle.');}await store.publishPosition(routeId,position.coords);const status=document.querySelector('#gps-status');if(status)status.textContent=`Sharing GPS · last update ${new Date().toLocaleTimeString('en-PH',{timeZone:'Asia/Manila'})}`;}
     catch(e){toast(e.message,true);}
   };
   if(Capacitor.isNativePlatform()){
@@ -296,19 +300,22 @@ async function enableGPS(routeId) {
 async function stopGPS(){if(gpsWatch===null)return;if(gpsNative)await Geolocation.clearWatch({id:gpsWatch});else navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;gpsRouteId=null;}
 
 async function handleAction(action,id) {
+  if(await schedulingAction(action,id,tripUI()))return;
   if(await tripAction(action,id,tripUI()))return;
   switch(action){
     case 'open-trips':navigate('trips');break;
+    case 'choose-portal-trip':portalTripId=id;render();break;
     case 'add-bus':addBusModal();break;
     case 'edit-bus':addBusModal(id);break;
     case 'add-route':routeModal();break;
+    case 'edit-route':routeModal(id);break;
+    case 'move-stop-up':{const i=Number(id);if(i>0)[routeDraft[i-1],routeDraft[i]]=[routeDraft[i],routeDraft[i-1]];updateDraft();break;}
+    case 'move-stop-down':{const i=Number(id);if(i<routeDraft.length-1)[routeDraft[i+1],routeDraft[i]]=[routeDraft[i],routeDraft[i+1]];updateDraft();break;}
     case 'add-driver':addPersonModal('driver');break;
     case 'add-student':addPersonModal('student');break;
-    case 'assign-student':assignModal(id);break;
-    case 'unassign-student':confirmModal('Remove this route assignment?','The student will need a new route before boarding.','Remove assignment',async()=>{await store.action('unassign_student',{assignment_id:id});toast('Route assignment removed.');});break;
+    case 'assign-student':await schedulingAction('subscribe-service',id,tripUI());break;
     case 'bus-detail':busDetail(id);break;
     case 'route-detail':routeDetail(id);break;
-    case 'delete-route':confirmModal('Remove this route?','This removes its stops and student assignments, and frees its bus and driver. Activity history is retained.','Remove route',async()=>{await store.action('delete_route',{route_id:id});toast('Route removed. Its bus and driver are available.');});break;
     case 'service-bus':serviceModal(id);break;
     case 'delete-bus':confirmModal('Remove this bus?','This unassigned bus will be removed from your fleet.','Remove bus',async()=>{await store.action('delete_bus',{bus_id:id});toast('Bus removed from your fleet.');});break;
     case 'person-detail':{const u=person(id),route=store.data.routes.find(r=>r.driver_id===id);showModal(esc(u.name),'Driver profile',`<div class="modal-detail-list"><div class="setting-row"><strong>Contact number</strong><span>${esc(u.contact_number || '—')}</span></div><div class="setting-row"><strong>Assigned route</strong><span>${esc(route?.route_name || 'Unassigned')}</span></div></div><div class="modal-footer">${route?button('View route','route-detail',{id:route.id,primary:true}):button('Close','close-modal')}</div>`);break;}
@@ -316,7 +323,7 @@ async function handleAction(action,id) {
     case 'enable-gps':await enableGPS(id);break;
     case 'export':exportFleet();break;
     case 'refresh':resetTripHistory();await store.refresh();toast('Your fleet is up to date.');break;
-    case 'recenter':fleetMap?.fit(routeFilter || undefined);break;
+    case 'recenter':fleetMap?.fit();break;
     case 'close-modal':closeModal();break;
     case 'menu':document.querySelector('.sidebar').classList.add('open');document.querySelector('.sidebar-overlay').classList.add('open');break;
     case 'close-menu':document.querySelector('.sidebar').classList.remove('open');document.querySelector('.sidebar-overlay').classList.remove('open');break;
@@ -324,9 +331,9 @@ async function handleAction(action,id) {
     case 'logout':await stopGPS();await store.logout();break;
     case 'reset-demo':resetTripHistory();confirmModal('Start fresh with sample data?','This removes the demo changes saved in this browser.','Reset demo',()=>{store.reset();toast('Sample data restored.');});break;
     case 'notifications':showModal('A little heads-up.','The latest updates from your fleet.',`<div class="activity-list notification-list">${activityItems(15)}</div><div class="modal-footer">${button('Close','close-modal')}</div>`);break;
-    case 'add-campus':routeDraft.push({stop_name:'UDD main campus',latitude:16.0436,longitude:120.3417});updateDraft();break;
+    case 'add-campus':routeDraft.push({id:crypto.randomUUID(),stop_name:'UDD main campus',latitude:16.0436,longitude:120.3417});updateDraft();break;
     case 'remove-stop':routeDraft.splice(Number(id),1);updateDraft();break;
-    case 'setup':showModal('Connect your school.','Switch from sample data to your shared Supabase workspace.',`<ol class="support-list"><li>Create a Supabase project and run <code>supabase/schema.sql</code> in its SQL editor, then apply <code>supabase/migrations/001_trip_history.sql</code>.</li><li>Copy <code>.env.example</code> to <code>.env</code> and add your project URL and publishable/anon key.</li><li>Create Auth users, then link their IDs to fleet profiles. See the project README for the administrator setup query.</li><li>Disable public Realtime channels in Supabase settings and restart the app.</li></ol><div class="note">Never place a Supabase service-role key in this app. Full setup and deployment steps are in README.md.</div><div class="modal-footer">${button('Got it','close-modal',{primary:true})}</div>`);break;
+    case 'setup':showModal('Connect your school.','Switch from sample data to your shared Supabase workspace.',`<ol class="support-list"><li>Create a Supabase project and run <code>supabase/schema.sql</code> in its SQL editor, then apply migrations <code>001_trip_history.sql</code> and <code>002_services_and_route_versions.sql</code> in numeric order.</li><li>Copy <code>.env.example</code> to <code>.env</code> and add your project URL and publishable/anon key.</li><li>Create Auth users, then link their IDs to fleet profiles. See the project README for the administrator setup query.</li><li>Disable public Realtime channels in Supabase settings and restart the app.</li></ol><div class="note">Never place a Supabase service-role key in this app. Full setup and deployment steps are in README.md.</div><div class="modal-footer">${button('Got it','close-modal',{primary:true})}</div>`);break;
     case 'help':showModal('A smoother school run starts here.','A quick guide to UDD Go.',`<ul class="support-list"><li><strong>Fleet:</strong> Add buses and keep their capacity and service intervals up to date.</li><li><strong>Routes:</strong> Assign an available bus and driver, then click the map to build a sequence of stops.</li><li><strong>Students:</strong> Add profiles, then assign a route and pickup stop. Full buses cannot accept more assignments.</li><li><strong>Drivers:</strong> Start your route, enable GPS sharing, and open the dated trip to record boarding and individual drop-offs. Complete the cabin check and final odometer.</li><li><strong>Students:</strong> Follow your assigned bus and keep your boarding ID ready.</li><li><strong>Demo:</strong> Use the role selector to try each experience. Sample data stays in this browser.</li></ul><div class="modal-footer">${button('Ready to go','close-modal',{primary:true})}</div>`);break;
   }
 }
@@ -340,7 +347,7 @@ document.addEventListener('click',async event=>{
 });
 document.addEventListener('change',async event=>{
   const target=event.target;
-  if(['demo-role','settings-role'].includes(target.id)){await stopGPS();page=target.value==='admin'?'overview':target.value;query='';store.setDemoRole(target.value);window.scrollTo({top:0,behavior:'instant'});}
+  if(['demo-role','settings-role'].includes(target.id)){await stopGPS();portalTripId='';page=target.value==='admin'?'overview':target.value;query='';store.setDemoRole(target.value);window.scrollTo({top:0,behavior:'instant'});}
   if(target.id==='map-route-filter'){routeFilter=target.value;render();}
   if(target.id==='notification-toggle'){
     try{
@@ -381,7 +388,7 @@ document.addEventListener('keydown',event=>{
     if(!event.shiftKey && document.activeElement===last){event.preventDefault();first?.focus();}
   }
 });
-store.addEventListener('change',()=>{if(gpsRouteId && !activeTrip(gpsRouteId))stopGPS();render();});
+store.addEventListener('change',()=>{if(gpsRouteId && !store.data.trips.some(t=>t.id===gpsRouteId && t.status==='active' && (store.profile?.role==='admin' || t.driver_id===store.profile?.id)))stopGPS();render();});
 store.addEventListener('position',event=>fleetMap?.update(event.detail));
 store.addEventListener('connectionerror',event=>toast(event.detail,true));
 store.addEventListener('connection',event=>{
@@ -390,23 +397,25 @@ store.addEventListener('connection',event=>{
 });
 store.addEventListener('trip',async({detail})=>{
   if(!preferences.notifications || store.profile?.role!=='student')return;
-  const assignment=store.data.student_assignments.find(a=>a.student_id===store.profile.id);
-  if(assignment?.route_id!==detail.route_id)return;
+  if(!store.visibleTrips().some(t=>t.id===detail.trip_id))return;
+  if(!['active','completed'].includes(detail.status))return;
   const message=detail.status==='active'?'Your school bus route has started. Be ready at your pickup stop.':'Your school bus route is complete.';
   toast(message);
-  if(Capacitor.isNativePlatform())await LocalNotifications.schedule({notifications:[{title:'UDD Go · Your journey',body:message,id:Math.floor(Date.now()/1000)%2147483647}]});
-  else if('Notification' in window && Notification.permission==='granted')new Notification('UDD Go · Your journey',{body:message,icon:'/favicon.svg'});
+  try{
+    if(Capacitor.isNativePlatform())await LocalNotifications.schedule({notifications:[{title:'UDD Go · Your journey',body:message,id:Math.floor(Date.now()/1000)%2147483647}]});
+    else if('Notification' in window && Notification.permission==='granted')new Notification('UDD Go · Your journey',{body:message,icon:'/favicon.svg'});
+  }catch{ /* Device or browser blocked system notification; in-app toast already notified the student. */ }
 });
 
 setInterval(()=>{
   if(store.mode!=='demo' || !store.profile || document.hidden || gpsWatch!==null)return;
   simulatedStep++;
-  for(const route of store.data.routes.filter(r=>r.status==='active')){
-    const stops=stopsFor(route.id);if(stops.length<2)continue;
-    const progress=(simulatedStep*.015+(store.data.routes.indexOf(route)*.17))%.92;
-    const index=Math.floor(progress*(stops.length-1));const ratio=progress*(stops.length-1)-index;
+  for(const trip of store.data.trips.filter(t=>t.status==='active')){
+    const stops=trip.stops;if(stops.length<2)continue;
+    const progress=(simulatedStep*.015+(store.data.trips.indexOf(trip)*.17))%.92;
+    const index=Math.floor(progress*(stops.length-1)),ratio=progress*(stops.length-1)-index;
     const from=stops[index],to=stops[index+1];
-    store.position({route_id:route.id,trip_id:activeTrip(route.id)?.id,lat:from.latitude+(to.latitude-from.latitude)*ratio,lng:from.longitude+(to.longitude-from.longitude)*ratio,at:Date.now()});
+    store.position({route_id:trip.route_id,trip_id:trip.id,location_epoch:trip.location_epoch,lat:from.latitude+(to.latitude-from.latitude)*ratio,lng:from.longitude+(to.longitude-from.longitude)*ratio,at:Date.now()});
   }
 },5000);
 
