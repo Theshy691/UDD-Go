@@ -24,3 +24,7 @@
 .native-app .page{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
 
 .map-status{position:absolute;bottom:48px;left:50%;transform:translateX(-50%);z-index:500;background:#ffffffed;border:1px solid #e2e8e7;border-radius:6px;padding:9px 13px;font-size:10px;color:#7e909b;width:max-content;max-width:85%;text-align:center}
+
+.service-weekdays{display:flex;flex-wrap:wrap;gap:12px;padding:12px;border:1px solid var(--line);border-radius:8px}.service-weekdays legend{font-size:12px;padding:0 6px}.service-weekdays label{display:flex;align-items:center;gap:5px;font-size:12px}.trip-actions{display:flex;flex-wrap:wrap;gap:8px}
+
+@media(max-width:720px){.service-page-heading .page-header{flex-direction:column}.service-page-heading .header-actions{padding-top:0;flex-wrap:wrap}.trip-actions>.button{max-width:100%;white-space:normal}}

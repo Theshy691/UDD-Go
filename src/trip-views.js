@@ -26,29 +26,30 @@ export async function tripAction(action,id,ui) {
   if(action==='current-trips'){resetTripHistory();await store.refresh();return true;}
   if(action==='prepare-trip') {
     if(store.profile.role!=='admin')throw new Error('Only administrators can prepare trips.');
-    const routes=store.data.routes;
-    if(!routes.length)throw new Error('Create a route before preparing a trip.');
+    const routes=store.data.service_schedules.filter(s=>s.active && !store.data.routes.find(r=>r.id===s.route_id)?.archived);
+    if(!routes.length)throw new Error('Create an active service before preparing a trip.');
     const operation_id=crypto.randomUUID();
-    ui.showModal('Prepare a school run.','This saves a dated copy of the route stops and current passenger assignments.',`<form>${ui.selectField('Route','route_id',routes.map(r=>`<option value="${esc(r.id)}">${esc(r.route_name)}</option>`).join(''))}${ui.inputField('Service date','service_date',{type:'date',value:schoolDate()})}${ui.inputField('Departure time','departure_time',{type:'time',value:routes[0].departure_time || '06:30'})}<div class="note">The passenger list is fixed when prepared. Future assignment changes apply to the next trip.</div>${ui.formFooter('Prepare trip')}</form>`,{onSubmit:async f=>{
-      await store.action('create_trip',{route_id:f.get('route_id'),service_date:f.get('service_date'),departure_time:f.get('departure_time'),operation_id});resetTripHistory();ui.closeModal();ui.toast('Trip prepared.');
+    ui.showModal('Prepare a school run.','This saves a dated copy of the route stops and current passenger assignments.',`<form>${ui.selectField('Service','schedule_id',routes.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}</option>`).join(''))}${ui.inputField('Service date','service_date',{type:'date',value:schoolDate()})}<p class="note">Departure times follow the service schedule.</p><div class="note">The passenger list is fixed when prepared. Future assignment changes apply to the next trip.</div>${ui.formFooter('Prepare trip')}</form>`,{onSubmit:async f=>{
+      await store.action('create_trip',{schedule_id:f.get('schedule_id'),service_date:f.get('service_date'),operation_id});resetTripHistory();ui.closeModal();ui.toast('Trip prepared.');
     }});
-    document.querySelector('#modal-root select[name=route_id]').addEventListener('change',event=>{document.querySelector('#modal-root input[name=departure_time]').value=routes.find(r=>r.id===event.target.value)?.departure_time || '06:30';});
     return true;
   }
   if(action!=='trip-detail')return false;
   const trip=store.visibleTrips().find(t=>t.id===id) || (historyOwner===store.profile.id?history?.find(t=>t.id===id):null);
   if(!trip)throw new Error('Refresh the trip list and try again.');
-  const passengers=await store.tripManifest(id), counts=tripCounts(passengers), isStudent=store.profile.role==='student';
+  const passengers=await store.tripManifest(id), resources=await store.tripResourceHistory(id), counts=tripCounts(passengers), isStudent=store.profile.role==='student';
   const canDrive=store.profile.role==='admin' || (store.profile.role==='driver' && trip.driver_id===store.profile.id);
   const operation_id=crypto.randomUUID();
   const movement=(p)=>trip.status==='active' && canDrive ? p.status==='expected'?`<button class="button" type="button" data-trip-movement="record_boarding" data-student="${esc(p.student_code)}" data-stop="${esc(p.pickup_stop_id)}">Board</button>`:p.status==='boarded'?`<button class="button" type="button" data-trip-movement="record_alighting" data-student="${esc(p.student_code)}" data-stop="${esc(p.dropoff_stop_id)}">Confirm drop-off</button>`:'' : '';
   ui.showModal(esc(trip.route_name),`${esc(time(trip.planned_at))} · ${esc(trip.bus_label)} · ${esc(trip.driver_name)}`,`
     <div class="between">${ui.badge(trip.status)}<span>${isStudent?'Your passenger record':`${counts.expected} expected · ${counts.boarded} on board · ${counts.alighted} dropped off`}</span></div>
     ${trip.legacy_import?'<p class="note">Imported demo journey. Original boarding/start timestamps are unknown.</p>':''}
+    ${store.profile.role==='admin' && ['scheduled','active'].includes(trip.status)?ui.button(trip.status==='active'?'Record handover':'Replace bus / driver','replace-trip-resources',{id:trip.id}):''}
     ${trip.status==='cancelled'?`<p class="note">Cancellation: ${esc(trip.cancellation_reason)}</p>`:''}
     <div class="stop-timeline">${trip.stops.map(s=>`<div class="stop-item"><span class="stop-dot"></span><div><strong>${esc(s.stop_name)}</strong><small>Stop ${s.stop_sequence}</small></div></div>`).join('')}</div>
+    ${resources.length?`<section class="note"><h3>Resource handovers</h3>${resources.map(e=>`<p>${esc(time(e.created_at))} · ${esc(e.reason)}<br>${esc(store.data.buses.find(b=>b.id===e.old_bus_id)?.label || e.old_bus_id)} → ${esc(store.data.buses.find(b=>b.id===e.new_bus_id)?.label || e.new_bus_id)}<br>Outgoing odometer: ${esc(e.old_start_mileage ?? 'Not started')} → ${esc(e.old_final_mileage ?? 'Not recorded')} km · incoming: ${esc(e.new_start_mileage ?? 'Not started')} km</p>`).join('')}</section>`:''}
     <div class="trip-passenger-list">${passengers.map(p=>`<article class="trip-passenger"><div><strong>${esc(p.student_name)}</strong><p class="small muted">${esc(p.student_code)}</p><p class="small">${esc(p.pickup_name)} → ${esc(p.dropoff_name)}</p></div><div>${ui.badge(p.status)}<p class="small muted">Boarded: ${esc(time(p.boarded_at))}</p><p class="small muted">Dropped off: ${esc(time(p.alighted_at))}</p>${movement(p)}</div></article>`).join('') || '<p class="note">No passengers reserved.</p>'}</div>
-    ${trip.status==='active' && canDrive?`<form id="trip-complete-form">${ui.inputField('Final odometer (km)','mileage',{type:'number',min:trip.start_mileage ?? 0,max:10000000,value:trip.start_mileage ?? 0})}<label class="setting-row"><span>I checked the cabin and confirmed no passengers remain.</span><input type="checkbox" name="cabin_checked" required></label>${ui.formFooter('Complete trip')}</form>`:
+    ${trip.status==='active' && canDrive?`<form id="trip-complete-form">${ui.inputField('Final odometer (km)','mileage',{type:'number',min:trip.segment_start_mileage ?? trip.start_mileage ?? 0,max:10000000,value:trip.segment_start_mileage ?? trip.start_mileage ?? 0})}<label class="setting-row"><span>I checked the cabin and confirmed no passengers remain.</span><input type="checkbox" name="cabin_checked" required></label>${ui.formFooter('Complete trip')}</form>`:
       trip.status==='scheduled' && canDrive?`<form id="trip-start-form"><div class="note">Confirm the bus and passenger list before starting. Only today’s trips can start.</div>${ui.formFooter('Start trip')}</form>`:`<div class="modal-footer">${ui.button('Close','close-modal')}</div>`}
     ${trip.status==='scheduled' && store.profile.role==='admin'?'<form id="trip-cancel-form"><label class="field">Cancellation reason<input name="reason" required maxlength="500"></label><div class="form-error" role="alert"></div><button type="submit" class="button danger">Cancel trip</button></form>':''}
     <div class="form-error" id="trip-action-error" role="alert"></div><button type="button" class="button" id="export-trip">Export passenger record</button>`,{wide:true,onSubmit:async f=>{
