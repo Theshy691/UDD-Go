@@ -41,6 +41,14 @@ Both migrations are implemented and tested locally. They have not been applied t
 - Database tests exercise both incremental migrations, converted subscriptions, AM/PM allocations, conflicts, generation retries, exception cancellation, extra days, archived routes, version preservation, stop remapping, handovers, and private-channel authorization. Hosted Auth/Realtime remain stubbed in the test harness.
 - Browser checks cover service creation, passenger reservations, trip generation, route publishing without changing prepared stops, school-calendar persistence, resource handover, removal of former-driver controls, and student privacy. Desktop/mobile screenshots are saved under ignored `output/playwright/`.
 
+## Multi-role login portal and authentication implemented November 15
+
+- Multi-role portal: Redesigned authentication screen with dedicated, interactive view panels for Fleet Administrator, School Bus Driver, and Student & Parent accounts.
+- Dual sign-in modes: One-click "Quick Role Access (Demo)" with instant role switching, and "School Credentials" form with autofill chips and live Supabase Auth integration.
+- Session & role management: Added demo-mode role resolution in `store.login(email, password)` supporting exact email matching or role keywords. Bi-directional sign-out via sidebar profile action and topbar role switcher returns cleanly to the login portal.
+- Daylight styling tokens: Integrated with system design standards (`#F5F4F0` canvas, `#0284c7` sky accent, `#368c71` driver green, `#c88a38` student amber, and responsive mobile layout).
+- Generative UI: Delivered self-contained interactive daylight preview widget with real-time capability matrix and HUD simulations.
+
 The next rollout requires `002_services_and_route_versions.sql` and matching frontend/mobile assets. Review converted service defaults before dispatch. Native background tracking and location freshness/checkpoints are still separate F06 work.
 
 ## Remaining implementation sequence

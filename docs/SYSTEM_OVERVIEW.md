@@ -95,6 +95,13 @@ Prevents backwards odometer manipulation across vehicle handovers and maintenanc
 4. **Privacy Isolation:** Students cannot see classmate identities or travel stops. Realtime channels broadcast aggregate seat occupancy only.
 5. **Trip Record Export:** Students can export their own historical travel record as a CSV file.
 
+### D. Redesigned Multi-Role Authentication Portal
+1. **Interactive Role Panels:** Direct selection between Fleet Administrator (`admin@udd.edu.ph`), School Bus Driver (`driver@udd.edu.ph`), and Student & Parent (`student@udd.edu.ph`) views.
+2. **Dual Sign-In Modes:**
+   * **Quick Role Access (Demo):** Instant 1-click launch into the role workspace with live simulated fleet data.
+   * **School Credentials:** Secure form authentication with email/password against Supabase Auth, supplemented by one-click autofill chips.
+3. **Bi-Directional Role Switching:** Sign-out button in the sidebar profile card and topbar role switcher allowing seamless return to the login portal at any time.
+
 ---
 
 ## 5. Database Schema & Architecture

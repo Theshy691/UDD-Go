@@ -2,7 +2,7 @@
 
 **Reviewed:** November 13, 2026 · Asia/Manila
 
-**Status:** Implementation started. The trip foundation and stage 2 scheduling/route management are implemented locally. Remaining stage 2 work and later phases are tracked separately. See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for current scope, validation, and next steps.
+**Status:** Implementation ongoing. The trip foundation, stage 2 scheduling/route management, and the multi-role login portal are implemented locally. Remaining stage 2 work and later phases are tracked separately. See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for current scope, validation, and next steps.
 
 **Scope:** Extend the existing school transport system. Preserve the original [system plan](fleet_management_system_plan.md).
 
