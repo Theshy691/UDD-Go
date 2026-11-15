@@ -63,7 +63,13 @@ class FleetStore extends EventTarget {
       });
     } else {
       this.loadDemo();
-      this.setDemoRole(preferences.demoRole || (Capacitor.isNativePlatform() ? 'driver' : 'admin'), false);
+      if (preferences.demoRole) {
+        this.setDemoRole(preferences.demoRole, false);
+      } else if (preferences.demoRole === null) {
+        this.profile = null;
+      } else {
+        this.setDemoRole(Capacitor.isNativePlatform() ? 'driver' : 'admin', false);
+      }
       this.connected = true;
     }
   }
@@ -83,6 +89,22 @@ class FleetStore extends EventTarget {
     if (emit) this.emit();
   }
   async login(email, password) {
+    if (this.mode === 'demo') {
+      const query = (email || '').toLowerCase().trim();
+      let matched = this.data.users.find(u => u.email?.toLowerCase() === query);
+      if (!matched) {
+        if (query.includes('driver')) matched = this.data.users.find(u => u.role === 'driver');
+        else if (query.includes('student')) matched = this.data.users.find(u => u.role === 'student');
+        else if (query.includes('admin')) matched = this.data.users.find(u => u.role === 'admin');
+      }
+      if (!matched) {
+        throw new Error('User not found. Use admin@udd.edu.ph, driver@udd.edu.ph, or student@udd.edu.ph');
+      }
+      this.profile = matched;
+      savePreferences({ demoRole: matched.role });
+      this.emit();
+      return;
+    }
     const { error } = await this.client.auth.signInWithPassword({ email, password });
     if (error) throw error;
     await this.loadLive(); this.emit();
@@ -91,6 +113,10 @@ class FleetStore extends EventTarget {
     if (this.mode === 'live') {
       const { error } = await this.client.auth.signOut();
       if (error) throw error;
+    } else {
+      this.profile = null;
+      savePreferences({ demoRole: null });
+      this.emit();
     }
   }
   async loadLive() {
