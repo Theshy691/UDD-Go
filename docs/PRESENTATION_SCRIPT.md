@@ -122,3 +122,4 @@
 
 **Q3: Can this system run without internet access?**  
 *Answer:* *"Yes! The system features a built-in offline demo architecture persisting to browser local storage. In a production deployment with Supabase, drivers can continue logging manifest changes locally before syncing when connectivity resumes."*
+

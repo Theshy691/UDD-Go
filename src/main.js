@@ -1,5 +1,5 @@
 import './styles.css';
-import { createIcons, LayoutDashboard, BusFront, Route, GraduationCap, Users, Wrench, Settings, CircleHelp, ChevronDown, ChevronRight, ChevronLeft, ArrowUpRight, ArrowRight, Plus, Download, Search, Bell, CalendarDays, MapPin, Navigation, LocateFixed, Menu, X, LogOut, Radio, CircleCheck, CircleAlert, Check, Clock3, ShieldCheck, Leaf, School, MoreHorizontal, Play, Square, UserRoundCheck, Trash2, ExternalLink, Mail, RefreshCw, Phone, Info, Gauge } from 'lucide';
+import { createIcons, LayoutDashboard, BusFront, Route, GraduationCap, Users, Wrench, Settings, CircleHelp, ChevronDown, ChevronRight, ChevronLeft, ArrowUpRight, ArrowRight, Plus, Download, Search, Bell, CalendarDays, MapPin, Navigation, LocateFixed, Menu, X, LogOut, Radio, CircleCheck, CircleAlert, Check, Clock3, ShieldCheck, Leaf, School, MoreHorizontal, Play, Square, UserRoundCheck, Trash2, ExternalLink, Mail, RefreshCw, Phone, Info, Gauge, Maximize2, Minimize2 } from 'lucide';
 import { store, preferences, savePreferences } from './store.js';
 import { tripPage, tripAction, filterTripHistory, resetTripHistory } from './trip-views.js';
 import { schedulingPage, schedulingAction } from './scheduling-views.js';
@@ -12,13 +12,13 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 
 document.documentElement.classList.toggle('native-app', Capacitor.isNativePlatform());
 
-const iconSet = { LayoutDashboard, BusFront, Route, GraduationCap, Users, Wrench, Settings, CircleHelp, ChevronDown, ChevronRight, ChevronLeft, ArrowUpRight, ArrowRight, Plus, Download, Search, Bell, CalendarDays, MapPin, Navigation, LocateFixed, Menu, X, LogOut, Radio, CircleCheck, CircleAlert, Check, Clock3, ShieldCheck, Leaf, School, MoreHorizontal, Play, Square, UserRoundCheck, Trash2, ExternalLink, Mail, RefreshCw, Phone, Info, Gauge };
+const iconSet = { LayoutDashboard, BusFront, Route, GraduationCap, Users, Wrench, Settings, CircleHelp, ChevronDown, ChevronRight, ChevronLeft, ArrowUpRight, ArrowRight, Plus, Download, Search, Bell, CalendarDays, MapPin, Navigation, LocateFixed, Menu, X, LogOut, Radio, CircleCheck, CircleAlert, Check, Clock3, ShieldCheck, Leaf, School, MoreHorizontal, Play, Square, UserRoundCheck, Trash2, ExternalLink, Mail, RefreshCw, Phone, Info, Gauge, Maximize2, Minimize2 };
 const icon = name => `<i data-lucide="${name.replace(/([a-z0-9])([A-Z])/g,'$1-$2').toLowerCase()}"></i>`;
 const mountIcons = () => createIcons({icons:iconSet,attrs:{'aria-hidden':'true','stroke-width':1.75}});
 const app = document.querySelector('#app');
 let page = 'overview', selectedBus = 'bus-1', routeFilter = '', busFilter = 'all', query = '';
 let fleetMap = null, modalMap = null, modalCleanup = null, modalReturnFocus = null, toastTimer, gpsWatch = null, gpsNative = false, gpsRouteId = null, simulatedStep = 0;
-let routeDraft = [], portalTripId = '', loginRole = 'admin', loginMethod = 'quick';
+let routeDraft = [], portalTripId = '', loginRole = 'admin', loginMethod = 'quick', portalExpanded = false;
 const titles = {overview:'Overview',trips:'Trips & history',services:'Services & calendar',fleet:'Fleet management',routes:'Routes & stops',students:'Students',drivers:'Drivers',maintenance:'Maintenance',activity:'Activity log',settings:'Settings',driver:'My route',student:'My journey'};
 const statusNames = {active:'On route',idle:'Available',maintenance:'Maintenance',scheduled:'Scheduled',completed:'Completed',boarded:'On board',assigned:'Assigned',overdue:'Overdue',due_soon:'Due soon',healthy:'Up to date',expected:'Expected',alighted:'Dropped off',cancelled:'Cancelled'};
 const badge = status => `<span class="badge ${esc(status)}">${esc(statusNames[status] || status)}</span>`;
@@ -157,8 +157,12 @@ function portal() {
   const passengers=store.data.trip_passengers.filter(p=>p.trip_id===trip.id),myPassenger=passengers.find(p=>p.student_id===store.profile.id);
   const counts=store.routeSummaries.get(trip.id) || tripCounts(passengers);
   const picker=`<section class="card" style="padding:16px;margin-bottom:20px"><div class="trip-actions">${choices.map(t=>button(`${t.direction==='return'?'Return':'Outbound'} · ${departure(new Date(t.planned_at).toLocaleTimeString('en-GB',{timeZone:'Asia/Manila',hour:'2-digit',minute:'2-digit'}))} · ${t.route_name}`,'choose-portal-trip',{id:t.id,primary:t.id===trip.id})).join('')}</div></section>`;
+  const expandButton = button(portalExpanded ? 'Normal view' : 'Enlarge map', 'toggle-portal-map', {
+    iconName: portalExpanded ? 'Minimize2' : 'Maximize2',
+    className: 'button subtle map-expand-btn'
+  });
   return `${pageHeader(isDriver?`Hello, ${esc(store.profile?.name?.split(' ')[0] || 'there')}.`:'Your school journeys, connected.','Choose your outbound or return trip.',button('Trips & history','open-trips',{iconName:'CalendarDays'}))}${picker}
-  <div class="portal-grid"><section class="card portal-map"><div class="card-head"><h2>${esc(trip.route_name)}</h2>${badge(trip.status)}</div><div class="map-wrap"><div id="fleet-map" class="fleet-map" aria-label="Your selected trip map"></div>${mapToolbar(false)}</div></section>
+  <div class="portal-grid ${isDriver?'driver-portal':'student-portal'} ${portalExpanded?'map-expanded':''}"><section class="card portal-map"><div class="card-head"><div><h2>${esc(trip.route_name)}</h2><span class="small muted">${isDriver?'Driver navigation HUD · live route telemetry':'Your school bus journey map'}</span></div><div class="flex gap-8">${badge(trip.status)}${expandButton}</div></div><div class="map-wrap"><div id="fleet-map" class="fleet-map" aria-label="Your selected trip map"></div>${mapToolbar(false)}</div></section>
   <div class="portal-sidebar"><section class="card trip-card"><h2>${esc(trip.direction==='return'?'Return journey':'Outbound journey')}</h2><div class="bus-title"><span class="vehicle-icon">${icon('BusFront')}</span><div><h3>${esc(trip.bus_label)}</h3><p>${esc(trip.plate_number)}</p></div></div><div class="driver-mini"><span class="avatar peach">${esc(initials(trip.driver_name))}</span><div><strong>${esc(trip.driver_name)}</strong>${esc(person(trip.driver_id)?.contact_number || '')}</div></div><div class="trip-info"><div class="between"><span>Service date</span><strong>${esc(trip.service_date)}</strong></div><div class="between"><span>On board</span><strong>${counts.boarded} / ${trip.capacity}</strong></div>${!isDriver?`<div class="between"><span>Your status</span>${badge(myPassenger?.status || 'expected')}</div>`:''}</div>
   ${isDriver?`<div class="trip-actions">${trip.status==='active'?button('Enable GPS sharing','enable-gps',{primary:true,id:trip.id,iconName:'LocateFixed'}):''}${button(trip.status==='scheduled'?'Review and start trip':'View passengers / complete','trip-detail',{id:trip.id})}</div><p id="gps-status" class="muted small">${gpsWatch!==null?'Sharing this device’s location.':store.mode==='demo'?'Sample locations are simulated.':'Enable location sharing during your active trip.'}</p>`:`<div class="student-pass"><span>Your boarding ID</span><strong>${esc(store.profile.student_code || store.profile.id)}</strong><p>${esc(myPassenger?.pickup_name || '')} → ${esc(myPassenger?.dropoff_name || '')}</p></div>${button('View my trip record','trip-detail',{id:trip.id})}`}</section><section class="card trip-card"><h2>Trip stops</h2><div class="stop-timeline">${timeline(trip.stops,myPassenger?.pickup_stop_id)}</div></section></div></div>`;
 }
@@ -529,6 +533,7 @@ async function handleAction(action,id) {
     case 'menu':document.querySelector('.sidebar').classList.add('open');document.querySelector('.sidebar-overlay').classList.add('open');break;
     case 'close-menu':document.querySelector('.sidebar').classList.remove('open');document.querySelector('.sidebar-overlay').classList.remove('open');break;
     case 'profile':navigate('settings');break;
+    case 'toggle-portal-map':portalExpanded=!portalExpanded;render();break;
     case 'select-login-role':loginRole=id;renderLogin();break;
     case 'set-login-method':loginMethod=id;renderLogin();break;
     case 'prefill-role':loginRole=id;renderLogin();break;
