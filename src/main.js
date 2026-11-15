@@ -18,7 +18,7 @@ const mountIcons = () => createIcons({icons:iconSet,attrs:{'aria-hidden':'true',
 const app = document.querySelector('#app');
 let page = 'overview', selectedBus = 'bus-1', routeFilter = '', busFilter = 'all', query = '';
 let fleetMap = null, modalMap = null, modalCleanup = null, modalReturnFocus = null, toastTimer, gpsWatch = null, gpsNative = false, gpsRouteId = null, simulatedStep = 0;
-let routeDraft = [],portalTripId='';
+let routeDraft = [], portalTripId = '', loginRole = 'admin', loginMethod = 'quick';
 const titles = {overview:'Overview',trips:'Trips & history',services:'Services & calendar',fleet:'Fleet management',routes:'Routes & stops',students:'Students',drivers:'Drivers',maintenance:'Maintenance',activity:'Activity log',settings:'Settings',driver:'My route',student:'My journey'};
 const statusNames = {active:'On route',idle:'Available',maintenance:'Maintenance',scheduled:'Scheduled',completed:'Completed',boarded:'On board',assigned:'Assigned',overdue:'Overdue',due_soon:'Due soon',healthy:'Up to date',expected:'Expected',alighted:'Dropped off',cancelled:'Cancelled'};
 const badge = status => `<span class="badge ${esc(status)}">${esc(statusNames[status] || status)}</span>`;
@@ -59,9 +59,9 @@ function shell(content) {
     <div class="nav-label">Workspace</div><nav class="nav-list">${admin ? `${navItem('overview','Overview','LayoutDashboard')}${navItem('fleet','Fleet management','BusFront')}${navItem('routes','Routes & stops','Route')}${navItem('services','Services & calendar','CalendarDays')}${navItem('students','Students','GraduationCap')}${navItem('drivers','Drivers','Users')}${navItem('maintenance','Maintenance','Wrench',due)}` : navItem(store.profile.role,store.profile.role === 'driver' ? 'My route' : 'My journey',store.profile.role === 'driver' ? 'Route' : 'MapPin')}
     </nav><div class="nav-separator"></div><div class="nav-label">Manage</div><nav class="nav-list">${admin ? navItem('activity','Activity log','Clock3') : ''}${navItem('trips','Trips & history','CalendarDays')}${navItem('settings','Settings','Settings')}</nav>
     <div class="sidebar-bottom"><div class="help-card"><div class="help-icon">${icon('Leaf')}</div><strong>A little care. A safer journey.</strong><p>Keep your fleet ready for the road.</p><button class="link-button" data-action="help">Visit the help center ${icon('ArrowUpRight')}</button></div>
-    <div class="sidebar-profile"><div class="avatar">${esc(initials(store.profile.name))}</div><div><strong>${esc(store.profile.name)}</strong><small>${admin ? 'Fleet administrator' : store.profile.role === 'driver' ? 'School bus driver' : 'Student account'}</small></div><button class="icon-button" data-action="${store.mode === 'demo' ? 'profile' : 'logout'}" aria-label="${store.mode === 'demo' ? 'Switch demo role' : 'Sign out'}">${icon(store.mode === 'demo' ? 'MoreHorizontal' : 'LogOut')}</button></div></div>
+    <div class="sidebar-profile"><div class="avatar">${esc(initials(store.profile.name))}</div><div><strong>${esc(store.profile.name)}</strong><small>${admin ? 'Fleet administrator' : store.profile.role === 'driver' ? 'School bus driver' : 'Student account'}</small></div><button class="icon-button" data-action="logout" aria-label="Sign out / Switch account">${icon('LogOut')}</button></div></div>
   </aside><div class="app-main"><header class="topbar"><div class="flex gap-8"><button class="icon-button menu-toggle" data-action="menu" aria-label="Open navigation">${icon('Menu')}</button><div class="mobile-brand">UDD<span> Go</span></div><div class="breadcrumbs">Workspace ${icon('ChevronRight')}<span class="current">${titles[page]}</span></div></div>
-    <div class="top-actions">${admin ? `<label class="global-search">${icon('Search')}<input id="global-search" placeholder="Search your fleet…" aria-label="Search fleet" value="${esc(query)}"/><kbd>⌘ K</kbd></label>` : ''}${store.mode === 'demo' ? `<span class="mode-pill">${icon('Radio')}Demo mode</span><select id="demo-role" class="demo-switch" aria-label="Demo role"><option value="admin" ${admin?'selected':''}>Admin view</option><option value="driver" ${store.profile.role==='driver'?'selected':''}>Driver view</option><option value="student" ${store.profile.role==='student'?'selected':''}>Student view</option></select>` : `<span class="live-label">${icon('ShieldCheck')}Secure workspace</span>`}<span class="top-divider"></span><button class="icon-button" data-action="notifications" aria-label="View notifications">${icon('Bell')}${due ? '<span class="notification-dot"></span>' : ''}</button><div class="avatar">${esc(initials(store.profile.name))}</div></div></header>
+    <div class="top-actions">${admin ? `<label class="global-search">${icon('Search')}<input id="global-search" placeholder="Search your fleet…" aria-label="Search fleet" value="${esc(query)}"/><kbd>⌘ K</kbd></label>` : ''}${store.mode === 'demo' ? `<span class="mode-pill">${icon('Radio')}Demo mode</span><select id="demo-role" class="demo-switch" aria-label="Demo role"><option value="admin" ${admin?'selected':''}>Admin view</option><option value="driver" ${store.profile.role==='driver'?'selected':''}>Driver view</option><option value="student" ${store.profile.role==='student'?'selected':''}>Student view</option><option value="logout">Sign out</option></select>` : `<span class="live-label">${icon('ShieldCheck')}Secure workspace</span>`}<span class="top-divider"></span><button class="icon-button" data-action="notifications" aria-label="View notifications">${icon('Bell')}${due ? '<span class="notification-dot"></span>' : ''}</button><div class="avatar">${esc(initials(store.profile.name))}</div></div></header>
     <main class="page" id="main-content">${content}<footer class="page-footer"><span>© ${new Date().getFullYear()} UDD Go. Every student. Every journey.</span><span>${store.mode==='demo' ? `${icon('Info')} Sample data · stored in this browser` : `${icon('ShieldCheck')} Access controlled by your fleet role`}</span></footer></main></div>`;
 }
 
@@ -196,7 +196,208 @@ function navigate(next) {
 }
 
 function renderLogin() {
-  app.innerHTML=`<main class="login-page"><div class="login-brand-panel"><div class="brand"><span class="brand-icon">${icon('BusFront')}</span><div>UDD<span> Go</span></div></div><div><h1>Every student.<br/>A safer journey.</h1><p>School transport, connected. One place for your fleet, your routes, and the people who make it all move.</p></div><p class="small">Universidad de Dagupan · School transport</p></div><div class="login-panel"><h2>Good to see you.</h2><p>Sign in to your school transport workspace.</p><form id="login-form"><label class="field">School email<input type="email" name="email" autocomplete="username" placeholder="you@school.edu.ph" required/></label><label class="field">Password<input type="password" name="password" autocomplete="current-password" minlength="6" required/></label><div class="form-error" role="alert"></div><button type="submit" class="button primary full">Sign in ${icon('ArrowRight')}</button><p class="muted small">Need an account? Contact your fleet administrator.</p></form></div></main>`;mountIcons();
+  const roleConfig = {
+    admin: {
+      title: 'Fleet Administrator',
+      badge: 'Operations Hub',
+      iconName: 'LayoutDashboard',
+      colorClass: 'role-admin',
+      desc: 'Central command for live GPS fleet tracking, stop sequence editing, calendar dispatches, bus maintenance intervals, and student allocations.',
+      email: 'admin@udd.edu.ph',
+      name: 'Alex Morgan',
+      tags: ['Live Tracking', 'Dispatch Engine', 'Audit Logs']
+    },
+    driver: {
+      title: 'School Bus Driver',
+      badge: 'In-Cabin Console',
+      iconName: 'BusFront',
+      colorClass: 'role-driver',
+      desc: 'Driver-optimized console with turn-by-turn stop manifest, live GPS beacon sharing, one-tap boarding check-in, and post-trip cabin verification.',
+      email: 'driver@udd.edu.ph',
+      name: 'Roberto Santos',
+      tags: ['GPS Beacon', '1-Tap Boarding', 'Cabin Safety']
+    },
+    student: {
+      title: 'Student & Parent',
+      badge: 'Journey Radar',
+      iconName: 'GraduationCap',
+      colorClass: 'role-student',
+      desc: 'Real-time school bus arrival radar, estimated pickup and dropoff times, digital passenger boarding pass, and departure notifications.',
+      email: 'student@udd.edu.ph',
+      name: 'Isabella Santos',
+      tags: ['Bus Radar', 'Digital ID', 'Trip Alerts']
+    }
+  };
+
+  const current = roleConfig[loginRole] || roleConfig.admin;
+
+  app.innerHTML = `<main class="login-page">
+    <aside class="login-brand-panel">
+      <div class="login-brand-top">
+        <div class="brand">
+          <span class="brand-icon">${icon('BusFront')}</span>
+          <div>UDD<span> Go</span></div>
+        </div>
+        <span class="campus-pill">${icon('School')} Universidad de Dagupan</span>
+      </div>
+
+      <div class="login-brand-content">
+        <div class="login-badge-live">${icon('Radio')} Campus Transport System</div>
+        <h1>Every student.<br/><span class="text-sky">A safer journey.</span></h1>
+        <p class="login-hero-desc">
+          Next-generation school transit operations. Connecting fleet managers, drivers, and campus families through live telemetry, instant boarding verification, and automated dispatch.
+        </p>
+
+        <div class="login-feature-list">
+          <div class="login-feature-item">
+            <span class="feature-icon blue">${icon('Navigation')}</span>
+            <div>
+              <strong>Live Fleet Radar</strong>
+              <p>Real-time vehicle GPS telemetry, active routes, and driver location beacons.</p>
+            </div>
+          </div>
+          <div class="login-feature-item">
+            <span class="feature-icon green">${icon('UserRoundCheck')}</span>
+            <div>
+              <strong>O(1) Boarding Verification</strong>
+              <p>One-tap manifest check-in, capacity enforcement, and parent arrival visibility.</p>
+            </div>
+          </div>
+          <div class="login-feature-item">
+            <span class="feature-icon orange">${icon('CalendarDays')}</span>
+            <div>
+              <strong>Autonomous Scheduling</strong>
+              <p>Deterministic trip generation synchronized with the academic service calendar.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="login-brand-footer">
+        <div class="between small muted">
+          <span>Main Campus · Dagupan City, Pangasinan</span>
+          <span>Version 2.0</span>
+        </div>
+      </div>
+    </aside>
+
+    <section class="login-panel">
+      <div class="login-panel-inner">
+        <div class="login-header">
+          <h2>Welcome to UDD Go</h2>
+          <p>Select your transport workspace view or sign in with school credentials.</p>
+        </div>
+
+        <div class="login-tab-bar" role="tablist" aria-label="Sign-in method">
+          <button type="button" class="login-tab-btn ${loginMethod === 'quick' ? 'selected' : ''}" data-action="set-login-method" data-id="quick" role="tab" aria-selected="${loginMethod === 'quick'}">
+            ${icon('Radio')} Quick Role Access (Demo)
+          </button>
+          <button type="button" class="login-tab-btn ${loginMethod === 'credentials' ? 'selected' : ''}" data-action="set-login-method" data-id="credentials" role="tab" aria-selected="${loginMethod === 'credentials'}">
+            ${icon('Mail')} School Credentials
+          </button>
+        </div>
+
+        ${loginMethod === 'quick' ? `
+          <div class="role-selector-section">
+            <div class="between role-section-heading">
+              <span>Choose a role to explore:</span>
+              <span class="count">3 available views</span>
+            </div>
+
+            <div class="role-panel-grid">
+              ${Object.entries(roleConfig).map(([key, item]) => `
+                <article class="role-card ${item.colorClass} ${loginRole === key ? 'selected' : ''}" data-action="select-login-role" data-id="${key}" tabindex="0" role="button" aria-pressed="${loginRole === key}">
+                  <div class="role-card-top">
+                    <div class="role-identity">
+                      <span class="role-icon-box ${item.colorClass}">
+                        ${icon(item.iconName)}
+                      </span>
+                      <div>
+                        <div class="role-title-row">
+                          <h3>${item.title}</h3>
+                          <span class="role-badge ${item.colorClass}">${item.badge}</span>
+                        </div>
+                        <span class="role-account-preview">${item.name} · ${item.email}</span>
+                      </div>
+                    </div>
+                    <span class="role-radio-indicator">
+                      ${loginRole === key ? icon('Check') : ''}
+                    </span>
+                  </div>
+
+                  <p class="role-card-desc">${item.desc}</p>
+
+                  <div class="role-card-footer">
+                    <div class="role-tags">
+                      ${item.tags.map(tag => `<span class="role-tag">${tag}</span>`).join('')}
+                    </div>
+                    <button type="button" class="role-enter-btn ${item.colorClass}" data-action="quick-login" data-id="${key}" title="Launch ${item.title}">
+                      Launch ${icon('ArrowRight')}
+                    </button>
+                  </div>
+                </article>
+              `).join('')}
+            </div>
+
+            <div class="login-cta-box">
+              <button type="button" class="button primary full login-primary-cta" data-action="quick-login" data-id="${loginRole}">
+                Enter as ${current.title} ${icon('ArrowRight')}
+              </button>
+              <div class="login-cta-hint muted small">
+                ${icon('ShieldCheck')} Sample fleet database pre-loaded · Changes stay isolated in this browser
+              </div>
+            </div>
+          </div>
+        ` : `
+          <form id="login-form" class="credentials-form">
+            <div class="credentials-autofill-box">
+              <span class="small muted">Quickly prefill role account:</span>
+              <div class="autofill-chips">
+                <button type="button" class="autofill-chip ${loginRole === 'admin' ? 'active' : ''}" data-action="prefill-role" data-id="admin">
+                  ${icon('LayoutDashboard')} Admin
+                </button>
+                <button type="button" class="autofill-chip ${loginRole === 'driver' ? 'active' : ''}" data-action="prefill-role" data-id="driver">
+                  ${icon('BusFront')} Driver
+                </button>
+                <button type="button" class="autofill-chip ${loginRole === 'student' ? 'active' : ''}" data-action="prefill-role" data-id="student">
+                  ${icon('GraduationCap')} Student
+                </button>
+              </div>
+            </div>
+
+            <label class="field">
+              School email address
+              <input type="email" id="login-email" name="email" autocomplete="username" placeholder="name@udd.edu.ph" value="${current.email}" required />
+              <small>Use your official Universidad de Dagupan email account.</small>
+            </label>
+
+            <label class="field">
+              Password
+              <input type="password" id="login-password" name="password" autocomplete="current-password" minlength="6" placeholder="••••••••••••" value="demo-password" required />
+              <small>In demo mode, any password grants access.</small>
+            </label>
+
+            <div class="form-error" role="alert"></div>
+
+            <button type="submit" class="button primary full login-primary-cta">
+              Sign in to Transport Workspace ${icon('ArrowRight')}
+            </button>
+
+            <div class="note">
+              ${icon('Info')} Live mode authenticates against Supabase Auth with Row-Level Security. In demo mode, role views switch without server dependency.
+            </div>
+          </form>
+        `}
+
+        <div class="login-footer-meta muted small">
+          <span>Universidad de Dagupan Transport Operations</span>
+          <span>·</span>
+          <button type="button" data-action="help" class="link-button">Help & Guidelines</button>
+        </div>
+      </div>
+    </section>
+  </main>`;
+  mountIcons();
 }
 
 function showModal(title,subtitle,body,{wide=false,onSubmit=null,cleanup=null}={}) {
@@ -328,6 +529,20 @@ async function handleAction(action,id) {
     case 'menu':document.querySelector('.sidebar').classList.add('open');document.querySelector('.sidebar-overlay').classList.add('open');break;
     case 'close-menu':document.querySelector('.sidebar').classList.remove('open');document.querySelector('.sidebar-overlay').classList.remove('open');break;
     case 'profile':navigate('settings');break;
+    case 'select-login-role':loginRole=id;renderLogin();break;
+    case 'set-login-method':loginMethod=id;renderLogin();break;
+    case 'prefill-role':loginRole=id;renderLogin();break;
+    case 'quick-login':{
+      const targetRole=id||loginRole;
+      await stopGPS();
+      store.setDemoRole(targetRole);
+      portalTripId='';
+      page=targetRole==='admin'?'overview':targetRole;
+      query='';
+      window.scrollTo({top:0,behavior:'instant'});
+      render();
+      break;
+    }
     case 'logout':await stopGPS();await store.logout();break;
     case 'reset-demo':resetTripHistory();confirmModal('Start fresh with sample data?','This removes the demo changes saved in this browser.','Reset demo',()=>{store.reset();toast('Sample data restored.');});break;
     case 'notifications':showModal('A little heads-up.','The latest updates from your fleet.',`<div class="activity-list notification-list">${activityItems(15)}</div><div class="modal-footer">${button('Close','close-modal')}</div>`);break;
@@ -347,7 +562,11 @@ document.addEventListener('click',async event=>{
 });
 document.addEventListener('change',async event=>{
   const target=event.target;
-  if(['demo-role','settings-role'].includes(target.id)){await stopGPS();portalTripId='';page=target.value==='admin'?'overview':target.value;query='';store.setDemoRole(target.value);window.scrollTo({top:0,behavior:'instant'});}
+  if(['demo-role','settings-role'].includes(target.id)){
+    await stopGPS();
+    if(target.value==='logout'){await store.logout();return;}
+    portalTripId='';page=target.value==='admin'?'overview':target.value;query='';store.setDemoRole(target.value);window.scrollTo({top:0,behavior:'instant'});
+  }
   if(target.id==='map-route-filter'){routeFilter=target.value;render();}
   if(target.id==='notification-toggle'){
     try{
