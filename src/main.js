@@ -376,635 +376,535 @@ function renderLanding() {
   const totalStops = store.data.route_stops.length;
   const activeBuses = store.data.buses.filter(b => b.status === 'active').length;
 
-  const playgroundData = {
+  const simulatorData = {
     radar: {
       method: 'GET',
       url: 'https://udd.edu.ph/api/fleet/live/bonuan-tondaligan',
-      label: 'Live Fleet Radar',
+      title: 'Live GPS Fleet Radar',
+      badge: 'Active Beacon · 10Hz',
       json: JSON.stringify({
-        status: "success",
-        route_id: "bonuan-tondaligan",
-        route_name: "Bonuan - Tondaligan Beach Corridor",
-        active_trip: {
-          trip_id: "trip-am-01",
-          bus: "Bus 101 (DAG-2024)",
-          driver: "Roberto Santos",
-          coordinates: { lat: 16.0582, lng: 120.3541 },
+        status: "active",
+        corridor: "Bonuan - Tondaligan Beach Corridor",
+        trip_id: "trip-am-01",
+        vehicle: {
+          bus_label: "Bus 101",
+          plate_number: "DAG-2024",
+          capacity: 28,
+          current_occupancy: 18,
+          available_seats: 10
+        },
+        telemetry: {
+          latitude: 16.0582,
+          longitude: 120.3541,
           speed_kmh: 36.4,
-          heading: "SW (215°)",
+          heading: "215° SW",
           current_stop: "Bonuan Tondaligan",
           next_stop: "Bonuan Gueset",
-          eta_minutes: 3.8,
-          occupancy: { boarded: 18, capacity: 28, available: 10 }
+          eta_minutes: 3.8
         },
-        dsa_invariants: {
-          graph_traversal: "O(V + E) Monotonic Sequence",
-          boarding_check: "O(1) Hash Map Verification",
-          capacity_guard: "O(N) Strict Seating Invariant"
-        }
+        assigned_driver: "Roberto Santos",
+        destination: "UDD Main Campus (Arellano St.)"
       }, null, 2),
-      markdown: `# Live Fleet Radar: Route 1 (Bonuan - Tondaligan)
-- **Status**: Active (On route to UDD Main Campus)
-- **Vehicle**: Bus 101 · Plate: DAG-2024
-- **Assigned Driver**: Roberto Santos (Phone: 0917-555-0192)
-- **Current Position**: Near Bonuan Gueset (16.0582° N, 120.3541° E)
-- **Speed**: 36.4 km/h | Heading: 215° SW
-- **Live Occupancy**: 18 / 28 seats (10 seats available)
-- **Destination**: Universidad de Dagupan (Arellano Campus)
-- **Estimated Arrival**: 07:18 AM (in 14 mins)`
+      markdown: `# Live Vehicle Radar: Bus 101 (Bonuan Corridor)
+- **Service Corridor**: Bonuan - Tondaligan Beach → UDD Main Campus
+- **Vehicle Status**: Active on route (Transmitting live GPS telemetry)
+- **Assigned Driver**: Roberto Santos (0917-555-0192)
+- **Live Coordinates**: 16.0582° N, 120.3541° E (Near Bonuan Gueset)
+- **Velocity & Heading**: 36.4 km/h · 215° SW
+- **Cabin Occupancy**: 18 of 28 seats occupied (10 seats available)
+- **Estimated Arrival**: 07:18 AM (in ~14 mins)`
     },
     manifest: {
       method: 'POST',
       url: 'https://udd.edu.ph/api/manifest/trip-am-01/board',
-      label: 'Boarding Pass Scan',
+      title: 'O(1) Boarding Verification',
+      badge: '< 10ms Latency',
       json: JSON.stringify({
-        status: "success",
-        manifest_id: "man-2026-11-17-01",
-        verified_passenger: {
+        verification_status: "accepted",
+        manifest_id: "man-am-01",
+        passenger: {
           student_id: "2023-0142",
           name: "Isabella Santos",
+          program: "BS Information Technology (3rd Year)",
           pickup_stop: "Bonuan Tondaligan",
-          dropoff_stop: "UDD Main Campus",
-          verification_time_ms: 4.2,
-          duplicate_detected: false
+          assigned_seat: 18
         },
-        summary: {
-          total_assigned: 22,
-          boarded_count: 18,
-          expected_count: 4,
-          capacity: 28
+        metrics: {
+          lookup_algorithm: "O(1) In-Memory Hash Table",
+          execution_time_ms: 3.6,
+          duplicate_detected: false,
+          pwa_offline_ready: true
         },
-        security_token: "jwt_sec_89f02c7a"
+        audit: {
+          verified_by: "Roberto Santos (Driver)",
+          timestamp: new Date().toLocaleTimeString('en-PH', { timeZone: 'Asia/Manila' })
+        }
       }, null, 2),
-      markdown: `# Boarding Verification Pass: Isabella Santos
-- **Student Code**: 2023-0142 (BSIT 3rd Year)
-- **Trip**: AM-01 Outbound · Bonuan Corridor
+      markdown: `# Passenger Boarding Pass Verification
+- **Student Account**: Isabella Santos (ID: 2023-0142)
+- **Program & Year**: BSIT 3rd Year · Universidad de Dagupan
+- **Boarding Manifest**: AM-01 Outbound Journey · Bus 101
+- **Pickup Location**: Bonuan Tondaligan Station
 - **Verification Engine**: O(1) Hash Map Token Check
-- **Latency**: 4.2 ms (Zero network latency with PWA local cache)
-- **Verification Status**: ✅ ACCEPTED · Seat #18 Assigned
-- **Cabin Sweep Status**: Pending end-of-trip driver confirmation`
+- **Verification Result**: ACCEPTED (Seat #18 Confirmed)
+- **Duplicate Prevention**: Atomic PostgreSQL Constraint Verified`
     },
     graph: {
       method: 'GET',
-      url: 'https://udd.edu.ph/api/routes/bonuan-tondaligan/graph',
-      label: 'Graph Sequence',
+      url: 'https://udd.edu.ph/api/routes/bonuan-tondaligan/sequence',
+      title: 'Directed Graph Stop Sequence',
+      badge: 'O(V + E) Monotonic',
       json: JSON.stringify({
-        route: "Bonuan - Tondaligan Beach Corridor",
-        graph_type: "Directed Acyclic Adjacency List (DAG)",
-        nodes_count: 5,
-        monotonic_sequence: [
-          { seq: 1, id: "stop-1", name: "Bonuan Tondaligan", dist_km: 0.0 },
-          { seq: 2, id: "stop-2", name: "Bonuan Gueset", dist_km: 2.1 },
-          { seq: 3, id: "stop-3", name: "AB Fernandez East", dist_km: 5.4 },
-          { seq: 4, id: "stop-4", name: "Arellano Street", dist_km: 7.2 },
-          { seq: 5, id: "stop-5", name: "UDD Main Campus (Terminus)", dist_km: 8.1 }
+        corridor: "Bonuan - Tondaligan Beach Corridor",
+        data_structure: "Directed Acyclic Graph (DAG) Adjacency List",
+        total_distance_km: 8.1,
+        total_stops: 5,
+        nodes: [
+          { sequence: 1, stop: "Bonuan Tondaligan", cumulative_km: 0.0, type: "origin" },
+          { sequence: 2, stop: "Bonuan Gueset", cumulative_km: 2.1, type: "intermediate" },
+          { sequence: 3, stop: "AB Fernandez East", cumulative_km: 5.4, type: "intermediate" },
+          { sequence: 4, stop: "Arellano Street", cumulative_km: 7.2, type: "intermediate" },
+          { sequence: 5, stop: "UDD Main Campus", cumulative_km: 8.1, type: "terminus" }
         ],
-        complexity: "O(V + E) Monotonic Traversal",
-        validation: "Topological Sort Validated • Cycle-free"
+        graph_invariants: {
+          monotonic_ordering: "strictly ascending",
+          cycle_detection: "zero cycles (DAG verified)",
+          reordering_engine: "Leaflet Drag-and-Order"
+        }
       }, null, 2),
-      markdown: `# Route Graph Topology: Route 1
+      markdown: `# Topological Route Graph: Route 1
 \`\`\`text
-(Stop 1: Tondaligan) ──[2.1km]──> (Stop 2: Gueset)
-                      ──[3.3km]──> (Stop 3: AB Fernandez)
-                      ──[1.8km]──> (Stop 4: Arellano St)
-                      ──[0.9km]──> (Stop 5: UDD Campus) [TERMINUS]
+[Stop 1: Tondaligan] ──(2.1 km)──> [Stop 2: Gueset]
+                     ──(3.3 km)──> [Stop 3: AB Fernandez]
+                     ──(1.8 km)──> [Stop 4: Arellano St]
+                     ──(0.9 km)──> [Stop 5: UDD Campus] [TERMINUS]
 \`\`\`
-- Total Route Distance: 8.1 km
-- Estimated Turnaround: 28 minutes
-- Sequence Constraint: Monotonic ascending sequence index`
+- **Graph Modeling**: Directed Acyclic Graph (DAG)
+- **Algorithmic Bounds**: O(V + E) Monotonic Traversal
+- **Total Route Span**: 8.1 km across Dagupan City`
     },
     capacity: {
       method: 'GET',
-      url: 'https://udd.edu.ph/api/capacity/bus-101/validate',
-      label: 'Capacity Bounds',
+      url: 'https://udd.edu.ph/api/capacity/bus-101/invariant',
+      title: 'Vehicle Capacity Invariant',
+      badge: 'O(N) Strict Limits',
       json: JSON.stringify({
-        bus_id: "bus-1",
-        label: "Bus 101",
+        vehicle: "Bus 101",
         plate_number: "DAG-2024",
-        seating_capacity: 28,
-        allocated_subscriptions: 22,
+        seating_limit: 28,
+        allocated_students: 22,
+        active_boarded: 18,
         available_seats: 6,
-        invariant_rule: "assigned <= capacity (22 <= 28) -> PASSED",
-        odometer: {
-          current_km: 24320,
+        capacity_check: "allocated <= limit (22 <= 28) -> PASSED",
+        maintenance_telemetry: {
+          current_odometer_km: 24320,
           next_service_km: 25000,
-          status: "healthy"
+          headroom_km: 680,
+          interval_status: "healthy"
         }
       }, null, 2),
-      markdown: `# Vehicle Capacity Invariant Check: Bus 101
-- **Plate Number**: DAG-2024
-- **Physical Capacity Limit**: 28 passenger seats
-- **Active Subscriptions**: 22 students assigned
-- **Available Seat Headroom**: 6 seats remaining
-- **Algorithm**: O(N) Aggregate Occupancy Filter
-- **Maintenance Status**: Healthy (680 km until next 25,000 km inspection)`
+      markdown: `# Capacity & Maintenance Invariants: Bus 101
+- **Physical Capacity Limit**: 28 Seats
+- **Registered Subscriptions**: 22 Students Assigned
+- **Seat Headroom**: 6 Seats Available (Overbooking Prevented)
+- **Current Odometer**: 24,320 km (Strictly monotonic)
+- **Next Service Threshold**: 25,000 km (680 km remaining)
+- **Preventive Maintenance Health**: Up to Date (Healthy)`
     }
   };
 
-  const currentPlayground = playgroundData[fcHeroTab] || playgroundData.radar;
-
-  const codeSnippets = {
-    python: `# pip install udd-go
-from udd_go import TransitFleet
-
-fleet = TransitFleet(api_key="udd_live_secret_key")
-
-# Stream real-time GPS telemetry from active route
-bus = fleet.trips.get("bonuan-tondaligan")
-print(f"Bus {bus.label}: {bus.speed_kmh} km/h • Next: {bus.next_stop}")
-
-# Atomic O(1) boarding verification check-in
-result = fleet.manifest.board(
-    trip_id="trip-am-01",
-    student_id="2023-0142",
-    stop_id="bonuan-tondaligan"
-)
-assert result.status == "boarded"`,
-    node: `// npm install @udd/transit-sdk
-import { createTransitClient } from '@udd/transit-sdk';
-
-const udd = createTransitClient({
-  url: 'https://udd.edu.ph/api',
-  token: 'udd_live_secret_key'
-});
-
-// Subscribe to vehicle GPS beacon broadcast
-udd.telemetry.subscribe('bonuan-tondaligan', (beacon) => {
-  console.log(\`Bus \${beacon.plate} at \${beacon.lat}, \${beacon.lng} (ETA: \${beacon.eta}m)\`);
-});`,
-    curl: `# Query live vehicle telemetry and route manifest
-curl -X GET "https://udd.edu.ph/api/fleet/live/bonuan-tondaligan" \\
-  -H "Authorization: Bearer udd_live_secret_key" \\
-  -H "Content-Type: application/json"`,
-    sql: `-- Supabase Row-Level Security: Student Journey Isolation
-CREATE POLICY "students_view_own_assigned_trip"
-  ON fleet.trip_passengers
-  FOR SELECT
-  USING (
-    student_id = auth.uid()
-    OR auth.role() = 'admin'
-  );`
-  };
+  const currentSim = simulatorData[fcHeroTab] || simulatorData.radar;
 
   const faqs = [
     {
       q: "What is UDD Go and how does it relate to Universidad de Dagupan?",
-      a: "UDD Go is the official next-generation campus transit management platform engineered for Universidad de Dagupan. It connects fleet operations managers, school bus drivers, and students/parents in real time across Dagupan City transit corridors (Bonuan, Calasiao, Lucao, and Downtown)."
+      a: "UDD Go is the official campus transit operations and student passenger safety platform for Universidad de Dagupan. It connects fleet operations managers, campus bus drivers, and students/parents in real time across four designated Dagupan City transit corridors (Bonuan, Calasiao, Lucao, and Downtown)."
     },
     {
       q: "How does the O(1) boarding verification work under the hood?",
-      a: "Each passenger manifest is pre-indexed in an in-memory hash map and enforced with an atomic PostgreSQL compound UNIQUE constraint (trip_id, student_id). This ensures instant O(1) passenger check-in verification in under 10 milliseconds while mathematically preventing duplicate scans or counterfeit IDs."
+      a: "Passenger manifests are pre-indexed in memory using hash tables and backed by PostgreSQL atomic UNIQUE constraints on (trip_id, student_id). This allows the driver to check in students in under 10 milliseconds with zero duplicate scans or fraudulent boarding."
     },
     {
-      q: "Does the system function offline when cellular reception drops?",
-      a: "Yes. Built as a modern Progressive Web App (PWA) with Capacitor native plugins, UDD Go caches the day's route topology, manifests, and active subscriptions locally. Drivers can continue turn-by-turn boarding manifests without internet, and the local event journal automatically synchronizes once a connection is re-established."
+      q: "Does the system continue working if mobile signal is weak?",
+      a: "Yes. Built as an offline-first Progressive Web App (PWA) with native Capacitor device storage, UDD Go caches the day's route topology, passenger manifests, and driver rosters locally. Drivers can check in passengers without active cellular reception, and the local journal automatically syncs once reconnected."
     },
     {
-      q: "How is student identity and location data protected?",
-      a: "UDD Go employs Supabase Row-Level Security (RLS) with zero-trust token isolation. Students can only view their own assigned vehicle and pickup coordinates; full manifest visibility and passenger rosters are restricted strictly to the assigned driver and authenticated fleet administrators."
+      q: "How is student identity and location data kept secure?",
+      a: "UDD Go enforces Supabase Row-Level Security (RLS) with zero-trust token scoping. Students can only see their own assigned vehicle and arrival radar; full passenger manifests and student directories are restricted strictly to authenticated drivers and fleet administrators."
     },
     {
       q: "How can evaluators test all 3 roles during capstone presentations?",
-      a: "Right from this landing page! Click any of the 3 Role Showcase panels (Admin, Student, Driver) below to instantly launch an interactive demo session pre-loaded with simulated Dagupan routes, live GPS movement, and realistic student manifests—no manual signup required."
+      a: "Right from the Role Showcase below! Click any of the three role cards (Admin Console, Driver Cockpit, Student Radar) to immediately launch an interactive live demo session with pre-populated Dagupan route data, live GPS simulation, and boarding records."
     }
   ];
 
-  app.innerHTML = `<div class="firecrawl-landing">
+  app.innerHTML = `<div class="landing-page">
     <!-- Top Announcement Ribbon -->
-    <aside class="fc-announcement-banner">
-      <div class="fc-banner-inner">
-        <span class="fc-badge-flame">${icon('Flame')} NEW</span>
-        <span>Introducing <strong>UDD Go 2.0</strong> · Real-Time Campus Transit & O(1) Manifest Verification.</span>
-        <button type="button" class="fc-banner-link" data-action="scroll-to-roles">Explore 3-Role Demo →</button>
+    <aside class="landing-banner">
+      <div class="banner-inner">
+        <span class="banner-pill-live">
+          <span class="banner-dot-ping"></span>
+          LIVE TRANSIT SYSTEM
+        </span>
+        <span class="banner-text"><strong>UDD Go</strong> · Intelligent Campus Fleet Management & Passenger Safety for Universidad de Dagupan.</span>
+        <button type="button" class="banner-cta-link" data-action="scroll-to-roles">Launch 3-Role Demo →</button>
       </div>
     </aside>
 
-    <!-- Firecrawl Style Header / Navbar -->
-    <header class="fc-navbar">
-      <div class="fc-nav-container">
-        <div class="fc-brand">
-          <div class="fc-logo-badge">
-            <span class="fc-flame-icon">${icon('Flame')}</span>
-            <div class="fc-brand-text">UDD<span> Go</span></div>
+    <!-- Navigation Header -->
+    <header class="landing-header">
+      <div class="header-container">
+        <div class="header-brand-wrap">
+          <div class="brand">
+            <span class="brand-icon">${icon('BusFront')}</span>
+            <div>UDD<span> Go</span></div>
           </div>
-          <span class="fc-campus-pill">${icon('School')} Universidad de Dagupan</span>
+          <span class="header-campus-pill">
+            ${icon('School')} Universidad de Dagupan
+          </span>
         </div>
 
-        <nav class="fc-nav-menu" aria-label="Main Navigation">
-          <button type="button" class="fc-menu-item" data-action="scroll-to-playground">Playground</button>
-          <button type="button" class="fc-menu-item" data-action="scroll-to-roles">Role Demos</button>
-          <button type="button" class="fc-menu-item" data-action="scroll-to-features">Features</button>
-          <button type="button" class="fc-menu-item" data-action="scroll-to-corridors">Corridors</button>
-          <button type="button" class="fc-menu-item" data-action="scroll-to-dsa">Architecture</button>
-          <button type="button" class="fc-menu-item" data-action="scroll-to-faq">FAQ</button>
+        <nav class="header-nav-links" aria-label="Main Navigation">
+          <button type="button" class="nav-item-btn" data-action="scroll-to-playground">Simulator</button>
+          <button type="button" class="nav-item-btn" data-action="scroll-to-roles">Demo Roles</button>
+          <button type="button" class="nav-item-btn" data-action="scroll-to-corridors">Active Routes</button>
+          <button type="button" class="nav-item-btn" data-action="scroll-to-dsa">Engineering Pillars</button>
+          <button type="button" class="nav-item-btn" data-action="scroll-to-faq">FAQ</button>
         </nav>
 
-        <div class="fc-nav-actions">
-          <a href="https://github.com/Theshy691/UDD-Go" target="_blank" rel="noopener noreferrer" class="fc-btn-github" title="View source repository on GitHub">
-            ${icon('Star')} <span>Star on GitHub</span>
-            <span class="fc-star-count">★ 1.4k</span>
-          </a>
-          <button type="button" class="fc-btn-primary" data-action="scroll-to-roles">
-            Start Interactive Demo →
+        <div class="header-actions-wrap">
+          <button type="button" class="button header-demo-btn" data-action="scroll-to-roles">
+            ${icon('Play')} Try Demo Roles
           </button>
-          <button type="button" class="fc-btn-portal" data-action="go-login">
-            ${icon('Mail')} Sign In
+          <button type="button" class="button primary header-portal-btn" data-action="go-login">
+            ${icon('Mail')} School Portal
           </button>
         </div>
       </div>
     </header>
 
-    <main class="fc-main">
-      <!-- Section 1: Hero Section -->
-      <section class="fc-hero-section">
-        <div class="fc-hero-glow"></div>
-        <div class="fc-hero-container">
-          <div class="fc-hero-tag">
-            <span class="fc-hero-tag-icon">${icon('Sparkles')}</span>
-            <span>Campus Transit Intelligence · Universidad de Dagupan</span>
+    <main class="landing-main-content">
+      <!-- Hero Section -->
+      <section class="landing-hero-section">
+        <div class="hero-radial-halo"></div>
+        <div class="hero-content-container">
+          <div class="hero-badge-pill">
+            <span class="badge-beacon-dot"></span>
+            <span>Universidad de Dagupan · Campus Transit Operations</span>
           </div>
 
-          <h1 class="fc-hero-title">
-            Give your campus fleet<br/>
-            <span class="fc-gradient-text">real-time intelligence and beyond.</span>
+          <h1 class="hero-main-title">
+            Every student. Every journey.<br/>
+            <span class="hero-title-gradient">Safer, smarter campus transit.</span>
           </h1>
 
-          <p class="fc-hero-desc">
-            The high-performance campus transit platform to track, navigate, and verify student boarding with access to live GPS vehicle telemetry, directed graph stop sequencing, and O(1) passenger manifests. It's also open source.
+          <p class="hero-lead-text">
+            A real-time school transit and passenger safety platform for Universidad de Dagupan. Connecting fleet managers, bus drivers, and students through live GPS telemetry, O(1) digital boarding verification, and automated campus dispatches.
           </p>
 
-          <div class="fc-hero-cta-group">
-            <button type="button" class="fc-cta-heat" data-action="scroll-to-roles">
-              ${icon('Play')} Start Interactive Demo →
+          <div class="hero-cta-buttons">
+            <button type="button" class="button primary hero-btn-primary" data-action="scroll-to-roles">
+              ${icon('Play')} Launch 3 Interactive Demo Roles ${icon('ArrowRight')}
             </button>
-            <button type="button" class="fc-cta-outline" data-action="go-login">
-              ${icon('Mail')} School Portal Login
+            <button type="button" class="button hero-btn-secondary" data-action="go-login">
+              ${icon('Mail')} Sign In with School Account
             </button>
           </div>
 
-          <!-- Social Proof Marquee / Corridors Strip -->
-          <div class="fc-trust-strip">
-            <span class="fc-trust-label">TRANSIT HUBS & ACTIVE CORRIDORS SERVED:</span>
-            <div class="fc-trust-chips">
-              <span class="fc-trust-chip">${icon('MapPin')} Bonuan Tondaligan</span>
-              <span class="fc-trust-chip">${icon('MapPin')} Calasiao Highway</span>
-              <span class="fc-trust-chip">${icon('MapPin')} Lucao District</span>
-              <span class="fc-trust-chip">${icon('MapPin')} Downtown Dagupan</span>
-              <span class="fc-trust-chip high">${icon('School')} UDD Main Campus</span>
+          <!-- Live Corridors Status Strip -->
+          <div class="hero-corridors-bar">
+            <span class="corridors-bar-label">DAGUPAN CITY ARTERIAL CORRIDORS:</span>
+            <div class="corridors-tags-row">
+              <span class="corridor-tag blue">${icon('Route')} Bonuan - Tondaligan</span>
+              <span class="corridor-tag green">${icon('Route')} Calasiao Highway</span>
+              <span class="corridor-tag amber">${icon('Route')} Lucao District</span>
+              <span class="corridor-tag purple">${icon('Route')} Downtown Express</span>
+              <span class="corridor-tag terminus">${icon('School')} UDD Main Campus</span>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Section 2: Interactive Hero Playground (Firecrawl Centerpiece) -->
-      <section class="fc-section" id="playground-section">
-        <div class="fc-section-header">
-          <div class="fc-code-comment">// Transit Operations First //</div>
-          <h2 class="fc-section-title">Start tracking today</h2>
-          <p class="fc-section-desc">
-            The infrastructure layer that helps campus fleet managers, drivers, and students find, navigate, and act on live transit corridors.
+      <!-- Live Counters Strip -->
+      <section class="landing-stats-container">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon-box blue">${icon('Route')}</div>
+            <div class="stat-info">
+              <strong>${routes.length} Active Corridors</strong>
+              <p>Bonuan, Calasiao, Lucao & Downtown</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-box green">${icon('BusFront')}</div>
+            <div class="stat-info">
+              <strong>${totalBuses} Transit Buses</strong>
+              <p>Equipped with GPS telemetry & capacity counters</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-box amber">${icon('MapPin')}</div>
+            <div class="stat-info">
+              <strong>${totalStops} Campus Stops</strong>
+              <p>Designated passenger boarding nodes</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-box purple">${icon('ShieldCheck')}</div>
+            <div class="stat-info">
+              <strong>&lt; 10ms Verification</strong>
+              <p>O(1) duplicate-safe digital boarding pass</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Interactive Transit Simulator (Firecrawl-Style Interactive Widget in System Colors) -->
+      <section class="landing-section" id="playground-section">
+        <div class="section-heading-wrap">
+          <span class="section-category-tag">${icon('Zap')} LIVE TRANSIT SIMULATOR</span>
+          <h2 class="section-title">Test the System in Action</h2>
+          <p class="section-subtitle">
+            Explore live vehicle telemetry, passenger boarding manifests, and graph routing invariants right in this interactive inspector.
           </p>
         </div>
 
-        <div class="fc-playground-card">
-          <!-- Method Selection Bar -->
-          <div class="fc-playground-nav">
-            <button type="button" class="fc-method-tab ${fcHeroTab === 'radar' ? 'active' : ''}" data-action="set-fc-hero-tab" data-id="radar">
+        <div class="simulator-card">
+          <!-- Simulator Mode Navigation Bar -->
+          <div class="simulator-mode-nav">
+            <button type="button" class="sim-mode-btn ${fcHeroTab === 'radar' ? 'active' : ''}" data-action="set-fc-hero-tab" data-id="radar">
               ${icon('Radio')} <span>Live Fleet Radar</span>
             </button>
-            <button type="button" class="fc-method-tab ${fcHeroTab === 'manifest' ? 'active' : ''}" data-action="set-fc-hero-tab" data-id="manifest">
+            <button type="button" class="sim-mode-btn ${fcHeroTab === 'manifest' ? 'active' : ''}" data-action="set-fc-hero-tab" data-id="manifest">
               ${icon('UserRoundCheck')} <span>Boarding Pass Scan</span>
             </button>
-            <button type="button" class="fc-method-tab ${fcHeroTab === 'graph' ? 'active' : ''}" data-action="set-fc-hero-tab" data-id="graph">
+            <button type="button" class="sim-mode-btn ${fcHeroTab === 'graph' ? 'active' : ''}" data-action="set-fc-hero-tab" data-id="graph">
               ${icon('Route')} <span>Graph Stop Sequence</span>
             </button>
-            <button type="button" class="fc-method-tab ${fcHeroTab === 'capacity' ? 'active' : ''}" data-action="set-fc-hero-tab" data-id="capacity">
+            <button type="button" class="sim-mode-btn ${fcHeroTab === 'capacity' ? 'active' : ''}" data-action="set-fc-hero-tab" data-id="capacity">
               ${icon('Gauge')} <span>Capacity Bounds</span>
             </button>
           </div>
 
-          <!-- URL / Endpoint Input Bar -->
-          <div class="fc-endpoint-bar">
-            <span class="fc-method-badge ${currentPlayground.method.toLowerCase()}">${currentPlayground.method}</span>
-            <div class="fc-url-input" title="Current API endpoint">${esc(currentPlayground.url)}</div>
-            <button type="button" class="fc-run-btn" data-action="run-fc-demo">
-              ${icon('Zap')} Run Telemetry
+          <!-- URL / Endpoint Inspector Bar -->
+          <div class="simulator-endpoint-bar">
+            <span class="sim-method-badge ${currentSim.method.toLowerCase()}">${currentSim.method}</span>
+            <div class="sim-url-field">${esc(currentSim.url)}</div>
+            <button type="button" class="button primary sim-refresh-btn" data-action="run-fc-demo">
+              ${icon('Zap')} <span>Refresh Telemetry Beacon</span>
             </button>
           </div>
 
-          <!-- Terminal / Payload Output Window -->
-          <div class="fc-output-window">
-            <div class="fc-output-header">
-              <div class="fc-mac-dots">
-                <span class="fc-dot red"></span>
-                <span class="fc-dot yellow"></span>
-                <span class="fc-dot green"></span>
+          <!-- Output Viewer Window -->
+          <div class="simulator-output-wrap">
+            <div class="sim-output-toolbar">
+              <div class="sim-window-dots">
+                <span class="wdot red"></span>
+                <span class="wdot yellow"></span>
+                <span class="wdot green"></span>
+                <span class="sim-window-label">${esc(currentSim.title)} · <span class="sim-badge-inline">${esc(currentSim.badge)}</span></span>
               </div>
 
-              <div class="fc-output-tabs">
-                <button type="button" class="fc-out-tab ${fcOutputTab === 'json' ? 'active' : ''}" data-action="set-fc-output-tab" data-id="json">
-                  .JSON
+              <div class="sim-format-tabs">
+                <button type="button" class="format-tab-btn ${fcOutputTab === 'json' ? 'active' : ''}" data-action="set-fc-output-tab" data-id="json">
+                  Structured JSON
                 </button>
-                <button type="button" class="fc-out-tab ${fcOutputTab === 'markdown' ? 'active' : ''}" data-action="set-fc-output-tab" data-id="markdown">
-                  .Markdown
+                <button type="button" class="format-tab-btn ${fcOutputTab === 'markdown' ? 'active' : ''}" data-action="set-fc-output-tab" data-id="markdown">
+                  Manifest Summary
                 </button>
               </div>
 
-              <button type="button" class="fc-copy-btn" data-action="copy-code" data-id="${esc(fcOutputTab === 'json' ? currentPlayground.json : currentPlayground.markdown)}" title="Copy payload">
+              <button type="button" class="sim-copy-btn" data-action="copy-code" data-id="${esc(fcOutputTab === 'json' ? currentSim.json : currentSim.markdown)}" title="Copy output">
                 ${icon('Copy')} Copy
               </button>
             </div>
 
-            <div class="fc-output-body">
-              <pre class="fc-code-block"><code>${esc(fcOutputTab === 'json' ? currentPlayground.json : currentPlayground.markdown)}</code></pre>
+            <div class="sim-output-body">
+              <pre class="sim-code-content"><code>${esc(fcOutputTab === 'json' ? currentSim.json : currentSim.markdown)}</code></pre>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Section 3: Performance Highlights (Fast, reliable, token-efficient) -->
-      <section class="fc-section" id="features-section">
-        <div class="fc-section-header">
-          <div class="fc-code-comment">// Built for Performance //</div>
-          <h2 class="fc-section-title">Fast, reliable, O(1) boarding. And it's open source.</h2>
-          <p class="fc-section-desc">
-            Campus mobility infrastructure built from the ground up for Universidad de Dagupan.
+      <!-- The 3 Operational Roles Showcase (Main Attraction for Presentations) -->
+      <section class="landing-section" id="demo-roles-section">
+        <div class="section-heading-wrap">
+          <span class="section-category-tag blue">${icon('Radio')} 1-CLICK INTERACTIVE ROLES</span>
+          <h2 class="section-title">Explore All 3 Operational Views</h2>
+          <p class="section-subtitle">
+            Experience the system from all operational perspectives. Click any panel below to instantly launch the live interactive console with pre-loaded campus data.
           </p>
         </div>
 
-        <div class="fc-perf-grid">
-          <div class="fc-perf-card">
-            <div class="fc-perf-icon orange">${icon('Activity')}</div>
-            <h3>Reliable on any corridor</h3>
-            <p>
-              Engineered with zero-loss PWA offline storage. Drivers and students maintain live manifests and schedules even during cellular drops in coastal or highway corridors.
-            </p>
-            <div class="fc-perf-metric">99.9% Telemetry Uptime</div>
-          </div>
-
-          <div class="fc-perf-card">
-            <div class="fc-perf-icon blue">${icon('Zap')}</div>
-            <h3>&lt; 10ms O(1) Manifest Verification</h3>
-            <p>
-              Pre-indexed in-memory hash tables coupled with PostgreSQL atomic compound keys. Validates passenger IDs and rejects duplicate boarding in sub-10ms latency.
-            </p>
-            <div class="fc-perf-metric">&lt; 10ms Boarding Latency</div>
-          </div>
-
-          <div class="fc-perf-card">
-            <div class="fc-perf-icon green">${icon('ShieldCheck')}</div>
-            <h3>Strict Seating Invariants</h3>
-            <p>
-              Mathematical capacity enforcement ($O(N)$ bounds) ensures vehicle safety limits are never breached during passenger seat reservation or morning rush pickups.
-            </p>
-            <div class="fc-perf-metric">Zero Overbooking</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 4: Bento Grid ("We handle the hard stuff") -->
-      <section class="fc-section" id="dsa-section">
-        <div class="fc-section-header">
-          <div class="fc-code-comment">// Zero Configuration //</div>
-          <h2 class="fc-section-title">We handle the hard stuff</h2>
-          <p class="fc-section-desc">
-            Graph sequence validation, real-time GPS telemetry, student privacy RLS, driver beacon synchronization, and more.
-          </p>
-        </div>
-
-        <div class="fc-bento-grid">
-          <div class="fc-bento-item wide">
-            <div class="fc-bento-header">
-              <span class="fc-bento-badge">${icon('Route')} Directed Acyclic Graph</span>
-              <h3>Directed Graph Stop Sequencing (O(V + E))</h3>
-            </div>
-            <p>
-              Stops along each corridor are ordered as a topological directed graph with strictly monotonic sequence indices. Prevents out-of-order pickups, loops, or reversed routes.
-            </p>
-            <div class="fc-bento-preview-pill">
-              <code>Tondaligan → Gueset → AB Fernandez → Arellano → UDD Main Campus</code>
-            </div>
-          </div>
-
-          <div class="fc-bento-item">
-            <div class="fc-bento-header">
-              <span class="fc-bento-badge">${icon('UserRoundCheck')} Hash Maps</span>
-              <h3>O(1) Manifest Hashing</h3>
-            </div>
-            <p>
-              Instant digital student ID validation without full table scans. Prevents double-scans and guards passenger safety.
-            </p>
-          </div>
-
-          <div class="fc-bento-item">
-            <div class="fc-bento-header">
-              <span class="fc-bento-badge">${icon('Shield')} Zero-Trust Security</span>
-              <h3>PostgreSQL Row-Level Security</h3>
-            </div>
-            <p>
-              Supabase RLS policies guarantee student privacy. Personal itineraries are hidden from other students and outsiders.
-            </p>
-          </div>
-
-          <div class="fc-bento-item wide">
-            <div class="fc-bento-header">
-              <span class="fc-bento-badge">${icon('CalendarDays')} Scheduling Engine</span>
-              <h3>Autonomous AM/PM Service Dispatches</h3>
-            </div>
-            <p>
-              Deterministic trip dispatches synchronized with the Universidad de Dagupan academic calendar. Handles holidays, vehicle substitutions, and driver handovers.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 5: The 3 Operational Roles Showcase -->
-      <section class="fc-section" id="demo-roles-section">
-        <div class="fc-section-header">
-          <div class="fc-code-comment">// Operational Roles //</div>
-          <h2 class="fc-section-title">Transform campus transit into a unified mobility experience</h2>
-          <p class="fc-section-desc">
-            See how you can empower your campus transport with UDD Go's three dedicated operational panels. Click any card to launch the live demo immediately.
-          </p>
-        </div>
-
-        <div class="fc-roles-grid">
+        <div class="roles-cards-grid">
           <!-- Administrator Role Card -->
-          <article class="fc-role-card admin">
-            <div class="fc-role-glow"></div>
-            <div class="fc-role-top">
-              <div class="fc-role-icon admin">${icon('LayoutDashboard')}</div>
-              <div>
-                <span class="fc-role-category">OPERATIONS COMMAND</span>
-                <h3>Fleet Administrator</h3>
+          <article class="role-showcase-card admin">
+            <div class="role-card-accent-bar admin"></div>
+            <div class="role-card-content">
+              <div class="role-header-row">
+                <div class="role-icon-box admin">${icon('LayoutDashboard')}</div>
+                <div>
+                  <span class="role-category-label admin">OPERATIONS COMMAND</span>
+                  <h3>Fleet Administrator</h3>
+                </div>
+              </div>
+
+              <div class="role-profile-chip">
+                <span class="role-profile-avatar">${icon('UserRoundCheck')}</span>
+                <div>
+                  <strong>Alex Morgan</strong>
+                  <span>admin@udd.edu.ph</span>
+                </div>
+              </div>
+
+              <p class="role-card-summary">
+                Centralized transit operations command. Oversee real-time GPS fleet radar, manage dispatch schedules, reorder stops with Leaflet, and monitor vehicle maintenance health.
+              </p>
+
+              <ul class="role-feature-list">
+                <li>${icon('Check')} <strong>Live GPS Radar:</strong> Real-time bus telemetry across Dagupan City</li>
+                <li>${icon('Check')} <strong>Dynamic Route Editor:</strong> Topological stop sequencing ($O(V+E)$)</li>
+                <li>${icon('Check')} <strong>Service Calendar:</strong> Automated AM/PM dispatch generation</li>
+                <li>${icon('Check')} <strong>Fleet Health:</strong> Monotonic odometer & maintenance threshold alerts</li>
+              </ul>
+
+              <div class="role-launch-wrap">
+                <button type="button" class="button primary full role-launch-button admin" data-action="quick-login" data-id="admin">
+                  ${icon('LayoutDashboard')} Launch Admin Console ${icon('ArrowRight')}
+                </button>
               </div>
             </div>
-
-            <div class="fc-role-account-pill">
-              <span class="fc-role-user-avatar">${icon('UserRoundCheck')}</span>
-              <span><strong>Alex Morgan</strong> · admin@udd.edu.ph</span>
-            </div>
-
-            <p class="fc-role-desc">
-              Centralized operations command. Monitor live GPS fleet radar, edit Leaflet stop coordinates, generate dispatches, and track preventive maintenance intervals.
-            </p>
-
-            <ul class="fc-role-features">
-              <li>${icon('Check')} <strong>Live GPS Radar:</strong> Real-time bus telemetry across Dagupan City</li>
-              <li>${icon('Check')} <strong>Dynamic Sequence Editor:</strong> Topological stop sequencing ($O(V+E)$)</li>
-              <li>${icon('Check')} <strong>Academic Calendar:</strong> Automated AM/PM dispatch generation</li>
-              <li>${icon('Check')} <strong>Fleet Health:</strong> Monotonic odometer & maintenance threshold alerts</li>
-            </ul>
-
-            <button type="button" class="fc-role-btn admin" data-action="quick-login" data-id="admin">
-              ${icon('LayoutDashboard')} Launch Admin Console ${icon('ArrowRight')}
-            </button>
           </article>
 
           <!-- Driver Role Card -->
-          <article class="fc-role-card driver">
-            <div class="fc-role-glow"></div>
-            <div class="fc-role-top">
-              <div class="fc-role-icon driver">${icon('BusFront')}</div>
-              <div>
-                <span class="fc-role-category">IN-CABIN COCKPIT</span>
-                <h3>School Bus Driver</h3>
+          <article class="role-showcase-card driver">
+            <div class="role-card-accent-bar driver"></div>
+            <div class="role-card-content">
+              <div class="role-header-row">
+                <div class="role-icon-box driver">${icon('BusFront')}</div>
+                <div>
+                  <span class="role-category-label driver">IN-CABIN COCKPIT</span>
+                  <h3>School Bus Driver</h3>
+                </div>
+              </div>
+
+              <div class="role-profile-chip">
+                <span class="role-profile-avatar">${icon('BusFront')}</span>
+                <div>
+                  <strong>Roberto Santos</strong>
+                  <span>driver@udd.edu.ph</span>
+                </div>
+              </div>
+
+              <p class="role-card-summary">
+                Touch-first cabin cockpit for transit drivers. Step-by-step stop manifests, rapid 1-tap passenger manifest check-in, live GPS beacon sharing, and post-trip cabin safety check.
+              </p>
+
+              <ul class="role-feature-list">
+                <li>${icon('Check')} <strong>Stop Manifest:</strong> Sequential stop list with passenger tallies</li>
+                <li>${icon('Check')} <strong>1-Tap Boarding:</strong> Rapid check-in with atomic duplicate protection</li>
+                <li>${icon('Check')} <strong>GPS Beacon:</strong> High-precision location broadcasting from device</li>
+                <li>${icon('Check')} <strong>Cabin Verification:</strong> Post-trip confirmation ensuring 0 students left</li>
+              </ul>
+
+              <div class="role-launch-wrap">
+                <button type="button" class="button primary full role-launch-button driver" data-action="quick-login" data-id="driver">
+                  ${icon('BusFront')} Launch Driver Cockpit ${icon('ArrowRight')}
+                </button>
               </div>
             </div>
-
-            <div class="fc-role-account-pill">
-              <span class="fc-role-user-avatar">${icon('BusFront')}</span>
-              <span><strong>Roberto Santos</strong> · driver@udd.edu.ph</span>
-            </div>
-
-            <p class="fc-role-desc">
-              Touch-first in-cabin cockpit for transit drivers. Turn-by-turn stop manifests, rapid 1-tap boarding pass check-ins, GPS beacon sharing, and post-trip cabin safety checks.
-            </p>
-
-            <ul class="fc-role-features">
-              <li>${icon('Check')} <strong>Turn-by-Turn Manifest:</strong> Sequential stop list with passenger tallies</li>
-              <li>${icon('Check')} <strong>1-Tap Boarding:</strong> Rapid check-in with atomic duplicate protection</li>
-              <li>${icon('Check')} <strong>Live GPS Beacon:</strong> Hardware-accelerated location broadcasting</li>
-              <li>${icon('Check')} <strong>Cabin Verification:</strong> Post-trip confirmation ensuring 0 students left</li>
-            </ul>
-
-            <button type="button" class="fc-role-btn driver" data-action="quick-login" data-id="driver">
-              ${icon('BusFront')} Launch Driver Cockpit ${icon('ArrowRight')}
-            </button>
           </article>
 
           <!-- Student Role Card -->
-          <article class="fc-role-card student">
-            <div class="fc-role-glow"></div>
-            <div class="fc-role-top">
-              <div class="fc-role-icon student">${icon('GraduationCap')}</div>
-              <div>
-                <span class="fc-role-category">PASSENGER JOURNEY</span>
-                <h3>Student & Parent</h3>
+          <article class="role-showcase-card student">
+            <div class="role-card-accent-bar student"></div>
+            <div class="role-card-content">
+              <div class="role-header-row">
+                <div class="role-icon-box student">${icon('GraduationCap')}</div>
+                <div>
+                  <span class="role-category-label student">PASSENGER JOURNEY</span>
+                  <h3>Student & Parent</h3>
+                </div>
+              </div>
+
+              <div class="role-profile-chip">
+                <span class="role-profile-avatar">${icon('GraduationCap')}</span>
+                <div>
+                  <strong>Isabella Santos</strong>
+                  <span>student@udd.edu.ph</span>
+                </div>
+              </div>
+
+              <p class="role-card-summary">
+                Live journey radar for campus families. Monitor approaching buses, view live estimated arrival times (ETA), display digital passenger boarding pass, and get safety alerts.
+              </p>
+
+              <ul class="role-feature-list">
+                <li>${icon('Check')} <strong>Bus Radar & ETA:</strong> Live distance and approaching bus countdown</li>
+                <li>${icon('Check')} <strong>Digital Boarding Pass:</strong> Tokenized student ID pass</li>
+                <li>${icon('Check')} <strong>Journey Telemetry HUD:</strong> Outbound and return route progress</li>
+                <li>${icon('Check')} <strong>Safety Alerts:</strong> Push notifications for boarding & drop-offs</li>
+              </ul>
+
+              <div class="role-launch-wrap">
+                <button type="button" class="button primary full role-launch-button student" data-action="quick-login" data-id="student">
+                  ${icon('GraduationCap')} Launch Student Portal ${icon('ArrowRight')}
+                </button>
               </div>
             </div>
-
-            <div class="fc-role-account-pill">
-              <span class="fc-role-user-avatar">${icon('GraduationCap')}</span>
-              <span><strong>Isabella Santos</strong> · student@udd.edu.ph</span>
-            </div>
-
-            <p class="fc-role-desc">
-              Live journey radar for campus families. Monitor approaching buses, view live estimated arrival times (ETA), display digital passenger boarding pass, and get safety alerts.
-            </p>
-
-            <ul class="fc-role-features">
-              <li>${icon('Check')} <strong>Bus Radar & ETA:</strong> Live distance and approaching bus countdown</li>
-              <li>${icon('Check')} <strong>Digital Boarding Pass:</strong> Tokenized student ID pass</li>
-              <li>${icon('Check')} <strong>Journey Telemetry HUD:</strong> Outbound and return route progress</li>
-              <li>${icon('Check')} <strong>Safety Alerts:</strong> Push notifications for boarding & drop-offs</li>
-            </ul>
-
-            <button type="button" class="fc-role-btn student" data-action="quick-login" data-id="student">
-              ${icon('GraduationCap')} Launch Student Portal ${icon('ArrowRight')}
-            </button>
           </article>
         </div>
       </section>
 
-      <!-- Section 6: Connect with SDKs (Developer Code Snippets) -->
-      <section class="fc-section">
-        <div class="fc-section-header">
-          <div class="fc-code-comment">// Developer First //</div>
-          <h2 class="fc-section-title">Easily connect with your campus fleet</h2>
-          <p class="fc-section-desc">
-            Integrate with our lightweight SDKs or direct Supabase Realtime channels in seconds.
+      <!-- Active Campus Corridors Network -->
+      <section class="landing-section" id="corridors-section">
+        <div class="section-heading-wrap">
+          <span class="section-category-tag green">${icon('Route')} CAMPUS TRANSIT NETWORK</span>
+          <h2 class="section-title">Active Dagupan City Corridors</h2>
+          <p class="section-subtitle">
+            4 dedicated arterial routes connecting student residential communities, commercial centers, and terminals directly to Universidad de Dagupan Main Campus.
           </p>
         </div>
 
-        <div class="fc-sdk-card">
-          <div class="fc-sdk-tabs">
-            <button type="button" class="fc-sdk-tab ${fcCodeLang === 'python' ? 'active' : ''}" data-action="set-fc-code-lang" data-id="python">
-              Python
-            </button>
-            <button type="button" class="fc-sdk-tab ${fcCodeLang === 'node' ? 'active' : ''}" data-action="set-fc-code-lang" data-id="node">
-              Node.js
-            </button>
-            <button type="button" class="fc-sdk-tab ${fcCodeLang === 'curl' ? 'active' : ''}" data-action="set-fc-code-lang" data-id="curl">
-              cURL
-            </button>
-            <button type="button" class="fc-sdk-tab ${fcCodeLang === 'sql' ? 'active' : ''}" data-action="set-fc-code-lang" data-id="sql">
-              SQL (RLS)
-            </button>
-          </div>
-
-          <div class="fc-sdk-body">
-            <pre class="fc-code-block"><code>${esc(codeSnippets[fcCodeLang] || codeSnippets.python)}</code></pre>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 7: Dagupan City Corridors Network -->
-      <section class="fc-section" id="corridors-section">
-        <div class="fc-section-header">
-          <div class="fc-code-comment">// Transit Corridors //</div>
-          <h2 class="fc-section-title">Connected Dagupan City Corridors</h2>
-          <p class="fc-section-desc">
-            4 dedicated arterial routes connecting student residential zones, transport terminals, and commercial hubs directly to Universidad de Dagupan Main Campus.
-          </p>
-        </div>
-
-        <div class="fc-corridors-grid">
+        <div class="corridors-grid">
           ${routes.map(r => {
             const stops = stopsFor(r.id);
             const bus = store.data.buses.find(b => b.id === r.bus_id);
             const driver = person(r.driver_id);
             return `
-              <div class="fc-corridor-card">
-                <div class="fc-corridor-top">
-                  <div class="fc-corridor-title-row">
-                    <span class="fc-route-dot" style="background:${safeColor(r.color)}"></span>
-                    <h4>${esc(r.route_name)}</h4>
+              <div class="corridor-card">
+                <div class="corridor-color-line" style="background:${safeColor(r.color)}"></div>
+                <div class="corridor-body">
+                  <div class="corridor-header">
+                    <div class="corridor-title-group">
+                      <span class="corridor-dot" style="background:${safeColor(r.color)}"></span>
+                      <h4>${esc(r.route_name)}</h4>
+                    </div>
+                    <span class="badge ${r.status === 'active' ? 'active' : 'idle'}">
+                      ${r.status === 'active' ? '● Active' : 'Scheduled'}
+                    </span>
                   </div>
-                  <span class="fc-badge-status ${r.status === 'active' ? 'active' : 'idle'}">
-                    ${r.status === 'active' ? '● Active' : 'Scheduled'}
-                  </span>
-                </div>
 
-                <div class="fc-corridor-meta">
-                  <span>${icon('MapPin')} ${stops.length} Designated Stops</span>
-                  <span>${icon('BusFront')} ${esc(bus?.label || 'Bus')} (${bus?.capacity || 28} seats)</span>
-                  <span>${icon('UserRoundCheck')} ${esc(driver?.name || 'Assigned Driver')}</span>
-                </div>
+                  <div class="corridor-meta-tags">
+                    <span>${icon('MapPin')} ${stops.length} Designated Stops</span>
+                    <span>${icon('BusFront')} ${esc(bus?.label || 'Bus')} (${bus?.capacity || 28} seats)</span>
+                    <span>${icon('UserRoundCheck')} ${esc(driver?.name || 'Driver')}</span>
+                  </div>
 
-                <div class="fc-corridor-stops">
-                  ${stops.slice(0, 3).map(s => `
-                    <div class="fc-stop-item">
-                      <span class="fc-stop-bullet"></span>
-                      <span>${esc(s.stop_name)}</span>
-                    </div>
-                  `).join('')}
-                  ${stops.length > 3 ? `
-                    <div class="fc-stop-item terminus">
-                      <span class="fc-stop-bullet terminus"></span>
-                      <span>+ ${stops.length - 3} more stops → UDD Main Campus</span>
-                    </div>
-                  ` : ''}
+                  <div class="corridor-stops-preview">
+                    ${stops.slice(0, 3).map(s => `
+                      <div class="stop-preview-node">
+                        <span class="stop-bullet"></span>
+                        <span>${esc(s.stop_name)}</span>
+                      </div>
+                    `).join('')}
+                    ${stops.length > 3 ? `
+                      <div class="stop-preview-node terminus">
+                        <span class="stop-bullet terminus"></span>
+                        <span>+ ${stops.length - 3} more stops → UDD Main Campus</span>
+                      </div>
+                    ` : ''}
+                  </div>
                 </div>
               </div>
             `;
@@ -1012,80 +912,74 @@ CREATE POLICY "students_view_own_assigned_trip"
         </div>
       </section>
 
-      <!-- Section 8: Campus Community Reviews -->
-      <section class="fc-section">
-        <div class="fc-section-header">
-          <div class="fc-code-comment">// Campus Community //</div>
-          <h2 class="fc-section-title">Loved by Universidad de Dagupan</h2>
-          <p class="fc-section-desc">
-            Discover why commuter students, drivers, and administrators rely on UDD Go every day.
+      <!-- Engineering & DSA Architecture Pillars -->
+      <section class="landing-section" id="dsa-section">
+        <div class="section-heading-wrap">
+          <span class="section-category-tag purple">${icon('ShieldCheck')} CAPSTONE ARCHITECTURE</span>
+          <h2 class="section-title">Built on Rigorous Data Structures & Algorithms</h2>
+          <p class="section-subtitle">
+            Designed according to formal ITECC04 computer science specifications with database-level invariants.
           </p>
         </div>
 
-        <div class="fc-reviews-grid">
-          <div class="fc-review-card">
-            <div class="fc-review-header">
-              <div class="fc-reviewer-avatar">MS</div>
-              <div>
-                <strong>Maria Santos</strong>
-                <span>@maria_santos · BSIT 3rd Year</span>
-              </div>
-            </div>
+        <div class="pillars-grid">
+          <div class="pillar-box">
+            <div class="pillar-icon-wrap blue">${icon('Route')}</div>
+            <h3>Directed Graph Stop Sequencing</h3>
+            <span class="complexity-pill">O(V + E) Bound</span>
             <p>
-              "Tracking Bus 101 on the Bonuan corridor right from my phone means no more guessing in the morning or waiting in the rain at Tondaligan. The dynamic arrival countdown is spot-on."
+              Stops are structured as a topological directed graph, guaranteeing strictly monotonic vehicle transit and preventing invalid reverse loops.
             </p>
-            <div class="fc-review-tag">${icon('GraduationCap')} Commuter Student</div>
           </div>
 
-          <div class="fc-review-card">
-            <div class="fc-review-header">
-              <div class="fc-reviewer-avatar">RS</div>
-              <div>
-                <strong>Roberto Santos</strong>
-                <span>@roberto_driver · Campus Fleet Driver</span>
-              </div>
-            </div>
+          <div class="pillar-box">
+            <div class="pillar-icon-wrap green">${icon('UserRoundCheck')}</div>
+            <h3>O(1) Hash Table Boarding Pass</h3>
+            <span class="complexity-pill">O(1) Verification</span>
             <p>
-              "The 1-tap boarding pass check-in is lightning fast. No paper manifests, no double counts, and the end-of-trip cabin sweep confirmation ensures every child is safely accounted for."
+              Passenger manifests are pre-indexed in memory hash maps for instantaneous QR/ID boarding verification and atomic duplicate check-in rejection.
             </p>
-            <div class="fc-review-tag">${icon('BusFront')} Senior Fleet Driver</div>
           </div>
 
-          <div class="fc-review-card">
-            <div class="fc-review-header">
-              <div class="fc-reviewer-avatar">AM</div>
-              <div>
-                <strong>Alex Morgan</strong>
-                <span>@alex_ops · Operations Lead</span>
-              </div>
-            </div>
+          <div class="pillar-box">
+            <div class="pillar-icon-wrap amber">${icon('Gauge')}</div>
+            <h3>Dynamic Capacity Limits</h3>
+            <span class="complexity-pill">O(N) Invariant</span>
             <p>
-              "The directed graph stop sequence and automated AM/PM dispatches completely overhauled our Dagupan transit schedule. The Capstone committee loved the formal DSA modeling."
+              Mathematical capacity enforcement ensures physical vehicle seating limits are never breached during registration or reservation.
             </p>
-            <div class="fc-review-tag">${icon('LayoutDashboard')} Fleet Administrator</div>
+          </div>
+
+          <div class="pillar-box">
+            <div class="pillar-icon-wrap purple">${icon('ShieldCheck')}</div>
+            <h3>PostgreSQL Row-Level Security</h3>
+            <span class="complexity-pill">Zero-Trust RLS</span>
+            <p>
+              Supabase Row-Level Security isolates student profiles, hides unassigned routes, and restricts vehicle telemetry publishing to authorized drivers.
+            </p>
           </div>
         </div>
       </section>
 
-      <!-- Section 9: Frequently Asked Questions (Accordion) -->
-      <section class="fc-section" id="faq-section">
-        <div class="fc-section-header">
-          <div class="fc-code-comment">// FAQ //</div>
-          <h2 class="fc-section-title">Frequently asked questions</h2>
-          <p class="fc-section-desc">
+      <!-- Frequently Asked Questions Accordion -->
+      <section class="landing-section" id="faq-section">
+        <div class="section-heading-wrap">
+          <span class="section-category-tag">${icon('CircleHelp')} FREQUENTLY ASKED QUESTIONS</span>
+          <h2 class="section-title">Frequently Asked Questions</h2>
+          <p class="section-subtitle">
             Everything you need to know about UDD Go and the ITECC04 Capstone Project.
           </p>
         </div>
 
-        <div class="fc-faq-list">
+        <div class="faq-accordion-list">
           ${faqs.map((f, idx) => `
-            <div class="fc-faq-item ${fcFaqOpen === idx ? 'open' : ''}">
-              <button type="button" class="fc-faq-question" data-action="toggle-fc-faq" data-id="${idx}">
+            <div class="faq-card-item ${fcFaqOpen === idx ? 'open' : ''}">
+              <button type="button" class="faq-question-btn" data-action="toggle-fc-faq" data-id="${idx}">
                 <span>${esc(f.q)}</span>
-                <span class="fc-faq-chevron">${icon(fcFaqOpen === idx ? 'ChevronDown' : 'ChevronRight')}</span>
+                <span class="faq-chevron-icon">${icon(fcFaqOpen === idx ? 'ChevronDown' : 'ChevronRight')}</span>
               </button>
               ${fcFaqOpen === idx ? `
-                <div class="fc-faq-answer">
+                <div class="faq-answer-content">
                   <p>${esc(f.a)}</p>
                 </div>
               ` : ''}
@@ -1094,92 +988,97 @@ CREATE POLICY "students_view_own_assigned_trip"
         </div>
       </section>
 
-      <!-- Section 10: Bottom Call-To-Action Banner (Firecrawl Flame Glow) -->
-      <section class="fc-cta-banner-section">
-        <div class="fc-cta-banner-glow"></div>
-        <div class="fc-cta-banner-box">
-          <h2>Ready to upgrade your campus transit?</h2>
-          <p>
-            Launch the interactive 3-role demo now or explore the developer API. Built for Universidad de Dagupan.
-          </p>
-          <div class="fc-cta-actions">
-            <button type="button" class="fc-cta-heat" data-action="scroll-to-roles">
-              ${icon('Play')} Start Interactive Demo →
-            </button>
-            <button type="button" class="fc-cta-outline" data-action="go-login">
-              ${icon('Mail')} Sign in with School Credentials
-            </button>
+      <!-- Bottom Call To Action Banner -->
+      <section class="landing-bottom-cta-wrap">
+        <div class="bottom-cta-box">
+          <div class="bottom-cta-halo"></div>
+          <div class="bottom-cta-inner">
+            <h2>Ready to experience next-generation campus transit?</h2>
+            <p>
+              Launch the interactive 3-role demo now or sign in to your official Universidad de Dagupan workspace.
+            </p>
+            <div class="bottom-cta-buttons">
+              <button type="button" class="button primary bottom-btn-main" data-action="scroll-to-roles">
+                ${icon('Play')} Explore Demo Roles ${icon('ArrowRight')}
+              </button>
+              <button type="button" class="button bottom-btn-sub" data-action="go-login">
+                ${icon('Mail')} Sign in with School Account
+              </button>
+            </div>
           </div>
         </div>
       </section>
     </main>
 
-    <!-- Firecrawl Style Deep Dark Footer -->
-    <footer class="fc-footer">
-      <div class="fc-footer-container">
-        <div class="fc-footer-top">
-          <div class="fc-footer-brand-col">
-            <div class="fc-brand">
-              <span class="fc-flame-icon">${icon('Flame')}</span>
-              <div class="fc-brand-text">UDD<span> Go</span></div>
+    <!-- Campus Footer -->
+    <footer class="landing-footer">
+      <div class="footer-inner-container">
+        <div class="footer-main-row">
+          <div class="footer-brand-column">
+            <div class="brand">
+              <span class="brand-icon">${icon('BusFront')}</span>
+              <div>UDD<span> Go</span></div>
             </div>
-            <p class="fc-footer-tagline">
-              Next-generation campus mobility and passenger safety platform for Universidad de Dagupan.
+            <p class="footer-subtext">
+              Official Campus Transit Operations Platform of Universidad de Dagupan.
             </p>
-            <div class="fc-footer-status">
-              <span class="fc-status-dot"></span>
-              <span>All systems operational · Manila (UTC+8)</span>
+            <div class="footer-campus-location">
+              ${icon('MapPin')} Arellano Street, Dagupan City, Pangasinan 2400, Philippines
+            </div>
+            <div class="footer-operational-pill">
+              <span class="footer-live-dot"></span>
+              <span>All campus routes operational · Manila (UTC+8)</span>
             </div>
           </div>
 
-          <div class="fc-footer-links-grid">
-            <div class="fc-footer-col">
-              <h4>Platform</h4>
+          <div class="footer-navigation-grid">
+            <div class="footer-nav-col">
+              <h4>System Views</h4>
               <ul>
-                <li><button type="button" class="fc-footer-link" data-action="scroll-to-playground">Playground</button></li>
-                <li><button type="button" class="fc-footer-link" data-action="scroll-to-features">Features</button></li>
-                <li><button type="button" class="fc-footer-link" data-action="scroll-to-corridors">Active Routes</button></li>
-                <li><button type="button" class="fc-footer-link" data-action="scroll-to-faq">FAQ</button></li>
+                <li><button type="button" class="footer-link" data-action="quick-login" data-id="admin">Admin Console</button></li>
+                <li><button type="button" class="footer-link" data-action="quick-login" data-id="driver">Driver Cockpit</button></li>
+                <li><button type="button" class="footer-link" data-action="quick-login" data-id="student">Student Radar</button></li>
+                <li><button type="button" class="footer-link" data-action="go-login">School Portal</button></li>
               </ul>
             </div>
 
-            <div class="fc-footer-col">
-              <h4>Operational Roles</h4>
+            <div class="footer-nav-col">
+              <h4>Corridors</h4>
               <ul>
-                <li><button type="button" class="fc-footer-link" data-action="quick-login" data-id="admin">Admin Console</button></li>
-                <li><button type="button" class="fc-footer-link" data-action="quick-login" data-id="driver">Driver Cockpit</button></li>
-                <li><button type="button" class="fc-footer-link" data-action="quick-login" data-id="student">Student Radar</button></li>
-                <li><button type="button" class="fc-footer-link" data-action="go-login">School Portal</button></li>
+                <li><button type="button" class="footer-link" data-action="scroll-to-corridors">Bonuan - Tondaligan</button></li>
+                <li><button type="button" class="footer-link" data-action="scroll-to-corridors">Calasiao Highway</button></li>
+                <li><button type="button" class="footer-link" data-action="scroll-to-corridors">Lucao District</button></li>
+                <li><button type="button" class="footer-link" data-action="scroll-to-corridors">Downtown Dagupan</button></li>
               </ul>
             </div>
 
-            <div class="fc-footer-col">
-              <h4>Engineering & DSA</h4>
+            <div class="footer-nav-col">
+              <h4>Engineering Pillars</h4>
               <ul>
-                <li><span class="fc-footer-static">Directed Graph: O(V+E)</span></li>
-                <li><span class="fc-footer-static">Manifest Hashing: O(1)</span></li>
-                <li><span class="fc-footer-static">Capacity Invariant: O(N)</span></li>
-                <li><span class="fc-footer-static">Supabase RLS Security</span></li>
+                <li><span class="footer-meta-item">Directed Graph (O(V+E))</span></li>
+                <li><span class="footer-meta-item">Manifest Hashing (O(1))</span></li>
+                <li><span class="footer-meta-item">Capacity Bounds (O(N))</span></li>
+                <li><span class="footer-meta-item">Supabase Row-Level Security</span></li>
               </ul>
             </div>
 
-            <div class="fc-footer-col">
-              <h4>Campus</h4>
+            <div class="footer-nav-col">
+              <h4>Institutional</h4>
               <ul>
-                <li><span class="fc-footer-static">Universidad de Dagupan</span></li>
-                <li><span class="fc-footer-static">Arellano Street, Dagupan</span></li>
-                <li><span class="fc-footer-static">Pangasinan 2400, Philippines</span></li>
-                <li><button type="button" class="fc-footer-link" data-action="help">Help & Guidelines</button></li>
+                <li><span class="footer-meta-item">Universidad de Dagupan</span></li>
+                <li><span class="footer-meta-item">ITECC04 Capstone Project</span></li>
+                <li><button type="button" class="footer-link" data-action="help">Help & Guidelines</button></li>
+                <li><button type="button" class="footer-link" data-action="setup">Supabase Deployment</button></li>
               </ul>
             </div>
           </div>
         </div>
 
-        <div class="fc-footer-bottom">
+        <div class="footer-copyright-bar">
           <span>© ${new Date().getFullYear()} Universidad de Dagupan · ITECC04 Data Structure and Algorithm Capstone.</span>
-          <div class="fc-footer-badges">
-            <span class="fc-fbadge">${icon('Flame')} Firecrawl Inspired UI</span>
-            <span class="fc-fbadge">${icon('ShieldCheck')} Zero-Trust Security</span>
+          <div class="footer-cert-badges">
+            <span class="footer-cert-pill">${icon('Radio')} Live Demo Ready</span>
+            <span class="footer-cert-pill">${icon('ShieldCheck')} RLS Protected</span>
           </div>
         </div>
       </div>
