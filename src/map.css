@@ -22,8 +22,24 @@
 .tracking-layout > .map-wrap {
   height: 430px;
 }
+.portal-main-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.portal-map {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  align-self: start;
+  width: 100%;
+}
 .portal-map .map-wrap {
-  height: 500px;
+  height: 480px;
+}
+.portal-grid.map-expanded .portal-map .map-wrap {
+  height: 700px;
 }
 .map-wrap .map-toolbar {
   top: 18px;
@@ -538,7 +554,7 @@
 
 @media(max-width:720px) {
   .tracking-layout > .map-wrap { height: 380px; }
-  .portal-map .map-wrap { height: 400px; }
+  .portal-map .map-wrap { height: 380px; }
   .map-wrap .map-toolbar { top: 14px; left: 14px; right: 14px; gap: 8px; }
   .map-filter { min-width: 0; gap: 8px; padding: 0 11px; max-width: calc(100% - 54px); }
   .map-toolbar .map-filter > select { font-size: 11px; max-width: 180px; }
