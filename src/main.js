@@ -18,7 +18,7 @@ const mountIcons = () => createIcons({icons:iconSet,attrs:{'aria-hidden':'true',
 const app = document.querySelector('#app');
 let page = 'overview', selectedBus = 'bus-1', routeFilter = '', busFilter = 'all', query = '';
 let fleetMap = null, modalMap = null, modalCleanup = null, modalReturnFocus = null, toastTimer, gpsWatch = null, gpsNative = false, gpsRouteId = null, simulatedStep = 0;
-let routeDraft = [], portalTripId = '', loginRole = 'admin', loginMethod = 'quick', portalExpanded = false;
+let routeDraft = [], portalTripId = '', loginRole = 'admin', loginMethod = 'quick', portalExpanded = false, publicView = 'landing';
 const titles = {overview:'Overview',trips:'Trips & history',services:'Services & calendar',fleet:'Fleet management',routes:'Routes & stops',students:'Students',drivers:'Drivers',maintenance:'Maintenance',activity:'Activity log',settings:'Settings',driver:'My route',student:'My journey'};
 const statusNames = {active:'On route',idle:'Available',maintenance:'Maintenance',scheduled:'Scheduled',completed:'Completed',boarded:'On board',assigned:'Assigned',overdue:'Overdue',due_soon:'Due soon',healthy:'Up to date',expected:'Expected',alighted:'Dropped off',cancelled:'Cancelled'};
 const badge = status => `<span class="badge ${esc(status)}">${esc(statusNames[status] || status)}</span>`;
@@ -61,7 +61,7 @@ function shell(content) {
     <div class="sidebar-bottom"><div class="help-card"><div class="help-icon">${icon('Leaf')}</div><strong>A little care. A safer journey.</strong><p>Keep your fleet ready for the road.</p><button class="link-button" data-action="help">Visit the help center ${icon('ArrowUpRight')}</button></div>
     <div class="sidebar-profile"><div class="avatar">${esc(initials(store.profile.name))}</div><div><strong>${esc(store.profile.name)}</strong><small>${admin ? 'Fleet administrator' : store.profile.role === 'driver' ? 'School bus driver' : 'Student account'}</small></div><button class="icon-button" data-action="logout" aria-label="Sign out / Switch account">${icon('LogOut')}</button></div></div>
   </aside><div class="app-main"><header class="topbar"><div class="flex gap-8"><button class="icon-button menu-toggle" data-action="menu" aria-label="Open navigation">${icon('Menu')}</button><div class="mobile-brand">UDD<span> Go</span></div><div class="breadcrumbs">Workspace ${icon('ChevronRight')}<span class="current">${titles[page]}</span></div></div>
-    <div class="top-actions">${admin ? `<label class="global-search">${icon('Search')}<input id="global-search" placeholder="Search your fleet…" aria-label="Search fleet" value="${esc(query)}"/><kbd>⌘ K</kbd></label>` : ''}${store.mode === 'demo' ? `<span class="mode-pill">${icon('Radio')}Demo mode</span><select id="demo-role" class="demo-switch" aria-label="Demo role"><option value="admin" ${admin?'selected':''}>Admin view</option><option value="driver" ${store.profile.role==='driver'?'selected':''}>Driver view</option><option value="student" ${store.profile.role==='student'?'selected':''}>Student view</option><option value="logout">Sign out</option></select>` : `<span class="live-label">${icon('ShieldCheck')}Secure workspace</span>`}<span class="top-divider"></span><button class="icon-button" data-action="notifications" aria-label="View notifications">${icon('Bell')}${due ? '<span class="notification-dot"></span>' : ''}</button><div class="avatar">${esc(initials(store.profile.name))}</div></div></header>
+    <div class="top-actions">${admin ? `<label class="global-search">${icon('Search')}<input id="global-search" placeholder="Search your fleet…" aria-label="Search fleet" value="${esc(query)}"/><kbd>⌘ K</kbd></label>` : ''}${store.mode === 'demo' ? `<div class="topbar-role-pill role-${store.profile.role}"><span class="role-pill-dot"></span><span>${admin ? 'Admin' : store.profile.role === 'driver' ? 'Driver' : 'Student'}</span></div><select id="demo-role" class="demo-switch" aria-label="Switch demo role"><option value="admin" ${admin?'selected':''}>Admin view</option><option value="driver" ${store.profile.role==='driver'?'selected':''}>Driver view</option><option value="student" ${store.profile.role==='student'?'selected':''}>Student view</option><option value="logout">Sign out to Landing</option></select>` : `<span class="live-label">${icon('ShieldCheck')}Secure workspace</span>`}<span class="top-divider"></span><button class="icon-button" data-action="notifications" aria-label="View notifications">${icon('Bell')}${due ? '<span class="notification-dot"></span>' : ''}</button><div class="avatar">${esc(initials(store.profile.name))}</div></div></header>
     <main class="page" id="main-content">${content}<footer class="page-footer"><span>© ${new Date().getFullYear()} UDD Go. Every student. Every journey.</span><span>${store.mode==='demo' ? `${icon('Info')} Sample data · stored in this browser` : `${icon('ShieldCheck')} Access controlled by your fleet role`}</span></footer></main></div>`;
 }
 
@@ -336,7 +336,12 @@ const tripUI=()=>({pageHeader,button,badge,showModal,closeModal,toast,inputField
 
 function render() {
   fleetMap?.destroy();fleetMap=null;
-  if(!store.profile) { renderLogin();return; }
+  if(!store.profile) {
+    if(publicView==='login') { renderLogin(); }
+    else { renderLanding(); }
+    document.title='UDD Go · Universidad de Dagupan Transport Operations';
+    return;
+  }
   if(store.profile.role!=='admin' && ![store.profile.role,'settings','trips'].includes(page)) page=store.profile.role;
   if(store.profile.role==='admin' && ['driver','student'].includes(page)) page='overview';
   const views={overview,services:()=>schedulingPage(tripUI()),trips:()=>tripPage(tripUI()),fleet,routes,students:()=>people('student'),drivers:()=>people('driver'),maintenance,settings,driver:portal,student:portal,activity:()=>`${pageHeader('The story of your school runs.','Boarding, trips, and fleet updates in one place.',button('Refresh','refresh',{iconName:'RefreshCw'}))}<section class="card"><div class="card-head"><h2>Fleet activity <span class="count">${store.data.activity.length}</span></h2></div><div class="activity-list">${activityItems()}</div></section>`};
@@ -362,6 +367,375 @@ function mountMap() {
 
 function navigate(next) {
   page=next;query='';busFilter='all';routeFilter='';render();window.scrollTo({top:0,behavior:'instant'});
+}
+
+function renderLanding() {
+  const routes = store.data.routes.filter(r => !r.archived);
+  const totalBuses = store.data.buses.length;
+  const totalStops = store.data.route_stops.length;
+
+  app.innerHTML = `<div class="landing-page">
+    <header class="landing-navbar">
+      <div class="landing-brand">
+        <div class="brand">
+          <span class="brand-icon">${icon('BusFront')}</span>
+          <div>UDD<span> Go</span></div>
+        </div>
+        <span class="landing-campus-tag">${icon('School')} Universidad de Dagupan</span>
+      </div>
+
+      <nav class="landing-nav-links" aria-label="Landing Navigation">
+        <button type="button" class="landing-nav-link" data-action="scroll-to-roles">Role Demos</button>
+        <button type="button" class="landing-nav-link" data-action="scroll-to-routes">Campus Corridors</button>
+        <button type="button" class="landing-nav-link" data-action="scroll-to-architecture">Architecture & DSA</button>
+      </nav>
+
+      <div class="landing-nav-actions">
+        <button type="button" class="button landing-demo-btn" data-action="scroll-to-roles">
+          ${icon('Play')} Explore Roles
+        </button>
+        <button type="button" class="button primary landing-login-btn" data-action="go-login">
+          ${icon('Mail')} School Portal
+        </button>
+      </div>
+    </header>
+
+    <main class="landing-main">
+      <section class="landing-hero">
+        <div class="landing-hero-container">
+          <div class="landing-hero-badge">
+            <span class="live-dot"></span>
+            <span>Universidad de Dagupan · Campus Transport Operations</span>
+          </div>
+
+          <h1 class="landing-hero-title">
+            Every student. Every journey.<br/>
+            <span class="gradient-text">Safer, smarter campus transit.</span>
+          </h1>
+
+          <p class="landing-hero-desc">
+            A next-generation school bus fleet tracking and passenger safety platform for Universidad de Dagupan. Seamlessly uniting fleet management, turn-by-turn driver navigation, and student journey radar across Dagupan City corridors.
+          </p>
+
+          <div class="landing-hero-ctas">
+            <button type="button" class="button primary landing-cta-main" data-action="scroll-to-roles">
+              ${icon('Play')} Launch 3 Interactive Demo Roles ${icon('ArrowRight')}
+            </button>
+            <button type="button" class="button landing-cta-secondary" data-action="go-login">
+              ${icon('Mail')} Sign in with School Credentials
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="landing-stats-container">
+        <div class="landing-stats-strip">
+          <div class="landing-stat-card">
+            <div class="stat-icon-wrapper blue">${icon('Route')}</div>
+            <div class="stat-content">
+              <strong>${routes.length} Active Corridors</strong>
+              <p>Bonuan, Calasiao, Lucao & Downtown</p>
+            </div>
+          </div>
+          <div class="landing-stat-card">
+            <div class="stat-icon-wrapper green">${icon('BusFront')}</div>
+            <div class="stat-content">
+              <strong>${totalBuses} Transit Buses</strong>
+              <p>GPS beacons & capacity trackers</p>
+            </div>
+          </div>
+          <div class="landing-stat-card">
+            <div class="stat-icon-wrapper amber">${icon('MapPin')}</div>
+            <div class="stat-content">
+              <strong>${totalStops} Campus Stops</strong>
+              <p>Designated passenger boarding nodes</p>
+            </div>
+          </div>
+          <div class="landing-stat-card">
+            <div class="stat-icon-wrapper purple">${icon('ShieldCheck')}</div>
+            <div class="stat-content">
+              <strong>&lt; 10ms Verification</strong>
+              <p>O(1) duplicate-safe boarding pass</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="landing-section" id="demo-roles-section">
+        <div class="section-header">
+          <div class="section-tag">${icon('Radio')} Live Capstone Demo Panels</div>
+          <h2>Interactive Role Showcase</h2>
+          <p>
+            Experience the entire transit system from all three operational perspectives. Click any panel below to instantly launch the live interactive console without separate credentials.
+          </p>
+        </div>
+
+        <div class="landing-roles-grid">
+          <article class="landing-role-card role-admin-card">
+            <div class="role-accent-bar admin-bar"></div>
+            <div class="role-card-inner">
+              <div class="role-card-topbar">
+                <div class="role-card-icon-box admin-box">${icon('LayoutDashboard')}</div>
+                <div class="role-card-title-group">
+                  <h3>Fleet Administrator</h3>
+                  <span class="role-card-badge admin-badge">Operations Command</span>
+                </div>
+              </div>
+
+              <div class="role-demo-account">
+                <span class="avatar-chip">${icon('UserRoundCheck')}</span>
+                <div>
+                  <strong>Alex Morgan</strong>
+                  <span>admin@udd.edu.ph</span>
+                </div>
+              </div>
+
+              <p class="role-card-summary">
+                Centralized transit operations command. Oversee real-time GPS telemetry, academic calendar dispatches, stop sequence reordering, and vehicle maintenance health.
+              </p>
+
+              <ul class="role-feature-checklist">
+                <li>${icon('Check')} <strong>Live GPS Radar:</strong> Real-time bus tracking across Dagupan City</li>
+                <li>${icon('Check')} <strong>Route Sequencing:</strong> Dynamic Leaflet stop ordering ($O(V+E)$)</li>
+                <li>${icon('Check')} <strong>Service Calendar:</strong> Automated AM/PM dispatch generation</li>
+                <li>${icon('Check')} <strong>Fleet Maintenance:</strong> Odometer alerts & inspection logs</li>
+              </ul>
+
+              <div class="role-card-cta-row">
+                <button type="button" class="button primary full role-launch-btn admin-btn" data-action="quick-login" data-id="admin">
+                  ${icon('LayoutDashboard')} Launch Admin Console ${icon('ArrowRight')}
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <article class="landing-role-card role-student-card">
+            <div class="role-accent-bar student-bar"></div>
+            <div class="role-card-inner">
+              <div class="role-card-topbar">
+                <div class="role-card-icon-box student-box">${icon('GraduationCap')}</div>
+                <div class="role-card-title-group">
+                  <h3>Student & Parent</h3>
+                  <span class="role-card-badge student-badge">Journey Radar</span>
+                </div>
+              </div>
+
+              <div class="role-demo-account">
+                <span class="avatar-chip">${icon('GraduationCap')}</span>
+                <div>
+                  <strong>Isabella Santos</strong>
+                  <span>student@udd.edu.ph</span>
+                </div>
+              </div>
+
+              <p class="role-card-summary">
+                Passenger journey radar for campus families. Monitor approaching buses, view live estimated arrival times (ETA), and access digital student boarding pass.
+              </p>
+
+              <ul class="role-feature-checklist">
+                <li>${icon('Check')} <strong>Bus Radar & ETA:</strong> Live distance and approaching bus timer</li>
+                <li>${icon('Check')} <strong>Digital Boarding Pass:</strong> Tokenized student ID pass</li>
+                <li>${icon('Check')} <strong>Journey Telemetry HUD:</strong> Outbound and return trip telemetry</li>
+                <li>${icon('Check')} <strong>Drop-off Safety:</strong> Boarding confirmations & safety alerts</li>
+              </ul>
+
+              <div class="role-card-cta-row">
+                <button type="button" class="button primary full role-launch-btn student-btn" data-action="quick-login" data-id="student">
+                  ${icon('GraduationCap')} Launch Student Portal ${icon('ArrowRight')}
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <article class="landing-role-card role-driver-card">
+            <div class="role-accent-bar driver-bar"></div>
+            <div class="role-card-inner">
+              <div class="role-card-topbar">
+                <div class="role-card-icon-box driver-box">${icon('BusFront')}</div>
+                <div class="role-card-title-group">
+                  <h3>School Bus Driver</h3>
+                  <span class="role-card-badge driver-badge">In-Cabin Cockpit</span>
+                </div>
+              </div>
+
+              <div class="role-demo-account">
+                <span class="avatar-chip">${icon('BusFront')}</span>
+                <div>
+                  <strong>Roberto Santos</strong>
+                  <span>driver@udd.edu.ph</span>
+                </div>
+              </div>
+
+              <p class="role-card-summary">
+                Touch-first cabin console for transit drivers. Step-by-step stop navigation, rapid 1-tap passenger manifest check-in, and post-trip safety sweep confirmation.
+              </p>
+
+              <ul class="role-feature-checklist">
+                <li>${icon('Check')} <strong>Stop Manifest:</strong> Sequential stop list with passenger counts</li>
+                <li>${icon('Check')} <strong>1-Tap Boarding:</strong> Instant check-in with duplicate detection</li>
+                <li>${icon('Check')} <strong>GPS Beacon:</strong> High-precision location broadcasting</li>
+                <li>${icon('Check')} <strong>Cabin Verification:</strong> Post-trip safety sweep confirmation</li>
+              </ul>
+
+              <div class="role-card-cta-row">
+                <button type="button" class="button primary full role-launch-btn driver-btn" data-action="quick-login" data-id="driver">
+                  ${icon('BusFront')} Launch Driver Cockpit ${icon('ArrowRight')}
+                </button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="landing-section" id="routes-section">
+        <div class="section-header">
+          <div class="section-tag">${icon('Route')} Dagupan City Corridors</div>
+          <h2>Active Transit Network</h2>
+          <p>
+            4 dedicated transit corridors connecting student residential zones, transport terminals, and commercial hubs directly to Universidad de Dagupan Main Campus.
+          </p>
+        </div>
+
+        <div class="landing-routes-grid">
+          ${routes.map(r => {
+            const stops = stopsFor(r.id);
+            const bus = store.data.buses.find(b => b.id === r.bus_id);
+            const driver = person(r.driver_id);
+            return `
+              <div class="landing-route-card">
+                <div class="route-color-stripe" style="background:${safeColor(r.color)}"></div>
+                <div class="route-card-content">
+                  <div class="route-card-header">
+                    <div class="route-pill" style="--c:${safeColor(r.color)}">
+                      <span class="route-dot" style="--c:${safeColor(r.color)}"></span>
+                      <strong>${esc(r.route_name)}</strong>
+                    </div>
+                    <span class="badge ${r.status === 'active' ? 'active' : 'idle'}">${r.status === 'active' ? 'Active' : 'Scheduled'}</span>
+                  </div>
+
+                  <div class="route-meta-strip">
+                    <span>${icon('MapPin')} ${stops.length} Stops</span>
+                    <span>${icon('BusFront')} ${esc(bus?.label || 'Bus')} (${bus?.capacity || 28} seats)</span>
+                    <span>${icon('UserRoundCheck')} ${esc(driver?.name || 'Driver')}</span>
+                  </div>
+
+                  <div class="route-stops-preview">
+                    ${stops.slice(0, 3).map(s => `
+                      <div class="preview-stop-item">
+                        <span class="preview-stop-dot"></span>
+                        <span>${esc(s.stop_name)}</span>
+                      </div>
+                    `).join('')}
+                    ${stops.length > 3 ? `
+                      <div class="preview-stop-item more">
+                        <span class="preview-stop-dot terminus"></span>
+                        <span>+ ${stops.length - 3} more stops → UDD Main Campus</span>
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </section>
+
+      <section class="landing-section" id="architecture-section">
+        <div class="section-header">
+          <div class="section-tag">${icon('ShieldCheck')} Engineering Architecture</div>
+          <h2>Built for Scalability, Security & Accuracy</h2>
+          <p>
+            UDD Go implements formal Data Structures & Algorithms (ITECC04) with production-grade database constraints.
+          </p>
+        </div>
+
+        <div class="landing-pillars-grid">
+          <div class="pillar-card">
+            <div class="pillar-icon">${icon('Route')}</div>
+            <h3>Directed Graph Stop Sequencing</h3>
+            <span class="complexity-badge">O(V + E)</span>
+            <p>
+              Stops are structured as a directed topological graph, guaranteeing monotonic vehicle transit and preventing invalid loops or out-of-order pickups.
+            </p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-icon">${icon('UserRoundCheck')}</div>
+            <h3>O(1) Hash Table Boarding Pass</h3>
+            <span class="complexity-badge">O(1) Time</span>
+            <p>
+              Passenger manifests are indexed in hash maps for instantaneous QR/ID boarding verification and atomic duplicate check-in prevention.
+            </p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-icon">${icon('Gauge')}</div>
+            <h3>Dynamic Capacity Bounds</h3>
+            <span class="complexity-badge">O(N) Invariant</span>
+            <p>
+              Mathematical capacity enforcement ensures physical vehicle seating limits are never breached during registration or reservation.
+            </p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-icon">${icon('ShieldCheck')}</div>
+            <h3>PostgreSQL Row-Level Security</h3>
+            <span class="complexity-badge">Zero-Trust RLS</span>
+            <p>
+              Supabase Row-Level Security isolates student profiles, hides unassigned routes, and restricts vehicle telemetry publishing to authorized drivers.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="landing-footer">
+      <div class="landing-footer-container">
+        <div class="footer-top-row">
+          <div class="footer-brand-col">
+            <div class="brand">
+              <span class="brand-icon">${icon('BusFront')}</span>
+              <div>UDD<span> Go</span></div>
+            </div>
+            <p class="footer-tagline">
+              Official Campus Transit Operations Platform of Universidad de Dagupan.
+            </p>
+            <div class="footer-campus-address">
+              ${icon('MapPin')} Arellano Street, Dagupan City, Pangasinan 2400, Philippines
+            </div>
+          </div>
+
+          <div class="footer-links-col">
+            <h4>Quick Role Launch</h4>
+            <ul>
+              <li><button type="button" class="footer-link-btn" data-action="quick-login" data-id="admin">Admin Operations Console</button></li>
+              <li><button type="button" class="footer-link-btn" data-action="quick-login" data-id="student">Student Journey Radar</button></li>
+              <li><button type="button" class="footer-link-btn" data-action="quick-login" data-id="driver">Bus Driver Cockpit</button></li>
+            </ul>
+          </div>
+
+          <div class="footer-links-col">
+            <h4>Access & Guidelines</h4>
+            <ul>
+              <li><button type="button" class="footer-link-btn" data-action="go-login">School Portal Sign In</button></li>
+              <li><button type="button" class="footer-link-btn" data-action="help">ITECC04 Project Guidelines</button></li>
+              <li><button type="button" class="footer-link-btn" data-action="setup">Supabase Deployment Guide</button></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer-bottom-bar">
+          <span>© ${new Date().getFullYear()} Universidad de Dagupan · ITECC04 Data Structure and Algorithm Capstone</span>
+          <div class="footer-badges">
+            <span class="footer-badge">${icon('Radio')} Live Demo Mode Ready</span>
+            <span class="footer-badge">${icon('ShieldCheck')} RLS Protected</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>`;
+
+  mountIcons();
 }
 
 function renderLogin() {
@@ -452,6 +826,11 @@ function renderLogin() {
 
     <section class="login-panel">
       <div class="login-panel-inner">
+        <div class="login-nav-bar">
+          <button type="button" class="link-button back-to-landing-btn" data-action="go-landing">
+            ${icon('ChevronLeft')} Back to Home Landing Page
+          </button>
+        </div>
         <div class="login-header">
           <h2>Welcome to UDD Go</h2>
           <p>Select your transport workspace view or sign in with school credentials.</p>
@@ -699,11 +1078,17 @@ async function handleAction(action,id) {
     case 'close-menu':document.querySelector('.sidebar').classList.remove('open');document.querySelector('.sidebar-overlay').classList.remove('open');break;
     case 'profile':navigate('settings');break;
     case 'toggle-portal-map':portalExpanded=!portalExpanded;render();break;
+    case 'go-landing':publicView='landing';render();break;
+    case 'go-login':publicView='login';render();break;
+    case 'scroll-to-roles':{const el=document.querySelector('#demo-roles-section');if(el)el.scrollIntoView({behavior:'smooth'});break;}
+    case 'scroll-to-routes':{const el=document.querySelector('#routes-section');if(el)el.scrollIntoView({behavior:'smooth'});break;}
+    case 'scroll-to-architecture':{const el=document.querySelector('#architecture-section');if(el)el.scrollIntoView({behavior:'smooth'});break;}
     case 'select-login-role':loginRole=id;renderLogin();break;
     case 'set-login-method':loginMethod=id;renderLogin();break;
     case 'prefill-role':loginRole=id;renderLogin();break;
     case 'quick-login':{
       const targetRole=id||loginRole;
+      publicView='landing';
       await stopGPS();
       store.setDemoRole(targetRole);
       portalTripId='';
@@ -713,7 +1098,7 @@ async function handleAction(action,id) {
       render();
       break;
     }
-    case 'logout':await stopGPS();await store.logout();break;
+    case 'logout':publicView='landing';await stopGPS();await store.logout();break;
     case 'reset-demo':resetTripHistory();confirmModal('Start fresh with sample data?','This removes the demo changes saved in this browser.','Reset demo',()=>{store.reset();toast('Sample data restored.');});break;
     case 'notifications':showModal('A little heads-up.','The latest updates from your fleet.',`<div class="activity-list notification-list">${activityItems(15)}</div><div class="modal-footer">${button('Close','close-modal')}</div>`);break;
     case 'add-campus':routeDraft.push({id:crypto.randomUUID(),stop_name:'UDD main campus',latitude:16.0436,longitude:120.3417});updateDraft();break;
@@ -734,7 +1119,7 @@ document.addEventListener('change',async event=>{
   const target=event.target;
   if(['demo-role','settings-role'].includes(target.id)){
     await stopGPS();
-    if(target.value==='logout'){await store.logout();return;}
+    if(target.value==='logout'){publicView='landing';await store.logout();return;}
     portalTripId='';page=target.value==='admin'?'overview':target.value;query='';store.setDemoRole(target.value);window.scrollTo({top:0,behavior:'instant'});
   }
   if(target.id==='map-route-filter'){routeFilter=target.value;render();}

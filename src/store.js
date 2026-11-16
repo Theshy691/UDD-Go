@@ -68,7 +68,7 @@ class FleetStore extends EventTarget {
       } else if (preferences.demoRole === null) {
         this.profile = null;
       } else {
-        this.setDemoRole(Capacitor.isNativePlatform() ? 'driver' : 'admin', false);
+        this.profile = null;
       }
       this.connected = true;
     }
