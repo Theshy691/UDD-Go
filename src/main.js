@@ -544,10 +544,9 @@ function renderLanding() {
       <div class="banner-inner">
         <span class="banner-pill-live">
           <span class="banner-dot-ping"></span>
-          LIVE TRANSIT SYSTEM
+          LIVE FLEET ACTIVE
         </span>
-        <span class="banner-text"><strong>UDD Go</strong> · Intelligent Campus Fleet Management & Passenger Safety for Universidad de Dagupan.</span>
-        <button type="button" class="banner-cta-link" data-action="scroll-to-roles">Launch 3-Role Demo →</button>
+        <span class="banner-text"><strong>UDD Go</strong> · Intelligent Campus Fleet Management & Passenger Safety for Universidad de Dagupan</span>
       </div>
     </aside>
 
@@ -565,19 +564,16 @@ function renderLanding() {
         </div>
 
         <nav class="header-nav-links" aria-label="Main Navigation">
-          <button type="button" class="nav-item-btn" data-action="scroll-to-playground">Simulator</button>
           <button type="button" class="nav-item-btn" data-action="scroll-to-roles">Demo Roles</button>
+          <button type="button" class="nav-item-btn" data-action="scroll-to-playground">Simulator</button>
           <button type="button" class="nav-item-btn" data-action="scroll-to-corridors">Active Routes</button>
           <button type="button" class="nav-item-btn" data-action="scroll-to-dsa">Engineering Pillars</button>
           <button type="button" class="nav-item-btn" data-action="scroll-to-faq">FAQ</button>
         </nav>
 
         <div class="header-actions-wrap">
-          <button type="button" class="button header-demo-btn" data-action="scroll-to-roles">
-            ${icon('Play')} Try Demo Roles
-          </button>
           <button type="button" class="button primary header-portal-btn" data-action="go-login">
-            ${icon('Mail')} School Portal
+            ${icon('School')} School Portal
           </button>
         </div>
       </div>
@@ -604,10 +600,10 @@ function renderLanding() {
 
           <div class="hero-cta-buttons">
             <button type="button" class="button primary hero-btn-primary" data-action="scroll-to-roles">
-              ${icon('Play')} Launch 3 Interactive Demo Roles ${icon('ArrowRight')}
+              ${icon('Play')} Explore Interactive Roles ${icon('ArrowDown')}
             </button>
-            <button type="button" class="button hero-btn-secondary" data-action="go-login">
-              ${icon('Mail')} Sign In with School Account
+            <button type="button" class="button hero-btn-secondary" data-action="scroll-to-playground">
+              ${icon('Radio')} View Telemetry Simulator
             </button>
           </div>
 
@@ -995,14 +991,11 @@ function renderLanding() {
           <div class="bottom-cta-inner">
             <h2>Ready to experience next-generation campus transit?</h2>
             <p>
-              Launch the interactive 3-role demo now or sign in to your official Universidad de Dagupan workspace.
+              Sign in to your official Universidad de Dagupan workspace to get started.
             </p>
             <div class="bottom-cta-buttons">
-              <button type="button" class="button primary bottom-btn-main" data-action="scroll-to-roles">
-                ${icon('Play')} Explore Demo Roles ${icon('ArrowRight')}
-              </button>
-              <button type="button" class="button bottom-btn-sub" data-action="go-login">
-                ${icon('Mail')} Sign in with School Account
+              <button type="button" class="button primary bottom-btn-main" data-action="go-login">
+                ${icon('School')} Sign in to School Portal ${icon('ArrowRight')}
               </button>
             </div>
           </div>
@@ -1033,22 +1026,22 @@ function renderLanding() {
 
           <div class="footer-navigation-grid">
             <div class="footer-nav-col">
-              <h4>System Views</h4>
+              <h4>Quick Navigation</h4>
               <ul>
-                <li><button type="button" class="footer-link" data-action="quick-login" data-id="admin">Admin Console</button></li>
-                <li><button type="button" class="footer-link" data-action="quick-login" data-id="driver">Driver Cockpit</button></li>
-                <li><button type="button" class="footer-link" data-action="quick-login" data-id="student">Student Radar</button></li>
-                <li><button type="button" class="footer-link" data-action="go-login">School Portal</button></li>
+                <li><button type="button" class="footer-link" data-action="scroll-to-roles">Interactive Demo Roles</button></li>
+                <li><button type="button" class="footer-link" data-action="scroll-to-playground">Fleet Simulator</button></li>
+                <li><button type="button" class="footer-link" data-action="scroll-to-corridors">Active Routes</button></li>
+                <li><button type="button" class="footer-link" data-action="scroll-to-dsa">Engineering Pillars</button></li>
               </ul>
             </div>
 
             <div class="footer-nav-col">
-              <h4>Corridors</h4>
+              <h4>Active Corridors</h4>
               <ul>
-                <li><button type="button" class="footer-link" data-action="scroll-to-corridors">Bonuan - Tondaligan</button></li>
-                <li><button type="button" class="footer-link" data-action="scroll-to-corridors">Calasiao Highway</button></li>
-                <li><button type="button" class="footer-link" data-action="scroll-to-corridors">Lucao District</button></li>
-                <li><button type="button" class="footer-link" data-action="scroll-to-corridors">Downtown Dagupan</button></li>
+                <li><span class="footer-meta-item">Bonuan – Tondaligan</span></li>
+                <li><span class="footer-meta-item">Calasiao Highway</span></li>
+                <li><span class="footer-meta-item">Lucao District</span></li>
+                <li><span class="footer-meta-item">Downtown Dagupan</span></li>
               </ul>
             </div>
 
