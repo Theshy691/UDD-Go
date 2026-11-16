@@ -149,6 +149,133 @@ function maintenance() {
 function settings() {
   return `${pageHeader('Make yourself at home.','Your workspace, connection, and notification preferences.')}<div class="settings-grid"><section class="card"><div class="card-head"><h2>Workspace</h2></div><div class="settings-body"><div class="setting-row"><div><strong>School</strong><p>Universidad de Dagupan</p></div><span class="setting-value">Main campus</span></div><div class="setting-row"><div><strong>Timezone</strong><p>All school times use Philippine Standard Time.</p></div><span class="setting-value">Asia/Manila</span></div><div class="setting-row"><div><strong>Signed in as</strong><p>${esc(store.profile.name)}</p></div><span class="setting-value">${esc(store.profile.role)}</span></div><div class="setting-row"><div><strong>Trip notifications</strong><p>Notify this device when your assigned trip starts or ends.</p></div><input id="notification-toggle" type="checkbox" class="toggle" aria-label="Trip notifications" ${preferences.notifications?'checked':''}/></div>${store.mode==='demo'?`<div class="setting-row"><div><strong>Preview another role</strong><p>Explore the driver or student experience.</p></div><select id="settings-role" aria-label="Switch demo role"><option value="admin" ${store.profile.role==='admin'?'selected':''}>Administrator</option><option value="driver" ${store.profile.role==='driver'?'selected':''}>Driver</option><option value="student" ${store.profile.role==='student'?'selected':''}>Student</option></select></div><div class="setting-row"><div><strong>Restore sample data</strong><p>Clear demo changes and start fresh.</p></div>${button('Reset demo','reset-demo')}</div>`:''}</div></section><div class="stack"><section class="card"><div class="card-head"><h2>Connection</h2>${store.mode==='demo'?'<span class="mode-pill">Demo mode</span>':badge('healthy')}</div><div class="settings-body"><div class="note">${store.mode==='demo'?'You are exploring sample records. Changes stay in this browser. Open a second tab to try live demo boarding and trip updates.':'Connected to Supabase. Your account role controls the records and location channels you can access.'}</div><div class="setting-row"><div><strong>${store.mode==='demo'?'Connect your school':'Data refresh'}</strong><p>${store.mode==='demo'?'Add your Supabase project keys to enable authentication and shared data.':'Fetch the latest shared records from your school.'}</p></div>${button(store.mode==='demo'?'Setup guide':'Refresh',store.mode==='demo'?'setup':'refresh',{iconName:store.mode==='demo'?'ExternalLink':'RefreshCw'})}</div></div></section><section class="card"><div class="card-head"><h2>A little help goes a long way.</h2></div><div class="settings-body"><p class="muted small">Find your way around routes, boarding, and school transport.</p><div style="margin-top:18px">${button('Open help center','help',{iconName:'CircleHelp'})}</div></div></section></div></div>`;
 }
+function studentHUDCard(trip, myPassenger, counts) {
+  const isBoarded = myPassenger?.status === 'boarded';
+  const isAlighted = myPassenger?.status === 'alighted';
+  const isActive = trip.status === 'active';
+  const pickupStop = myPassenger?.pickup_name || trip.stops?.[0]?.stop_name || 'Assigned Stop';
+  const dropoffStop = myPassenger?.dropoff_name || trip.stops?.at(-1)?.stop_name || 'UDD Main Campus';
+  const driverPhone = person(trip.driver_id)?.contact_number || '';
+
+  return `<section class="card student-hud-card">
+    <div class="card-head">
+      <div>
+        <h2>Live journey & safety telemetry</h2>
+        <p>Real-time transit updates, your assigned pickup, and campus arrival tracking.</p>
+      </div>
+      <span class="live-label" data-live-status>
+        <span class="live-dot"></span>
+        ${isActive ? 'Bus on route' : trip.status === 'scheduled' ? 'Scheduled run' : 'Completed'}
+      </span>
+    </div>
+    <div class="hud-body">
+      <div class="hud-eta-banner ${isActive ? 'active' : ''}">
+        <div class="eta-icon">${icon('Navigation')}</div>
+        <div class="eta-info">
+          <span class="eta-tag">${isBoarded ? 'On board vehicle' : isAlighted ? 'Safe drop-off verified' : 'Awaiting boarding'}</span>
+          <strong>${isBoarded ? `En route to ${esc(dropoffStop)}` : isAlighted ? `Arrived at ${esc(dropoffStop)}` : `Pickup at ${esc(pickupStop)}`}</strong>
+          <p class="small muted">${isActive ? (isBoarded ? `Bus ${esc(trip.bus_label)} is traveling safely. Destination arrival in ~8–12 mins.` : `Bus ${esc(trip.bus_label)} is approaching. Please wait safely at your designated stop area.`) : trip.status === 'scheduled' ? `Scheduled departure at ${departure(trip.planned_at?.slice(11,16))} · Driver: ${esc(trip.driver_name)}.` : 'This journey has safely concluded at the school campus.'}</p>
+        </div>
+        <div class="eta-pill">
+          <span>${isActive ? 'EST. TIME' : 'DEPARTURE'}</span>
+          <strong>${isActive ? (isBoarded ? '~10 min' : '~5 min') : departure(trip.planned_at?.slice(11,16))}</strong>
+        </div>
+      </div>
+
+      <div class="hud-stats-grid">
+        <div class="hud-stat-chip">
+          <span class="stat-label">Assigned Vehicle</span>
+          <strong>${esc(trip.bus_label)}</strong>
+          <small class="muted">${esc(trip.plate_number)}</small>
+        </div>
+        <div class="hud-stat-chip">
+          <span class="stat-label">Official Driver</span>
+          <strong>${esc(trip.driver_name)}</strong>
+          <small class="muted">${esc(driverPhone || 'UDD Fleet')}</small>
+        </div>
+        <div class="hud-stat-chip">
+          <span class="stat-label">Your Status</span>
+          <strong style="color:${isBoarded ? '#059669' : isAlighted ? '#2563eb' : '#d97706'}">${isBoarded ? 'On Board' : isAlighted ? 'Alighted' : 'Reserved Seat'}</strong>
+          <small class="muted">${counts.boarded} / ${trip.capacity} passengers</small>
+        </div>
+        <div class="hud-stat-chip">
+          <span class="stat-label">School Destination</span>
+          <strong>UDD Campus</strong>
+          <small class="muted">Main Hub</small>
+        </div>
+      </div>
+
+      <div class="hud-action-row">
+        ${driverPhone ? `<a href="tel:${esc(driverPhone.replace(/\s+/g,''))}" class="button" title="Call assigned driver">${icon('Phone')}<span>Call driver (${esc(driverPhone)})</span></a>` : ''}
+        <a href="tel:0755222496" class="button" title="Universidad de Dagupan Security Desk">${icon('ShieldCheck')}<span>UDD Security Hotline (075) 522-2496</span></a>
+        ${button('View my trip manifest', 'trip-detail', { id: trip.id, iconName: 'UserRoundCheck' })}
+      </div>
+    </div>
+  </section>`;
+}
+
+function driverHUDCard(trip, counts, passengers) {
+  const stops = trip.stops || [];
+  const nextStop = stops.find((s, i) => i > 0 && i < stops.length - 1) || stops[1] || stops[0];
+  const waitingCount = passengers.filter(p => p.pickup_stop_id === nextStop?.id && p.status === 'expected').length;
+  const isSharing = gpsWatch !== null;
+
+  return `<section class="card driver-hud-card">
+    <div class="card-head">
+      <div>
+        <h2>Cockpit navigation & passenger manifest HUD</h2>
+        <p>Live route telematics, next stop advisory, and passenger boarding scanner.</p>
+      </div>
+      <span class="live-label" data-live-status>
+        <span class="live-dot"></span>
+        ${trip.status === 'active' ? 'Active telemetry' : trip.status === 'scheduled' ? 'Scheduled departure' : 'Trip completed'}
+      </span>
+    </div>
+    <div class="hud-body">
+      <div class="driver-cockpit-banner">
+        <div class="cockpit-icon">${icon('MapPin')}</div>
+        <div class="cockpit-info">
+          <span class="cockpit-tag">UPCOMING ROUTE STOP</span>
+          <h3>${esc(nextStop?.stop_name || 'UDD Main Campus')}</h3>
+          <p class="small muted">Stop ${nextStop?.stop_sequence || 1} of ${stops.length} · ${waitingCount} student${waitingCount === 1 ? '' : 's'} assigned to board at this stop.</p>
+        </div>
+        <div class="cockpit-quick-action">
+          ${button('Open Boarding Scanner', 'trip-detail', { id: trip.id, primary: true, iconName: 'UserRoundCheck' })}
+        </div>
+      </div>
+
+      <div class="driver-telemetry-grid">
+        <div class="telemetry-item">
+          <span class="telemetry-label">Passenger Load</span>
+          <strong>${counts.boarded} / ${trip.capacity}</strong>
+          <div class="progress" style="margin-top:6px"><span style="width:${Math.min(100, (counts.boarded / trip.capacity) * 100)}%"></span></div>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">Speed Advisory</span>
+          <strong>35 km/h</strong>
+          <small class="muted">Max 40 km/h school zone</small>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">GPS Precision</span>
+          <strong style="color:${isSharing ? '#059669' : '#0284c7'}">${isSharing ? '±2.4m High Acc.' : 'Simulated GPS'}</strong>
+          <small class="muted">${isSharing ? 'Device broadcasting' : 'Tap below to share'}</small>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">Vehicle Odometer</span>
+          <strong>${formatNumber(trip.start_mileage || trip.segment_start_mileage || 24320)} km</strong>
+          <small class="muted">Plate: ${esc(trip.plate_number)}</small>
+        </div>
+      </div>
+
+      <div class="hud-action-row">
+        ${trip.status === 'active' ? button(isSharing ? 'GPS broadcasting active' : 'Enable live GPS sharing', 'enable-gps', { primary: !isSharing, id: trip.id, iconName: 'LocateFixed' }) : ''}
+        ${button(trip.status === 'scheduled' ? 'Review & start trip' : 'Complete trip / cabin check', 'trip-detail', { id: trip.id, iconName: 'Check' })}
+        <a href="tel:0755222496" class="button" title="UDD Dispatch Center">${icon('Phone')}<span>Contact school dispatch</span></a>
+      </div>
+    </div>
+  </section>`;
+}
+
 function portal() {
   const isDriver=store.profile.role==='driver';
   const choices=store.visibleTrips().filter(t=>t.service_date===schoolDate() || t.status==='active').sort((a,b)=>(b.status==='active')-(a.status==='active') || a.planned_at.localeCompare(b.planned_at));
@@ -162,9 +289,47 @@ function portal() {
     className: 'button subtle map-expand-btn'
   });
   return `${pageHeader(isDriver?`Hello, ${esc(store.profile?.name?.split(' ')[0] || 'there')}.`:'Your school journeys, connected.','Choose your outbound or return trip.',button('Trips & history','open-trips',{iconName:'CalendarDays'}))}${picker}
-  <div class="portal-grid ${isDriver?'driver-portal':'student-portal'} ${portalExpanded?'map-expanded':''}"><section class="card portal-map"><div class="card-head"><div><h2>${esc(trip.route_name)}</h2><span class="small muted">${isDriver?'Driver navigation HUD · live route telemetry':'Your school bus journey map'}</span></div><div class="flex gap-8">${badge(trip.status)}${expandButton}</div></div><div class="map-wrap"><div id="fleet-map" class="fleet-map" aria-label="Your selected trip map"></div>${mapToolbar(false)}</div></section>
-  <div class="portal-sidebar"><section class="card trip-card"><h2>${esc(trip.direction==='return'?'Return journey':'Outbound journey')}</h2><div class="bus-title"><span class="vehicle-icon">${icon('BusFront')}</span><div><h3>${esc(trip.bus_label)}</h3><p>${esc(trip.plate_number)}</p></div></div><div class="driver-mini"><span class="avatar peach">${esc(initials(trip.driver_name))}</span><div><strong>${esc(trip.driver_name)}</strong>${esc(person(trip.driver_id)?.contact_number || '')}</div></div><div class="trip-info"><div class="between"><span>Service date</span><strong>${esc(trip.service_date)}</strong></div><div class="between"><span>On board</span><strong>${counts.boarded} / ${trip.capacity}</strong></div>${!isDriver?`<div class="between"><span>Your status</span>${badge(myPassenger?.status || 'expected')}</div>`:''}</div>
-  ${isDriver?`<div class="trip-actions">${trip.status==='active'?button('Enable GPS sharing','enable-gps',{primary:true,id:trip.id,iconName:'LocateFixed'}):''}${button(trip.status==='scheduled'?'Review and start trip':'View passengers / complete','trip-detail',{id:trip.id})}</div><p id="gps-status" class="muted small">${gpsWatch!==null?'Sharing this device’s location.':store.mode==='demo'?'Sample locations are simulated.':'Enable location sharing during your active trip.'}</p>`:`<div class="student-pass"><span>Your boarding ID</span><strong>${esc(store.profile.student_code || store.profile.id)}</strong><p>${esc(myPassenger?.pickup_name || '')} → ${esc(myPassenger?.dropoff_name || '')}</p></div>${button('View my trip record','trip-detail',{id:trip.id})}`}</section><section class="card trip-card"><h2>Trip stops</h2><div class="stop-timeline">${timeline(trip.stops,myPassenger?.pickup_stop_id)}</div></section></div></div>`;
+  <div class="portal-grid ${isDriver?'driver-portal':'student-portal'} ${portalExpanded?'map-expanded':''}">
+    <div class="portal-main-col stack">
+      <section class="card portal-map">
+        <div class="card-head">
+          <div>
+            <h2>${esc(trip.route_name)}</h2>
+            <span class="small muted">${isDriver?'Driver navigation HUD · live route telemetry':'Your school bus journey map'}</span>
+          </div>
+          <div class="flex gap-8">
+            ${badge(trip.status)}
+            ${expandButton}
+          </div>
+        </div>
+        <div class="map-wrap">
+          <div id="fleet-map" class="fleet-map" aria-label="Your selected trip map"></div>
+          ${mapToolbar(false)}
+        </div>
+      </section>
+      ${isDriver ? driverHUDCard(trip, counts, passengers) : studentHUDCard(trip, myPassenger, counts)}
+    </div>
+    <div class="portal-sidebar">
+      <section class="card trip-card">
+        <h2>${esc(trip.direction==='return'?'Return journey':'Outbound journey')}</h2>
+        <div class="bus-title"><span class="vehicle-icon">${icon('BusFront')}</span><div><h3>${esc(trip.bus_label)}</h3><p>${esc(trip.plate_number)}</p></div></div>
+        <div class="driver-mini"><span class="avatar peach">${esc(initials(trip.driver_name))}</span><div><strong>${esc(trip.driver_name)}</strong>${esc(person(trip.driver_id)?.contact_number || '')}</div></div>
+        <div class="trip-info">
+          <div class="between"><span>Service date</span><strong>${esc(trip.service_date)}</strong></div>
+          <div class="between"><span>On board</span><strong>${counts.boarded} / ${trip.capacity}</strong></div>
+          ${!isDriver?`<div class="between"><span>Your status</span>${badge(myPassenger?.status || 'expected')}</div>`:''}
+        </div>
+        ${isDriver
+          ? `<div class="trip-actions">${trip.status==='active'?button('Enable GPS sharing','enable-gps',{primary:true,id:trip.id,iconName:'LocateFixed'}):''}${button(trip.status==='scheduled'?'Review and start trip':'View passengers / complete','trip-detail',{id:trip.id})}</div><p id="gps-status" class="muted small">${gpsWatch!==null?'Sharing this device’s location.':store.mode==='demo'?'Sample locations are simulated.':'Enable location sharing during your active trip.'}</p>`
+          : `<div class="student-pass"><span>Your boarding ID</span><strong>${esc(store.profile.student_code || store.profile.id)}</strong><p>${esc(myPassenger?.pickup_name || '')} → ${esc(myPassenger?.dropoff_name || '')}</p></div>${button('View my trip record','trip-detail',{id:trip.id})}`
+        }
+      </section>
+      <section class="card trip-card">
+        <h2>Trip stops</h2>
+        <div class="stop-timeline">${timeline(trip.stops,myPassenger?.pickup_stop_id)}</div>
+      </section>
+    </div>
+  </div>`;
 }
 
 const tripUI=()=>({pageHeader,button,badge,showModal,closeModal,toast,inputField,selectField,formFooter});
