@@ -6687,38 +6687,20 @@ tr:last-child td {
    ========================================================================== */
 
 /* Keyframe Animations */
-@keyframes beacon-pulse {
-    0% {
-        transform: scale(0.95);
-        box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.6);
-    }
-    70% {
-        transform: scale(1.15);
-        box-shadow: 0 0 0 10px rgba(2, 132, 199, 0);
-    }
-    100% {
-        transform: scale(0.95);
-        box-shadow: 0 0 0 0 rgba(2, 132, 199, 0);
-    }
+@property --beam-angle {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
 }
 
-@keyframes ping-ring {
-    0% {
-        transform: scale(0.8);
-        opacity: 0.9;
+@keyframes beam-spin {
+    from {
+        --beam-angle: 0deg;
+        transform: rotate(0deg);
     }
-    80%, 100% {
-        transform: scale(2.4);
-        opacity: 0;
-    }
-}
-
-@keyframes float-subtle {
-    0%, 100% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-5px);
+    to {
+        --beam-angle: 360deg;
+        transform: rotate(360deg);
     }
 }
 
@@ -6728,15 +6710,6 @@ tr:last-child td {
     }
     100% {
         background-position: 200% 0;
-    }
-}
-
-@keyframes status-blink {
-    0%, 100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.4;
     }
 }
 
@@ -6777,10 +6750,9 @@ tr:last-child td {
     text-align: center;
 }
 
-.banner-pill-live {
+.banner-tag {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
     background: #e0f2fe;
     color: #0284c7;
     font-weight: 700;
@@ -6789,45 +6761,12 @@ tr:last-child td {
     padding: 3px 9px;
     border-radius: 9999px;
     border: 1px solid #bae6fd;
-}
-
-.banner-dot-ping {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #0284c7;
-    position: relative;
-}
-
-.banner-dot-ping::after {
-    content: "";
-    position: absolute;
-    inset: -3px;
-    border-radius: 50%;
-    background: #38bdf8;
-    animation: ping-ring 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    text-transform: uppercase;
 }
 
 .banner-text {
     font-size: 12.5px;
     color: #1e293b;
-}
-
-.banner-cta-link {
-    background: none;
-    border: none;
-    color: #0284c7;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 2px 6px;
-    transition: color 0.15s ease, transform 0.15s ease;
-}
-
-.banner-cta-link:hover {
-    color: #0369a1;
-    text-decoration: underline;
-    transform: translateX(2px);
 }
 
 /* 2. Sticky Navigation Header */
@@ -7010,28 +6949,97 @@ tr:last-child td {
     z-index: 1;
 }
 
-.hero-badge-pill {
+/* Linear-Style Border Beam Capsule */
+.hero-capsule-wrap {
+    position: relative;
     display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: #ffffff;
-    border: 1px solid #bae6fd;
-    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.1);
-    padding: 6px 14px;
+    padding: 1.5px;
     border-radius: 9999px;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: #0369a1;
+    background: #e2e8f0;
+    overflow: hidden;
     margin-bottom: 24px;
-    animation: float-subtle 4s ease-in-out infinite;
+    cursor: pointer;
+    box-shadow: 0 4px 16px -2px rgba(2, 132, 199, 0.12), 0 2px 6px rgba(0, 0, 0, 0.03);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+    text-decoration: none;
+    user-select: none;
 }
 
-.badge-beacon-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #0284c7;
-    animation: beacon-pulse 2s infinite;
+.hero-capsule-wrap:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -4px rgba(2, 132, 199, 0.22), 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.capsule-beam {
+    position: absolute;
+    inset: -150%;
+    background: conic-gradient(
+        from var(--beam-angle, 0deg),
+        transparent 65%,
+        rgba(56, 189, 248, 0.35) 78%,
+        #0284c7 88%,
+        #38bdf8 94%,
+        rgba(255, 255, 255, 0.98) 98%,
+        transparent 100%
+    );
+    animation: beam-spin 4s linear infinite;
+    pointer-events: none;
+}
+
+.hero-capsule {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 6px 14px 6px 8px;
+    border-radius: 9999px;
+}
+
+.capsule-badge {
+    background: #e0f2fe;
+    color: #0284c7;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    border: 1px solid #bae6fd;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.capsule-divider {
+    width: 1px;
+    height: 14px;
+    background: #e2e8f0;
+}
+
+.capsule-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+}
+
+.capsule-arrow {
+    display: inline-flex;
+    align-items: center;
+    color: #64748b;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.capsule-arrow svg {
+    width: 14px;
+    height: 14px;
+}
+
+.hero-capsule-wrap:hover .capsule-arrow {
+    transform: translateX(3px);
+    color: #0284c7;
 }
 
 .hero-main-title {
@@ -7636,6 +7644,18 @@ tr:last-child td {
     background: #ecfdf5;
     color: #059669;
     border: 1px solid #a7f3d0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.corridor-header .badge.active::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #059669;
 }
 
 .corridor-header .badge.idle {
@@ -8033,7 +8053,6 @@ tr:last-child td {
     height: 6px;
     border-radius: 50%;
     background: #10b981;
-    animation: status-blink 2s ease-in-out infinite;
 }
 
 .footer-navigation-grid {
