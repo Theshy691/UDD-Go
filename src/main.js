@@ -1,5 +1,5 @@
 import './styles.css';
-import { createIcons, LayoutDashboard, BusFront, Route, GraduationCap, Users, Wrench, Settings, CircleHelp, ChevronDown, ChevronRight, ChevronLeft, ArrowUpRight, ArrowRight, Plus, Download, Search, Bell, CalendarDays, MapPin, Navigation, LocateFixed, Menu, X, LogOut, Radio, CircleCheck, CircleAlert, Check, Clock3, ShieldCheck, Leaf, School, MoreHorizontal, Play, Square, UserRoundCheck, Trash2, ExternalLink, Mail, RefreshCw, Phone, Info, Gauge, Maximize2, Minimize2, Flame, Terminal, Code, Sparkles, Copy, Zap, Star, Compass, Activity, Server, Database, Shield, Cpu, CheckCheck } from 'lucide';
+import { createIcons, LayoutDashboard, BusFront, Route, GraduationCap, Users, Wrench, Settings, CircleHelp, ChevronDown, ChevronRight, ChevronLeft, ArrowUpRight, ArrowRight, Plus, Download, Search, Bell, CalendarDays, MapPin, Navigation, LocateFixed, Menu, X, LogOut, Radio, CircleCheck, CircleAlert, Check, Clock3, ShieldCheck, Leaf, School, MoreHorizontal, Play, Square, UserRoundCheck, Trash2, ExternalLink, Mail, RefreshCw, Phone, Info, Gauge, Maximize2, Minimize2, Activity, CheckCheck } from 'lucide';
 import { store, preferences, savePreferences } from './store.js';
 import { tripPage, tripAction, filterTripHistory, resetTripHistory } from './trip-views.js';
 import { schedulingPage, schedulingAction } from './scheduling-views.js';
@@ -12,14 +12,14 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 
 document.documentElement.classList.toggle('native-app', Capacitor.isNativePlatform());
 
-const iconSet = { LayoutDashboard, BusFront, Route, GraduationCap, Users, Wrench, Settings, CircleHelp, ChevronDown, ChevronRight, ChevronLeft, ArrowUpRight, ArrowRight, Plus, Download, Search, Bell, CalendarDays, MapPin, Navigation, LocateFixed, Menu, X, LogOut, Radio, CircleCheck, CircleAlert, Check, Clock3, ShieldCheck, Leaf, School, MoreHorizontal, Play, Square, UserRoundCheck, Trash2, ExternalLink, Mail, RefreshCw, Phone, Info, Gauge, Maximize2, Minimize2, Flame, Terminal, Code, Sparkles, Copy, Zap, Star, Compass, Activity, Server, Database, Shield, Cpu, CheckCheck };
+const iconSet = { LayoutDashboard, BusFront, Route, GraduationCap, Users, Wrench, Settings, CircleHelp, ChevronDown, ChevronRight, ChevronLeft, ArrowUpRight, ArrowRight, Plus, Download, Search, Bell, CalendarDays, MapPin, Navigation, LocateFixed, Menu, X, LogOut, Radio, CircleCheck, CircleAlert, Check, Clock3, ShieldCheck, Leaf, School, MoreHorizontal, Play, Square, UserRoundCheck, Trash2, ExternalLink, Mail, RefreshCw, Phone, Info, Gauge, Maximize2, Minimize2, Activity, CheckCheck };
 const icon = name => `<i data-lucide="${name.replace(/([a-z0-9])([A-Z])/g,'$1-$2').toLowerCase()}"></i>`;
 const mountIcons = () => createIcons({icons:iconSet,attrs:{'aria-hidden':'true','stroke-width':1.75}});
 const app = document.querySelector('#app');
 let page = 'overview', selectedBus = 'bus-1', routeFilter = '', busFilter = 'all', query = '';
 let fleetMap = null, modalMap = null, modalCleanup = null, modalReturnFocus = null, toastTimer, gpsWatch = null, gpsNative = false, gpsRouteId = null, simulatedStep = 0;
 let routeDraft = [], portalTripId = '', loginRole = 'admin', loginMethod = 'quick', portalExpanded = false, publicView = 'landing';
-let fcHeroTab = 'radar', fcOutputTab = 'json', fcCodeLang = 'python', fcFaqOpen = 0;
+let faqOpen = 0;
 const titles = {overview:'Overview',trips:'Trips & history',services:'Services & calendar',fleet:'Fleet management',routes:'Routes & stops',students:'Students',drivers:'Drivers',maintenance:'Maintenance',activity:'Activity log',settings:'Settings',driver:'My route',student:'My journey'};
 const statusNames = {active:'On route',idle:'Available',maintenance:'Maintenance',scheduled:'Scheduled',completed:'Completed',boarded:'On board',assigned:'Assigned',overdue:'Overdue',due_soon:'Due soon',healthy:'Up to date',expected:'Expected',alighted:'Dropped off',cancelled:'Cancelled'};
 const badge = status => `<span class="badge ${esc(status)}">${esc(statusNames[status] || status)}</span>`;
@@ -376,145 +376,6 @@ function renderLanding() {
   const totalStops = store.data.route_stops.length;
   const activeBuses = store.data.buses.filter(b => b.status === 'active').length;
 
-  const simulatorData = {
-    radar: {
-      method: 'GET',
-      url: 'https://udd.edu.ph/api/fleet/live/bonuan-tondaligan',
-      title: 'Live GPS Fleet Radar',
-      badge: 'Active Beacon · 10Hz',
-      json: JSON.stringify({
-        status: "active",
-        corridor: "Bonuan - Tondaligan Beach Corridor",
-        trip_id: "trip-am-01",
-        vehicle: {
-          bus_label: "Bus 101",
-          plate_number: "DAG-2024",
-          capacity: 28,
-          current_occupancy: 18,
-          available_seats: 10
-        },
-        telemetry: {
-          latitude: 16.0582,
-          longitude: 120.3541,
-          speed_kmh: 36.4,
-          heading: "215° SW",
-          current_stop: "Bonuan Tondaligan",
-          next_stop: "Bonuan Gueset",
-          eta_minutes: 3.8
-        },
-        assigned_driver: "Roberto Santos",
-        destination: "UDD Main Campus (Arellano St.)"
-      }, null, 2),
-      markdown: `# Live Vehicle Radar: Bus 101 (Bonuan Corridor)
-- **Service Corridor**: Bonuan - Tondaligan Beach → UDD Main Campus
-- **Vehicle Status**: Active on route (Transmitting live GPS telemetry)
-- **Assigned Driver**: Roberto Santos (0917-555-0192)
-- **Live Coordinates**: 16.0582° N, 120.3541° E (Near Bonuan Gueset)
-- **Velocity & Heading**: 36.4 km/h · 215° SW
-- **Cabin Occupancy**: 18 of 28 seats occupied (10 seats available)
-- **Estimated Arrival**: 07:18 AM (in ~14 mins)`
-    },
-    manifest: {
-      method: 'POST',
-      url: 'https://udd.edu.ph/api/manifest/trip-am-01/board',
-      title: 'O(1) Boarding Verification',
-      badge: '< 10ms Latency',
-      json: JSON.stringify({
-        verification_status: "accepted",
-        manifest_id: "man-am-01",
-        passenger: {
-          student_id: "2023-0142",
-          name: "Isabella Santos",
-          program: "BS Information Technology (3rd Year)",
-          pickup_stop: "Bonuan Tondaligan",
-          assigned_seat: 18
-        },
-        metrics: {
-          lookup_algorithm: "O(1) In-Memory Hash Table",
-          execution_time_ms: 3.6,
-          duplicate_detected: false,
-          pwa_offline_ready: true
-        },
-        audit: {
-          verified_by: "Roberto Santos (Driver)",
-          timestamp: new Date().toLocaleTimeString('en-PH', { timeZone: 'Asia/Manila' })
-        }
-      }, null, 2),
-      markdown: `# Passenger Boarding Pass Verification
-- **Student Account**: Isabella Santos (ID: 2023-0142)
-- **Program & Year**: BSIT 3rd Year · Universidad de Dagupan
-- **Boarding Manifest**: AM-01 Outbound Journey · Bus 101
-- **Pickup Location**: Bonuan Tondaligan Station
-- **Verification Engine**: O(1) Hash Map Token Check
-- **Verification Result**: ACCEPTED (Seat #18 Confirmed)
-- **Duplicate Prevention**: Atomic PostgreSQL Constraint Verified`
-    },
-    graph: {
-      method: 'GET',
-      url: 'https://udd.edu.ph/api/routes/bonuan-tondaligan/sequence',
-      title: 'Directed Graph Stop Sequence',
-      badge: 'O(V + E) Monotonic',
-      json: JSON.stringify({
-        corridor: "Bonuan - Tondaligan Beach Corridor",
-        data_structure: "Directed Acyclic Graph (DAG) Adjacency List",
-        total_distance_km: 8.1,
-        total_stops: 5,
-        nodes: [
-          { sequence: 1, stop: "Bonuan Tondaligan", cumulative_km: 0.0, type: "origin" },
-          { sequence: 2, stop: "Bonuan Gueset", cumulative_km: 2.1, type: "intermediate" },
-          { sequence: 3, stop: "AB Fernandez East", cumulative_km: 5.4, type: "intermediate" },
-          { sequence: 4, stop: "Arellano Street", cumulative_km: 7.2, type: "intermediate" },
-          { sequence: 5, stop: "UDD Main Campus", cumulative_km: 8.1, type: "terminus" }
-        ],
-        graph_invariants: {
-          monotonic_ordering: "strictly ascending",
-          cycle_detection: "zero cycles (DAG verified)",
-          reordering_engine: "Leaflet Drag-and-Order"
-        }
-      }, null, 2),
-      markdown: `# Topological Route Graph: Route 1
-\`\`\`text
-[Stop 1: Tondaligan] ──(2.1 km)──> [Stop 2: Gueset]
-                     ──(3.3 km)──> [Stop 3: AB Fernandez]
-                     ──(1.8 km)──> [Stop 4: Arellano St]
-                     ──(0.9 km)──> [Stop 5: UDD Campus] [TERMINUS]
-\`\`\`
-- **Graph Modeling**: Directed Acyclic Graph (DAG)
-- **Algorithmic Bounds**: O(V + E) Monotonic Traversal
-- **Total Route Span**: 8.1 km across Dagupan City`
-    },
-    capacity: {
-      method: 'GET',
-      url: 'https://udd.edu.ph/api/capacity/bus-101/invariant',
-      title: 'Vehicle Capacity Invariant',
-      badge: 'O(N) Strict Limits',
-      json: JSON.stringify({
-        vehicle: "Bus 101",
-        plate_number: "DAG-2024",
-        seating_limit: 28,
-        allocated_students: 22,
-        active_boarded: 18,
-        available_seats: 6,
-        capacity_check: "allocated <= limit (22 <= 28) -> PASSED",
-        maintenance_telemetry: {
-          current_odometer_km: 24320,
-          next_service_km: 25000,
-          headroom_km: 680,
-          interval_status: "healthy"
-        }
-      }, null, 2),
-      markdown: `# Capacity & Maintenance Invariants: Bus 101
-- **Physical Capacity Limit**: 28 Seats
-- **Registered Subscriptions**: 22 Students Assigned
-- **Seat Headroom**: 6 Seats Available (Overbooking Prevented)
-- **Current Odometer**: 24,320 km (Strictly monotonic)
-- **Next Service Threshold**: 25,000 km (680 km remaining)
-- **Preventive Maintenance Health**: Up to Date (Healthy)`
-    }
-  };
-
-  const currentSim = simulatorData[fcHeroTab] || simulatorData.radar;
-
   const faqs = [
     {
       q: "What is UDD Go and how does it relate to Universidad de Dagupan?",
@@ -565,7 +426,6 @@ function renderLanding() {
 
         <nav class="header-nav-links" aria-label="Main Navigation">
           <button type="button" class="nav-item-btn" data-action="scroll-to-roles">Demo Roles</button>
-          <button type="button" class="nav-item-btn" data-action="scroll-to-playground">Simulator</button>
           <button type="button" class="nav-item-btn" data-action="scroll-to-corridors">Active Routes</button>
           <button type="button" class="nav-item-btn" data-action="scroll-to-dsa">Engineering Pillars</button>
           <button type="button" class="nav-item-btn" data-action="scroll-to-faq">FAQ</button>
@@ -600,10 +460,10 @@ function renderLanding() {
 
           <div class="hero-cta-buttons">
             <button type="button" class="button primary hero-btn-primary" data-action="scroll-to-roles">
-              ${icon('Play')} Explore Interactive Roles ${icon('ArrowDown')}
+              ${icon('Play')} Explore Console Roles ${icon('ArrowRight')}
             </button>
-            <button type="button" class="button hero-btn-secondary" data-action="scroll-to-playground">
-              ${icon('Radio')} View Telemetry Simulator
+            <button type="button" class="button hero-btn-secondary" data-action="scroll-to-corridors">
+              ${icon('Route')} Active Campus Corridors
             </button>
           </div>
 
@@ -650,73 +510,6 @@ function renderLanding() {
             <div class="stat-info">
               <strong>&lt; 10ms Verification</strong>
               <p>O(1) duplicate-safe digital boarding pass</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Interactive Transit Simulator (Firecrawl-Style Interactive Widget in System Colors) -->
-      <section class="landing-section" id="playground-section">
-        <div class="section-heading-wrap">
-          <span class="section-category-tag">${icon('Zap')} LIVE TRANSIT SIMULATOR</span>
-          <h2 class="section-title">Test the System in Action</h2>
-          <p class="section-subtitle">
-            Explore live vehicle telemetry, passenger boarding manifests, and graph routing invariants right in this interactive inspector.
-          </p>
-        </div>
-
-        <div class="simulator-card">
-          <!-- Simulator Mode Navigation Bar -->
-          <div class="simulator-mode-nav">
-            <button type="button" class="sim-mode-btn ${fcHeroTab === 'radar' ? 'active' : ''}" data-action="set-fc-hero-tab" data-id="radar">
-              ${icon('Radio')} <span>Live Fleet Radar</span>
-            </button>
-            <button type="button" class="sim-mode-btn ${fcHeroTab === 'manifest' ? 'active' : ''}" data-action="set-fc-hero-tab" data-id="manifest">
-              ${icon('UserRoundCheck')} <span>Boarding Pass Scan</span>
-            </button>
-            <button type="button" class="sim-mode-btn ${fcHeroTab === 'graph' ? 'active' : ''}" data-action="set-fc-hero-tab" data-id="graph">
-              ${icon('Route')} <span>Graph Stop Sequence</span>
-            </button>
-            <button type="button" class="sim-mode-btn ${fcHeroTab === 'capacity' ? 'active' : ''}" data-action="set-fc-hero-tab" data-id="capacity">
-              ${icon('Gauge')} <span>Capacity Bounds</span>
-            </button>
-          </div>
-
-          <!-- URL / Endpoint Inspector Bar -->
-          <div class="simulator-endpoint-bar">
-            <span class="sim-method-badge ${currentSim.method.toLowerCase()}">${currentSim.method}</span>
-            <div class="sim-url-field">${esc(currentSim.url)}</div>
-            <button type="button" class="button primary sim-refresh-btn" data-action="run-fc-demo">
-              ${icon('Zap')} <span>Refresh Telemetry Beacon</span>
-            </button>
-          </div>
-
-          <!-- Output Viewer Window -->
-          <div class="simulator-output-wrap">
-            <div class="sim-output-toolbar">
-              <div class="sim-window-dots">
-                <span class="wdot red"></span>
-                <span class="wdot yellow"></span>
-                <span class="wdot green"></span>
-                <span class="sim-window-label">${esc(currentSim.title)} · <span class="sim-badge-inline">${esc(currentSim.badge)}</span></span>
-              </div>
-
-              <div class="sim-format-tabs">
-                <button type="button" class="format-tab-btn ${fcOutputTab === 'json' ? 'active' : ''}" data-action="set-fc-output-tab" data-id="json">
-                  Structured JSON
-                </button>
-                <button type="button" class="format-tab-btn ${fcOutputTab === 'markdown' ? 'active' : ''}" data-action="set-fc-output-tab" data-id="markdown">
-                  Manifest Summary
-                </button>
-              </div>
-
-              <button type="button" class="sim-copy-btn" data-action="copy-code" data-id="${esc(fcOutputTab === 'json' ? currentSim.json : currentSim.markdown)}" title="Copy output">
-                ${icon('Copy')} Copy
-              </button>
-            </div>
-
-            <div class="sim-output-body">
-              <pre class="sim-code-content"><code>${esc(fcOutputTab === 'json' ? currentSim.json : currentSim.markdown)}</code></pre>
             </div>
           </div>
         </div>
@@ -969,12 +762,12 @@ function renderLanding() {
 
         <div class="faq-accordion-list">
           ${faqs.map((f, idx) => `
-            <div class="faq-card-item ${fcFaqOpen === idx ? 'open' : ''}">
-              <button type="button" class="faq-question-btn" data-action="toggle-fc-faq" data-id="${idx}">
+            <div class="faq-card-item ${faqOpen === idx ? 'open' : ''}">
+              <button type="button" class="faq-question-btn" data-action="toggle-faq" data-id="${idx}">
                 <span>${esc(f.q)}</span>
-                <span class="faq-chevron-icon">${icon(fcFaqOpen === idx ? 'ChevronDown' : 'ChevronRight')}</span>
+                <span class="faq-chevron-icon">${icon(faqOpen === idx ? 'ChevronDown' : 'ChevronRight')}</span>
               </button>
-              ${fcFaqOpen === idx ? `
+              ${faqOpen === idx ? `
                 <div class="faq-answer-content">
                   <p>${esc(f.a)}</p>
                 </div>
@@ -1029,9 +822,9 @@ function renderLanding() {
               <h4>Quick Navigation</h4>
               <ul>
                 <li><button type="button" class="footer-link" data-action="scroll-to-roles">Interactive Demo Roles</button></li>
-                <li><button type="button" class="footer-link" data-action="scroll-to-playground">Fleet Simulator</button></li>
                 <li><button type="button" class="footer-link" data-action="scroll-to-corridors">Active Routes</button></li>
                 <li><button type="button" class="footer-link" data-action="scroll-to-dsa">Engineering Pillars</button></li>
+                <li><button type="button" class="footer-link" data-action="scroll-to-faq">Frequently Asked Questions</button></li>
               </ul>
             </div>
 
@@ -1423,18 +1216,8 @@ async function handleAction(action,id) {
     case 'toggle-portal-map':portalExpanded=!portalExpanded;render();break;
     case 'go-landing':publicView='landing';render();break;
     case 'go-login':publicView='login';render();break;
-    case 'set-fc-hero-tab':fcHeroTab=id;render();break;
-    case 'set-fc-output-tab':fcOutputTab=id;render();break;
-    case 'set-fc-code-lang':fcCodeLang=id;render();break;
-    case 'toggle-fc-faq':fcFaqOpen=fcFaqOpen===Number(id)?-1:Number(id);render();break;
-    case 'run-fc-demo':toast('Live telemetry payload refreshed from vehicle beacon.');render();break;
-    case 'copy-code':{
-      try{navigator?.clipboard?.writeText(id||'');toast('Code snippet copied to clipboard.');}catch{toast('Copied to clipboard.');}
-      break;
-    }
+    case 'toggle-faq':faqOpen=faqOpen===Number(id)?-1:Number(id);render();break;
     case 'scroll-to-roles':{const el=document.querySelector('#demo-roles-section');if(el)el.scrollIntoView({behavior:'smooth'});break;}
-    case 'scroll-to-playground':{const el=document.querySelector('#playground-section');if(el)el.scrollIntoView({behavior:'smooth'});break;}
-    case 'scroll-to-features':{const el=document.querySelector('#features-section');if(el)el.scrollIntoView({behavior:'smooth'});break;}
     case 'scroll-to-corridors':{const el=document.querySelector('#corridors-section');if(el)el.scrollIntoView({behavior:'smooth'});break;}
     case 'scroll-to-dsa':{const el=document.querySelector('#dsa-section');if(el)el.scrollIntoView({behavior:'smooth'});break;}
     case 'scroll-to-faq':{const el=document.querySelector('#faq-section');if(el)el.scrollIntoView({behavior:'smooth'});break;}
