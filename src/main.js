@@ -403,10 +403,7 @@ function renderLanding() {
     <!-- Top Announcement Ribbon -->
     <aside class="landing-banner">
       <div class="banner-inner">
-        <span class="banner-pill-live">
-          <span class="banner-dot-ping"></span>
-          LIVE FLEET ACTIVE
-        </span>
+        <span class="banner-tag">TRANSIT OPERATIONS</span>
         <span class="banner-text"><strong>UDD Go</strong> · Intelligent Campus Fleet Management & Passenger Safety for Universidad de Dagupan</span>
       </div>
     </aside>
@@ -444,9 +441,14 @@ function renderLanding() {
       <section class="landing-hero-section">
         <div class="hero-radial-halo"></div>
         <div class="hero-content-container">
-          <div class="hero-badge-pill">
-            <span class="badge-beacon-dot"></span>
-            <span>Universidad de Dagupan · Campus Transit Operations</span>
+          <div class="hero-capsule-wrap" data-action="scroll-to-roles" role="button" tabindex="0" title="Explore interactive console roles">
+            <span class="capsule-beam"></span>
+            <div class="hero-capsule">
+              <span class="capsule-badge">TRANSIT OS</span>
+              <span class="capsule-divider"></span>
+              <span class="capsule-label">Universidad de Dagupan Campus Transit Operations</span>
+              <span class="capsule-arrow">${icon('ChevronRight')}</span>
+            </div>
           </div>
 
           <h1 class="hero-main-title">
@@ -670,7 +672,7 @@ function renderLanding() {
                       <h4>${esc(r.route_name)}</h4>
                     </div>
                     <span class="badge ${r.status === 'active' ? 'active' : 'idle'}">
-                      ${r.status === 'active' ? '● Active' : 'Scheduled'}
+                      ${r.status === 'active' ? 'Active' : 'Scheduled'}
                     </span>
                   </div>
 
