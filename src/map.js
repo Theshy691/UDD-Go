@@ -11,21 +11,21 @@ let cartoKey = import.meta.env.VITE_CARTO_API_KEY;
 export function configureMap(config) {cartoKey=config.cartoKey || cartoKey;}
 function baseLayer() {
   return cartoKey
-    ? L.tileLayer(`https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(cartoKey)}`,{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',maxZoom:19,className:'udd-basemap'})
-    : L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:19,className:'udd-basemap osm-tiles'});
+    ? L.tileLayer(`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(cartoKey)}`,{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',maxZoom:19,subdomains:'abcd',className:'udd-basemap'})
+    : L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',maxZoom:19,className:'udd-basemap osm-tiles'});
 }
 function mapOptions(extra={}) {
   return {scrollWheelZoom:false,zoomSnap:.25,zoomDelta:.5,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false,...extra};
 }
 function addCampus(map) {
-  const marker=L.marker(CAMPUS,{title:'Universidad de Dagupan campus',alt:'Universidad de Dagupan campus',zIndexOffset:500,
-    icon:L.divIcon({className:'campus-marker',html:`<div class="campus-pin"><span class="campus-pin-icon">${schoolSvg}</span><span class="campus-pin-label">UDD<small>Main campus</small></span></div>`,iconSize:[38,38],iconAnchor:[19,19]})})
-    .addTo(map).bindTooltip('Universidad de Dagupan',{direction:'top',offset:[0,-22],className:'map-tooltip'});
-  marker.getElement()?.setAttribute('aria-label','Universidad de Dagupan campus');
+  const marker=L.marker(CAMPUS,{title:'Universidad de Dagupan (Main Campus)',alt:'Universidad de Dagupan (Main Campus)',zIndexOffset:800,
+    icon:L.divIcon({className:'campus-marker',html:`<div class="campus-pin"><span class="campus-pin-icon">${schoolSvg}</span><span class="campus-pin-label">UDD<small>Main campus</small></span><i class="campus-beacon" title="University Hub"></i></div>`,iconSize:[42,42],iconAnchor:[21,21]})})
+    .addTo(map).bindTooltip('<strong>Universidad de Dagupan</strong>Main campus &middot; Transit Terminal',{direction:'top',offset:[0,-24],className:'map-tooltip'});
+  marker.getElement()?.setAttribute('aria-label','Universidad de Dagupan Main Campus');
   return marker;
 }
 function stopIcon(stop,color,editor=false) {
-  return L.divIcon({className:`route-stop-marker${editor?' editor-stop-marker':''}`,html:`<span class="map-stop-node" style="--route-color:${color}"><span>${stop.stop_sequence}</span></span>`,iconSize:[22,22],iconAnchor:[11,11]});
+  return L.divIcon({className:`route-stop-marker${editor?' editor-stop-marker':''}`,html:`<span class="map-stop-node" style="--route-color:${color}"><span>${stop.stop_sequence}</span></span>`,iconSize:[24,24],iconAnchor:[12,12]});
 }
 export class FleetMap {
   constructor(element, data, {selected, routeId = '', demo = true, showVehicles=true, onSelect = () => {}} = {}) {
@@ -45,8 +45,8 @@ export class FleetMap {
       const stops=[...buildRouteGraph(data.route_stops.filter(s=>s.route_id===route.id)).values()];
       if(!stops.length)continue;
       const points=stops.map(s=>[s.latitude,s.longitude]),color=colorOf(route);
-      const casing=L.polyline(points,{color:'#ffffff',weight:8,opacity:.95,lineCap:'round',lineJoin:'round',interactive:false}).addTo(this.map);
-      const line=L.polyline(points,{color,weight:3.5,opacity:.9,lineCap:'round',lineJoin:'round',dashArray:route.status==='active'?undefined:'5 7',interactive:false}).addTo(this.map);
+      const casing=L.polyline(points,{color:'#ffffff',weight:8.5,opacity:.96,lineCap:'round',lineJoin:'round',interactive:false}).addTo(this.map);
+      const line=L.polyline(points,{color,weight:4.5,opacity:.98,lineCap:'round',lineJoin:'round',dashArray:route.status==='active'?undefined:'5 7',interactive:false}).addTo(this.map);
       const nodes=stops.filter(stop=>this.map.distance([stop.latitude,stop.longitude],CAMPUS)>25).map(stop=>
         L.marker([stop.latitude,stop.longitude],{title:`Stop ${stop.stop_sequence}: ${stop.stop_name}`,alt:`Stop ${stop.stop_sequence}: ${stop.stop_name}`,zIndexOffset:200,icon:stopIcon(stop,color)})
           .addTo(this.map).bindTooltip(`<strong>Stop ${stop.stop_sequence}</strong>${escapeHtml(stop.stop_name)}`,{direction:'top',offset:[0,-14],className:'map-tooltip'}));
@@ -98,8 +98,8 @@ export class FleetMap {
     for(const [id,marker] of this.markers){marker.getElement()?.classList.toggle('selected',id===focus);marker.setZIndexOffset(id===focus?1200:1000);}
     this.groups.forEach((group,i)=>{
       const muted=focus && group.route.bus_id!==focus;
-      group.line.setStyle({opacity:muted ? 0.38 : 0.96,weight:muted?2.5:3.5});
-      group.casing.setStyle({opacity:muted ? 0.6 : 1,weight:muted?6:8});
+      group.line.setStyle({opacity:muted ? 0.35 : 0.98,weight:muted?2.8:4.5});
+      group.casing.setStyle({opacity:muted ? 0.5 : 0.98,weight:muted?6:8.5});
       group.nodes.forEach(node=>node.getElement()?.classList.toggle('is-muted',Boolean(muted)));
       this.keyElement?.querySelector(`[data-map-route="${i}"]`)?.setAttribute('aria-pressed',String(group.route.bus_id===focus));
     });
@@ -111,7 +111,7 @@ export class FleetMap {
     if(this.campusMarker)this.campusMarker.getElement()?.classList.toggle('label-left',this.map.latLngToContainerPoint(this.campusMarker.getLatLng()).x>width-125);
   }
   addBusMarker(bus,route,lat,lng) {
-    const marker=L.marker([lat,lng],{title:`${bus.label}: ${route.route_name}`,alt:`${bus.label}: ${route.route_name}`,icon:L.divIcon({className:'bus-marker',html:`<div class="bus-pin" style="--route-color:${colorOf(route)}"><span class="bus-pin-icon">${busSvg}</span><span class="bus-pin-copy"><strong>${escapeHtml(bus.label)}</strong><small>${escapeHtml(route.area || route.route_name)}</small></span><i class="bus-pin-status"></i></div>`,iconSize:[44,44],iconAnchor:[22,22]}),zIndexOffset:1000}).addTo(this.map);
+    const marker=L.marker([lat,lng],{title:`${bus.label}: ${route.route_name}`,alt:`${bus.label}: ${route.route_name}`,icon:L.divIcon({className:'bus-marker',html:`<div class="bus-pin" style="--route-color:${colorOf(route)}"><span class="bus-pin-icon">${busSvg}<span class="bus-radar-ring"></span></span><span class="bus-pin-copy"><strong>${escapeHtml(bus.label)}</strong><small>${escapeHtml(route.area || route.route_name)}</small></span><i class="bus-pin-status" title="Live GPS"></i></div>`,iconSize:[46,46],iconAnchor:[23,23]}),zIndexOffset:1000}).addTo(this.map);
     marker.getElement()?.setAttribute('aria-label',`${bus.label}: ${route.route_name}`);
     marker.on('click',()=>{this.highlight(bus.id);this.onSelect(bus.id);});
     this.markers.set(bus.id,marker);
@@ -143,7 +143,7 @@ export function createStopEditor(element,onAdd) {
       layer.clearLayers();
       const points=stops.map(s=>[s.latitude,s.longitude]);
       if(firstUpdate){initialPoints=points;firstUpdate=false;}
-      if(points.length>1){L.polyline(points,{color:'#fff',weight:8,interactive:false}).addTo(layer);L.polyline(points,{color:'#2ba9e0',weight:3.5,dashArray:'5 7',interactive:false}).addTo(layer);}
+      if(points.length>1){L.polyline(points,{color:'#fff',weight:8.5,interactive:false}).addTo(layer);L.polyline(points,{color:'#2ba9e0',weight:4.5,dashArray:'5 7',interactive:false}).addTo(layer);}
       stops.forEach((stop,i)=>L.marker(points[i],{title:`Stop ${i+1}: ${stop.stop_name}`,alt:`Stop ${i+1}: ${stop.stop_name}`,icon:stopIcon({...stop,stop_sequence:i+1},'#2ba9e0',true),zIndexOffset:700}).addTo(layer));
     },
     destroy(){destroyed=true;clearTimeout(resizeTimer);map.stop();map.remove();},
