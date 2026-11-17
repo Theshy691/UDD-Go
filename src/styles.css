@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* Mobile & WebKit Cross-Browser Baseline (Safari & Chrome) */
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    overflow-x: hidden;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
 /* Keep Leaflet controls below mobile navigation and dialogs. */
 .map-wrap {
     isolation: isolate
@@ -8738,3 +8751,411 @@ tr:last-child td {
     background: currentColor;
 }
 
+
+
+/* ==========================================================================
+   Mobile Responsiveness & Cross-Device Optimization (Safari & Chrome)
+   Guarantees zero text overlap, no horizontal blowout, and fluid typography.
+   ========================================================================== */
+
+/* Prevent WebKit flex item overflow & text collision */
+.flex,
+.role-identity,
+.stat-info,
+.corridor-title-group,
+.hero-capsule,
+.login-brand-header,
+.login-card-topbar,
+.modal-header,
+.topbar {
+    min-width: 0;
+}
+
+.role-identity > div,
+.stat-info,
+.stop-preview-node,
+.corridor-title-group,
+.login-brand-text {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.role-account-preview,
+.table-route,
+.corridor-header h4 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* iOS Safari: Prevent viewport zoom on input focus */
+@media (max-width: 768px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="search"],
+    input[type="number"],
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* Safe area insets for iOS notch, Dynamic Island, and home indicator */
+@supports (padding: env(safe-area-inset-top)) {
+    .landing-header {
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+    .topbar {
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+    .sidebar {
+        padding-top: max(29px, env(safe-area-inset-top, 29px));
+        padding-bottom: max(18px, env(safe-area-inset-bottom, 18px));
+    }
+    .landing-footer {
+        padding-bottom: max(32px, env(safe-area-inset-bottom, 32px));
+    }
+    .login-panel {
+        padding-top: max(24px, env(safe-area-inset-top, 24px));
+        padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
+    }
+}
+
+/* Tablet & Smaller Screens (< 1024px) */
+@media (max-width: 1024px) {
+    .header-nav-links {
+        display: none !important;
+    }
+    .login-page {
+        grid-template-columns: 1fr !important;
+    }
+    .login-brand-panel {
+        display: none !important;
+    }
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+    .roles-cards-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .pillars-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+    .corridors-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Small Tablets & Large Phones (< 768px) */
+@media (max-width: 768px) {
+    .hero-main-title {
+        font-size: 34px !important;
+        letter-spacing: -1.2px !important;
+        line-height: 1.2 !important;
+    }
+    .hero-lead-text {
+        font-size: 15px !important;
+        line-height: 1.6 !important;
+    }
+    .landing-section {
+        padding: 56px 20px !important;
+    }
+    .section-title {
+        font-size: 28px !important;
+        letter-spacing: -0.8px !important;
+    }
+    .footer-main-row {
+        grid-template-columns: 1fr !important;
+        gap: 32px !important;
+    }
+    .footer-navigation-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 24px !important;
+    }
+}
+
+/* Standard Mobile Devices (< 640px) */
+@media (max-width: 640px) {
+    .header-campus-pill {
+        display: none !important;
+    }
+    .header-inner {
+        padding: 0 16px !important;
+        height: 60px !important;
+    }
+    .header-portal-btn {
+        padding: 6px 12px !important;
+        font-size: 12px !important;
+    }
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .pillars-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .footer-navigation-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Compact Phones (< 480px: iPhone 13/14/15/16, Galaxy S series, Pixel) */
+@media (max-width: 480px) {
+    .landing-hero-section {
+        padding: 32px 14px 28px !important;
+    }
+    .hero-capsule-wrap {
+        max-width: 100% !important;
+        margin-bottom: 16px !important;
+    }
+    .hero-capsule {
+        max-width: 100% !important;
+        gap: 6px !important;
+        padding: 4px 8px 4px 6px !important;
+        box-sizing: border-box !important;
+    }
+    .capsule-badge {
+        font-size: 9px !important;
+        padding: 2px 5px !important;
+        letter-spacing: 0.4px !important;
+    }
+    .capsule-label {
+        max-width: 165px !important;
+        font-size: 11px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+    .hero-main-title {
+        font-size: 25px !important;
+        letter-spacing: -0.7px !important;
+        line-height: 1.22 !important;
+        margin-bottom: 12px !important;
+    }
+    .hero-lead-text {
+        font-size: 13px !important;
+        line-height: 1.5 !important;
+        margin-bottom: 20px !important;
+        padding: 0 2px !important;
+    }
+    .hero-cta-buttons {
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 10px !important;
+        margin-bottom: 20px !important;
+    }
+    .hero-btn-primary,
+    .hero-btn-secondary {
+        width: 100% !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+        padding: 12px 16px !important;
+        font-size: 13px !important;
+    }
+    .hero-corridors-bar {
+        border-radius: 14px !important;
+        padding: 10px 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    .corridors-bar-label {
+        font-size: 10px !important;
+        text-align: center;
+    }
+    .corridors-tags-row {
+        justify-content: center !important;
+        gap: 5px !important;
+    }
+    .corridor-tag {
+        font-size: 10.5px !important;
+        padding: 3px 8px !important;
+    }
+    .landing-section {
+        padding: 40px 14px !important;
+    }
+    .section-title {
+        font-size: 22px !important;
+        letter-spacing: -0.5px !important;
+        line-height: 1.25 !important;
+    }
+    .section-subtitle {
+        font-size: 12.5px !important;
+        line-height: 1.5 !important;
+    }
+    .stat-card {
+        padding: 12px 14px !important;
+        gap: 12px !important;
+    }
+    .stat-info strong {
+        font-size: 13.5px !important;
+    }
+    .stat-info p {
+        font-size: 11px !important;
+    }
+    .role-card-content {
+        padding: 18px 14px !important;
+    }
+    .role-header-row {
+        gap: 10px !important;
+    }
+    .role-header-row h3 {
+        font-size: 16px !important;
+    }
+    .role-feature-list li {
+        font-size: 11.5px !important;
+        line-height: 1.45 !important;
+        gap: 7px !important;
+    }
+    .corridor-card {
+        border-radius: 14px !important;
+    }
+    .corridor-body {
+        padding: 16px 14px !important;
+    }
+    .corridor-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+    }
+    .corridor-meta-tags {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 5px !important;
+        font-size: 11px !important;
+    }
+    .pillar-box {
+        padding: 18px 14px !important;
+    }
+    .pillar-box h3 {
+        font-size: 15px !important;
+    }
+    .pillar-box p {
+        font-size: 12px !important;
+    }
+    .faq-question-btn {
+        padding: 13px 14px !important;
+        font-size: 12.5px !important;
+        gap: 10px !important;
+    }
+    .faq-question-btn span:first-child {
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+    .faq-chevron-icon {
+        flex-shrink: 0 !important;
+    }
+    .bottom-cta-box {
+        padding: 28px 16px !important;
+        border-radius: 16px !important;
+    }
+    .bottom-cta-inner h2 {
+        font-size: 20px !important;
+        letter-spacing: -0.5px !important;
+        line-height: 1.25 !important;
+    }
+    .bottom-cta-inner p {
+        font-size: 12.5px !important;
+    }
+    .bottom-btn-main {
+        width: 100% !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+        padding: 12px 16px !important;
+        font-size: 13px !important;
+    }
+    .footer-copyright-bar {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+        font-size: 11px !important;
+    }
+    .footer-cert-badges {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+    }
+
+    /* Login Portal on Compact Screens */
+    .login-panel {
+        padding: 16px 10px !important;
+    }
+    .login-panel-inner {
+        padding: 20px 14px !important;
+        border-radius: 16px !important;
+        gap: 14px !important;
+        max-width: 100% !important;
+    }
+    .login-tab-bar {
+        grid-template-columns: 1fr !important;
+        gap: 3px !important;
+    }
+    .login-card-topbar {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+    }
+    .login-campus-pill {
+        font-size: 10px !important;
+        padding: 2px 7px !important;
+        max-width: 145px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+    .login-back-pill {
+        font-size: 11px !important;
+        padding: 3px 8px !important;
+    }
+    .login-brand-header h2 {
+        font-size: 18px !important;
+    }
+    .autofill-chips {
+        gap: 5px !important;
+    }
+    .autofill-chip {
+        flex: 1 1 30% !important;
+        justify-content: center !important;
+        padding: 5px 6px !important;
+        font-size: 10.5px !important;
+    }
+
+    /* App Console Topbar on Compact Screens */
+    .topbar {
+        padding: 0 10px !important;
+    }
+    .topbar-role-pill {
+        display: none !important;
+    }
+    .top-divider {
+        display: none !important;
+    }
+    .demo-switch {
+        max-width: 82px !important;
+        font-size: 9.5px !important;
+        padding: 4px 4px !important;
+    }
+    .top-actions {
+        gap: 6px !important;
+    }
+    .portal-map .map-wrap {
+        height: 310px !important;
+    }
+}
+
+/* Ultra-Narrow Screens (< 360px: iPhone SE 1st gen, small Androids) */
+@media (max-width: 360px) {
+    .capsule-label {
+        max-width: 120px !important;
+        font-size: 10px !important;
+    }
+    .hero-main-title {
+        font-size: 22px !important;
+        letter-spacing: -0.5px !important;
+    }
+    .login-panel-inner {
+        padding: 16px 10px !important;
+    }
+    .login-campus-pill {
+        max-width: 115px !important;
+    }
+}
