@@ -964,14 +964,27 @@ function renderLogin() {
 
     <section class="login-panel">
       <div class="login-panel-inner">
-        <div class="login-nav-bar">
-          <button type="button" class="link-button back-to-landing-btn" data-action="go-landing">
-            ${icon('ChevronLeft')} Back to Home Landing Page
+        <div class="login-card-topbar">
+          <button type="button" class="login-back-pill" data-action="go-landing">
+            ${icon('ChevronLeft')} Back to Home
           </button>
+          <span class="login-campus-pill">
+            ${icon('School')} Universidad de Dagupan
+          </span>
         </div>
-        <div class="login-header">
-          <h2>Welcome to UDD Go</h2>
-          <p>Select your transport workspace view or sign in with school credentials.</p>
+
+        <div class="login-brand-header">
+          <div class="login-brand-badge">
+            <span class="brand-icon">${icon('BusFront')}</span>
+            <div class="login-brand-text">
+              <span class="login-brand-name">UDD<span> Go</span></span>
+              <span class="login-brand-tagline">Campus Transit Operations</span>
+            </div>
+          </div>
+          <div class="login-header">
+            <h2>Welcome to UDD Go</h2>
+            <p>Select your transport workspace view or sign in with school credentials.</p>
+          </div>
         </div>
 
         <div class="login-tab-bar" role="tablist" aria-label="Sign-in method">
