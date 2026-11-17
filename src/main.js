@@ -759,6 +759,34 @@ function renderLanding() {
   const totalStops = store.data.route_stops.length;
   const activeBuses = store.data.buses.filter((b) => b.status === 'active').length;
 
+  const heroRoles = {
+    admin: {
+      label: 'Admin',
+      name: 'Alex Morgan',
+      email: 'admin@udd.edu.ph',
+      title: 'Fleet Operations Director',
+      roleBadge: 'Central Command',
+      iconName: 'LayoutDashboard',
+    },
+    driver: {
+      label: 'Driver',
+      name: 'Roberto Santos',
+      email: 'driver@udd.edu.ph',
+      title: 'School Bus Driver',
+      roleBadge: 'In-Cabin Console',
+      iconName: 'BusFront',
+    },
+    student: {
+      label: 'Student',
+      name: 'Isabella Santos',
+      email: 'student@udd.edu.ph',
+      title: 'Student & Parent',
+      roleBadge: 'Passenger Radar',
+      iconName: 'GraduationCap',
+    },
+  };
+  const activeHeroRole = heroRoles[loginRole] || heroRoles.admin;
+
   const faqs = [
     {
       q: 'What is UDD Go and how does it relate to Universidad de Dagupan?',
@@ -778,7 +806,7 @@ function renderLanding() {
     },
     {
       q: 'How can evaluators test all 3 roles during capstone presentations?',
-      a: 'Right from the Role Showcase below! Click any of the three role cards (Admin Console, Driver Cockpit, Student Radar) to immediately launch an interactive live demo session with pre-populated Dagupan route data, live GPS simulation, and boarding records.',
+      a: 'Right from the Role Showcase below or the Quick Role Access card in the hero! Click any of the three role cards (Admin Console, Driver Cockpit, Student Radar) to immediately launch an interactive live demo session with pre-populated Dagupan route data, live GPS simulation, and boarding records.',
     },
   ];
 
@@ -805,9 +833,11 @@ function renderLanding() {
         </div>
 
         <nav class="header-nav-links" aria-label="Main Navigation">
-          <button type="button" class="nav-item-btn" data-action="scroll-to-roles">Demo Roles</button>
+          <button type="button" class="nav-item-btn" data-action="scroll-to-features">Features</button>
+          <button type="button" class="nav-item-btn" data-action="scroll-to-vehicles">Vehicles</button>
           <button type="button" class="nav-item-btn" data-action="scroll-to-corridors">Active Routes</button>
-          <button type="button" class="nav-item-btn" data-action="scroll-to-dsa">Engineering Pillars</button>
+          <button type="button" class="nav-item-btn" data-action="scroll-to-roles">Demo Roles</button>
+          <button type="button" class="nav-item-btn" data-action="scroll-to-dsa">Engineering</button>
           <button type="button" class="nav-item-btn" data-action="scroll-to-faq">FAQ</button>
         </nav>
 
@@ -820,47 +850,155 @@ function renderLanding() {
     </header>
 
     <main class="landing-main-content">
-      <!-- Hero Section -->
+      <!-- 2-Column Split Hero Section (Inspired by Enterprise Fleet Platform) -->
       <section class="landing-hero-section">
         <div class="hero-radial-halo"></div>
-        <div class="hero-content-container">
-          <div class="hero-capsule-wrap" data-action="scroll-to-roles" role="button" tabindex="0" title="Explore interactive console roles">
-            <span class="capsule-beam"></span>
-            <div class="hero-capsule">
-              <span class="capsule-badge">TRANSIT OS</span>
-              <span class="capsule-divider"></span>
-              <span class="capsule-label">Universidad de Dagupan Campus Transit Operations</span>
-              <span class="capsule-arrow">${icon('ChevronRight')}</span>
+        <div class="hero-split-container">
+          <!-- Hero Left Column -->
+          <div class="hero-left-col">
+            <div class="hero-capsule-wrap" data-action="scroll-to-roles" role="button" tabindex="0" title="Explore interactive console roles">
+              <span class="capsule-beam"></span>
+              <div class="hero-capsule">
+                <span class="capsule-badge">TRANSIT OS</span>
+                <span class="capsule-divider"></span>
+                <span class="capsule-label">Universidad de Dagupan Campus Transit Operations</span>
+                <span class="capsule-arrow">${icon('ChevronRight')}</span>
+              </div>
+            </div>
+
+            <h1 class="hero-main-title">
+              The comprehensive<br/>
+              <span class="hero-title-gradient">campus fleet management</span><br/>
+              solution
+            </h1>
+
+            <p class="hero-lead-text">
+              Empowering Universidad de Dagupan with real-time transit telematics, automated driver manifests, and zero-overbooking student safety across all Dagupan City corridors.
+            </p>
+
+            <div class="hero-cta-buttons">
+              <button type="button" class="button primary hero-btn-primary" data-action="scroll-to-roles">
+                ${icon('Play')} Explore Console Roles ${icon('ArrowRight')}
+              </button>
+              <button type="button" class="button hero-btn-secondary" data-action="scroll-to-corridors">
+                ${icon('Route')} Active Campus Corridors
+              </button>
+            </div>
+
+            <!-- Bullet checkmarks matching reference design -->
+            <div class="hero-check-list">
+              <div class="hero-check-item">
+                <span class="check-icon">${icon('Check')}</span>
+                <span>Real-time GPS telematics & velocity monitoring</span>
+              </div>
+              <div class="hero-check-item">
+                <span class="check-icon">${icon('Check')}</span>
+                <span>O(1) duplicate-safe digital boarding verification</span>
+              </div>
+              <div class="hero-check-item">
+                <span class="check-icon">${icon('Check')}</span>
+                <span>Monotonic odometer & preventive maintenance alerts</span>
+              </div>
             </div>
           </div>
 
-          <h1 class="hero-main-title">
-            Every student. Every journey.<br/>
-            <span class="hero-title-gradient">Safer, smarter campus transit.</span>
-          </h1>
+          <!-- Hero Right Column (Interactive Workspace Dispatch Card) -->
+          <div class="hero-right-col">
+            <div class="hero-form-card">
+              <div class="hero-form-header">
+                <div class="hero-form-badge">
+                  <span class="brand-icon small">${icon('BusFront')}</span>
+                  <span>UDD Go · Quick Role Access</span>
+                </div>
+                <h3>Experience UDD Go</h3>
+                <p>Select your transport workspace view or sign in with school credentials.</p>
+              </div>
 
-          <p class="hero-lead-text">
-            A real-time school transit and passenger safety platform for Universidad de Dagupan. Connecting fleet managers, bus drivers, and students through live GPS telemetry, O(1) digital boarding verification, and automated campus dispatches.
-          </p>
+              <!-- Quick role selection pills -->
+              <div class="hero-role-pills" role="tablist" aria-label="Role selector">
+                ${Object.entries(heroRoles)
+                  .map(
+                    ([k, r]) => `
+                  <button type="button" class="hero-role-pill ${loginRole === k ? 'active' : ''}" data-action="select-hero-role" data-id="${k}">
+                    ${icon(r.iconName)} ${esc(r.label)}
+                  </button>
+                `
+                  )
+                  .join('')}
+              </div>
 
-          <div class="hero-cta-buttons">
-            <button type="button" class="button primary hero-btn-primary" data-action="scroll-to-roles">
-              ${icon('Play')} Explore Console Roles ${icon('ArrowRight')}
-            </button>
-            <button type="button" class="button hero-btn-secondary" data-action="scroll-to-corridors">
-              ${icon('Route')} Active Campus Corridors
-            </button>
+              <div class="hero-form-body">
+                <div class="hero-input-group">
+                  <label for="hero-email-input">School email address</label>
+                  <div class="hero-input-wrap">
+                    <span class="input-icon">${icon('Mail')}</span>
+                    <input type="email" id="hero-email-input" readonly value="${esc(activeHeroRole.email)}" class="hero-field" />
+                  </div>
+                </div>
+
+                <div class="hero-input-group">
+                  <label for="hero-password-input">Password / Passcode</label>
+                  <div class="hero-input-wrap">
+                    <span class="input-icon">${icon('Lock')}</span>
+                    <input type="password" id="hero-password-input" readonly value="••••••••••••" class="hero-field" />
+                  </div>
+                </div>
+
+                <div class="hero-input-group">
+                  <label>Assigned profile / workspace view</label>
+                  <div class="hero-role-summary-box">
+                    <strong>${esc(activeHeroRole.name)}</strong>
+                    <span>${esc(activeHeroRole.title)} · ${esc(activeHeroRole.roleBadge)}</span>
+                  </div>
+                </div>
+
+                <button type="button" class="button primary hero-form-submit" data-action="quick-login" data-id="${loginRole}">
+                  ${icon('LogIn')} Sign in to Transport Workspace ${icon('ArrowRight')}
+                </button>
+
+                <div class="hero-form-notice">
+                  ${icon('Info')}
+                  <span>Live mode authenticates against Supabase Auth with Row-Level Security. In demo mode, role views switch without server dependency.</span>
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
+      </section>
 
-          <!-- Live Corridors Status Strip -->
-          <div class="hero-corridors-bar">
-            <span class="corridors-bar-label">DAGUPAN CITY ARTERIAL CORRIDORS:</span>
-            <div class="corridors-tags-row">
-              <span class="corridor-tag blue">${icon('Route')} Bonuan - Tondaligan</span>
-              <span class="corridor-tag green">${icon('Route')} Calasiao Highway</span>
-              <span class="corridor-tag amber">${icon('Route')} Lucao District</span>
-              <span class="corridor-tag purple">${icon('Route')} Downtown Express</span>
-              <span class="corridor-tag terminus">${icon('School')} UDD Main Campus</span>
+      <!-- Trust & Arterial Corridor Strip (Matching Partner Logos in Reference) -->
+      <section class="landing-trust-bar">
+        <div class="trust-bar-inner">
+          <span class="trust-label">TRANSIT PARTNERS & ARTERIAL CORRIDORS:</span>
+          <div class="trust-badges-row">
+            <span class="trust-badge">${icon('School')} Universidad de Dagupan</span>
+            <span class="trust-badge">${icon('Route')} Bonuan - Tondaligan Line</span>
+            <span class="trust-badge">${icon('Route')} Calasiao Highway Route</span>
+            <span class="trust-badge">${icon('Route')} Lucao District Transit</span>
+            <span class="trust-badge">${icon('Route')} Downtown Dagupan Express</span>
+            <span class="trust-badge">${icon('ShieldCheck')} CHED Safe Transit Standard</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Three Core Value Proposition Pillars (Matching Circular Icons in Reference) -->
+      <section class="landing-pillars-strip">
+        <div class="landing-container">
+          <div class="value-pillars-grid">
+            <div class="value-pillar-card">
+              <div class="value-pillar-icon blue">${icon('Radio')}</div>
+              <h3>Instant Telematics</h3>
+              <p>Sub-second vehicle GPS telemetry, live approaching bus radar, and automated traffic velocity monitoring across Dagupan City.</p>
+            </div>
+            <div class="value-pillar-card">
+              <div class="value-pillar-icon green">${icon('ShieldCheck')}</div>
+              <h3>Guaranteed Capacity</h3>
+              <p>Transactional database capacity locks ensuring zero student overbooking, guaranteed seating, and eliminated standing-room hazards.</p>
+            </div>
+            <div class="value-pillar-card">
+              <div class="value-pillar-icon amber">${icon('BusFront')}</div>
+              <h3>Driver Accountability</h3>
+              <p>Mandatory post-trip cabin sweeps ensuring zero students left behind, combined with strictly monotonic odometer tracking.</p>
             </div>
           </div>
         </div>
@@ -895,6 +1033,298 @@ function renderLanding() {
             <div class="stat-info">
               <strong>&lt; 10ms Verification</strong>
               <p>O(1) duplicate-safe digital boarding pass</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 Alternating Zig-Zag Showcase Sections (Matching Reference Design) -->
+      <section class="landing-showcases-wrapper" id="features-section">
+        <!-- Showcase 1: Instant Visibility (Text Left, Visual Right) -->
+        <div class="showcase-row">
+          <div class="showcase-content-col">
+            <span class="showcase-category-pill blue">${icon('Radio')} REAL-TIME TELEMATICS</span>
+            <h2 class="showcase-title">Instant visibility across your entire campus fleet</h2>
+            <p class="showcase-desc">
+              Live interactive Leaflet map tracking all active campus buses along Dagupan streets. Monitor exact speed, coordinates, next stops, and passenger occupancies from a single centralized operations console.
+            </p>
+            <ul class="showcase-bullet-list">
+              <li>${icon('Check')} <strong>Sub-second GPS updates:</strong> Telemetry beacons broadcasted via private WebSockets</li>
+              <li>${icon('Check')} <strong>High-accuracy geofencing:</strong> Automatic detection as buses approach designated stops</li>
+              <li>${icon('Check')} <strong>Dynamic route geometry:</strong> Stop sequence markers rendered with live capacity pills</li>
+            </ul>
+            <div class="showcase-action-wrap">
+              <button type="button" class="button primary" data-action="quick-login" data-id="admin">
+                ${icon('LayoutDashboard')} Explore Live Radar Console ${icon('ArrowRight')}
+              </button>
+            </div>
+          </div>
+
+          <div class="showcase-visual-col">
+            <div class="mockup-window-card">
+              <div class="mockup-window-header">
+                <div class="mockup-dots">
+                  <span class="dot red"></span>
+                  <span class="dot yellow"></span>
+                  <span class="dot green"></span>
+                </div>
+                <span class="mockup-title">${icon('Radio')} Dagupan Central Radar · Live Telemetry</span>
+                <span class="mockup-badge live">● LIVE BEACON</span>
+              </div>
+              <div class="mockup-window-body">
+                <div class="mockup-bus-row">
+                  <div class="mockup-bus-info">
+                    <span class="bus-number-chip">Bus #1</span>
+                    <div>
+                      <strong>Bonuan – Tondaligan Line</strong>
+                      <span class="small muted">Driver: Alex Morgan · Next: Nepo Mall Junction</span>
+                    </div>
+                  </div>
+                  <div class="mockup-bus-stats">
+                    <span class="badge active">38 km/h</span>
+                    <span class="pill-capacity">22 / 28 Seats</span>
+                  </div>
+                </div>
+
+                <div class="mockup-bus-row">
+                  <div class="mockup-bus-info">
+                    <span class="bus-number-chip">Bus #2</span>
+                    <div>
+                      <strong>Calasiao Highway Arterial</strong>
+                      <span class="small muted">Driver: Roberto Santos · Next: Robinsons Place</span>
+                    </div>
+                  </div>
+                  <div class="mockup-bus-stats">
+                    <span class="badge active">42 km/h</span>
+                    <span class="pill-capacity">16 / 20 Seats</span>
+                  </div>
+                </div>
+
+                <div class="mockup-bus-row">
+                  <div class="mockup-bus-info">
+                    <span class="bus-number-chip">Bus #3</span>
+                    <div>
+                      <strong>Lucao District Express</strong>
+                      <span class="small muted">Driver: Carlo Reyes · Next: UDD Main Campus</span>
+                    </div>
+                  </div>
+                  <div class="mockup-bus-stats">
+                    <span class="badge active">35 km/h</span>
+                    <span class="pill-capacity full">28 / 28 Full</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Showcase 2: In-Cabin Cockpit (Visual Left, Text Right) -->
+        <div class="showcase-row reverse">
+          <div class="showcase-content-col">
+            <span class="showcase-category-pill green">${icon('BusFront')} IN-CABIN COCKPIT</span>
+            <h2 class="showcase-title">Streamlined manifest & O(1) boarding verification</h2>
+            <p class="showcase-desc">
+              Eliminate paper rosters and chaotic boarding. Bus drivers verify passengers in under 10 milliseconds with instant duplicate check-in rejection, local offline persistence, and automated parent arrival notifications.
+            </p>
+            <ul class="showcase-bullet-list">
+              <li>${icon('Check')} <strong>1-Tap check-in:</strong> Instant student ID verification with zero double-boarding</li>
+              <li>${icon('Check')} <strong>Atomic capacity guards:</strong> Prevents physical vehicle seating overbooking</li>
+              <li>${icon('Check')} <strong>Mandatory cabin check:</strong> Post-trip confirmation ensuring zero students remain</li>
+            </ul>
+            <div class="showcase-action-wrap">
+              <button type="button" class="button primary" data-action="quick-login" data-id="driver">
+                ${icon('BusFront')} Launch Driver Cockpit ${icon('ArrowRight')}
+              </button>
+            </div>
+          </div>
+
+          <div class="showcase-visual-col">
+            <div class="mockup-window-card">
+              <div class="mockup-window-header">
+                <div class="mockup-dots">
+                  <span class="dot red"></span>
+                  <span class="dot yellow"></span>
+                  <span class="dot green"></span>
+                </div>
+                <span class="mockup-title">${icon('UserRoundCheck')} Stop #3: Perez Blvd. Junction</span>
+                <span class="mockup-badge active">BOARDING OPEN</span>
+              </div>
+              <div class="mockup-window-body">
+                <div class="manifest-check-item success">
+                  <div class="manifest-student-meta">
+                    <span class="student-id-tag">UDD-0005</span>
+                    <strong>Juan Dela Cruz</strong>
+                    <span class="small muted">Pickup: Perez Blvd.</span>
+                  </div>
+                  <span class="manifest-status-badge boarded">${icon('Check')} Boarded</span>
+                </div>
+
+                <div class="manifest-check-item success">
+                  <div class="manifest-student-meta">
+                    <span class="student-id-tag">UDD-0006</span>
+                    <strong>Maria Santos</strong>
+                    <span class="small muted">Pickup: Perez Blvd.</span>
+                  </div>
+                  <span class="manifest-status-badge boarded">${icon('Check')} Boarded</span>
+                </div>
+
+                <div class="manifest-check-item warning">
+                  <div class="manifest-student-meta">
+                    <span class="student-id-tag">UDD-0001</span>
+                    <strong>Duplicate Boarding Scan</strong>
+                    <span class="small muted">Already boarded at Stop #1</span>
+                  </div>
+                  <span class="manifest-status-badge rejected">${icon('ShieldAlert')} Duplicate Blocked</span>
+                </div>
+
+                <div class="cabin-check-banner">
+                  ${icon('ShieldCheck')}
+                  <div>
+                    <strong>Post-Trip Cabin Safety Verification</strong>
+                    <span class="small muted">Driver confirms entire cabin inspected and zero students left behind.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Showcase 3: Works with Any Vehicle (Text Left, Vehicle Showcase Right) -->
+        <div class="showcase-row" id="vehicles-section">
+          <div class="showcase-content-col">
+            <span class="showcase-category-pill amber">${icon('Truck')} MULTI-VEHICLE FLEET</span>
+            <h2 class="showcase-title">Works with every campus vehicle</h2>
+            <p class="showcase-desc">
+              UDD Go seamlessly adapts to diverse institutional transit fleets—from high-capacity student coaches to compact commuter vans and campus electric shuttles.
+            </p>
+            <ul class="showcase-bullet-list">
+              <li>${icon('Check')} <strong>Configurable seating capacities:</strong> Tailored from 14 to 50+ passenger seats</li>
+              <li>${icon('Check')} <strong>Flexible AM/PM allocation:</strong> Share vehicle assets across non-conflicting schedules</li>
+              <li>${icon('Check')} <strong>Integrated asset tracking:</strong> Comprehensive vehicle profiles, plates, and odometer logs</li>
+            </ul>
+            <div class="showcase-action-wrap">
+              <button type="button" class="button" data-action="scroll-to-corridors">
+                ${icon('Route')} View Active Campus Corridors ${icon('ArrowRight')}
+              </button>
+            </div>
+          </div>
+
+          <div class="showcase-visual-col">
+            <div class="vehicles-showcase-grid">
+              <div class="vehicle-card-item">
+                <div class="vehicle-icon-wrap blue">${icon('BusFront')}</div>
+                <div class="vehicle-card-meta">
+                  <h4>Toyota Coaster Transit</h4>
+                  <span class="vehicle-seats">28 Passenger Seats</span>
+                  <span class="small muted">Bonuan & Downtown Routes</span>
+                </div>
+              </div>
+
+              <div class="vehicle-card-item">
+                <div class="vehicle-icon-wrap green">${icon('Car')}</div>
+                <div class="vehicle-card-meta">
+                  <h4>Nissan Commuter Van</h4>
+                  <span class="vehicle-seats">18 Passenger Seats</span>
+                  <span class="small muted">Calasiao Highway Line</span>
+                </div>
+              </div>
+
+              <div class="vehicle-card-item">
+                <div class="vehicle-icon-wrap amber">${icon('BusFront')}</div>
+                <div class="vehicle-card-meta">
+                  <h4>Campus Express Coach</h4>
+                  <span class="vehicle-seats">45 Passenger Seats</span>
+                  <span class="small muted">Lucao District Terminal</span>
+                </div>
+              </div>
+
+              <div class="vehicle-card-item">
+                <div class="vehicle-icon-wrap purple">${icon('Zap')}</div>
+                <div class="vehicle-card-meta">
+                  <h4>Electric Campus Shuttle</h4>
+                  <span class="vehicle-seats">14 Passenger Seats</span>
+                  <span class="small muted">UDD Main Campus Loop</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Showcase 4: Maintenance & Odometer (Visual Left, Text Right) -->
+        <div class="showcase-row reverse">
+          <div class="showcase-content-col">
+            <span class="showcase-category-pill purple">${icon('Wrench')} FLEET RELIABILITY</span>
+            <h2 class="showcase-title">Automated preventive maintenance & odometer validation</h2>
+            <p class="showcase-desc">
+              Prevent transit breakdowns before they happen. Enforce strictly monotonic odometer logging after every trip, receive automated alerts at 500 km thresholds, and maintain complete audit records for university administration.
+            </p>
+            <ul class="showcase-bullet-list">
+              <li>${icon('Check')} <strong>Monotonic odometer validation:</strong> Prevents mileage tampering or rollback</li>
+              <li>${icon('Check')} <strong>Proactive warnings:</strong> Color-coded alerts when servicing falls within 500 km</li>
+              <li>${icon('Check')} <strong>Certified service logs:</strong> Complete audit trail of past mechanic inspections</li>
+            </ul>
+            <div class="showcase-action-wrap">
+              <button type="button" class="button primary" data-action="quick-login" data-id="admin">
+                ${icon('Wrench')} Inspect Maintenance Dashboard ${icon('ArrowRight')}
+              </button>
+            </div>
+          </div>
+
+          <div class="showcase-visual-col">
+            <div class="mockup-window-card">
+              <div class="mockup-window-header">
+                <div class="mockup-dots">
+                  <span class="dot red"></span>
+                  <span class="dot yellow"></span>
+                  <span class="dot green"></span>
+                </div>
+                <span class="mockup-title">${icon('Gauge')} Maintenance Health & Servicing Records</span>
+                <span class="mockup-badge active">ACTIVE MONITOR</span>
+              </div>
+              <div class="mockup-window-body">
+                <div class="maintenance-monitor-item healthy">
+                  <div>
+                    <strong>Bus #1 (Toyota Coaster)</strong>
+                    <span class="small muted">Current: 42,150 km · Next: 45,000 km</span>
+                  </div>
+                  <span class="maint-status-pill healthy">${icon('Check')} Healthy · 2,850 km left</span>
+                </div>
+
+                <div class="maintenance-monitor-item due-soon">
+                  <div>
+                    <strong>Bus #3 (Nissan Commuter)</strong>
+                    <span class="small muted">Current: 59,650 km · Next: 60,000 km</span>
+                  </div>
+                  <span class="maint-status-pill due-soon">${icon('AlertTriangle')} Due Soon · 350 km left</span>
+                </div>
+
+                <div class="maintenance-monitor-item overdue">
+                  <div>
+                    <strong>Bus #6 (Campus Coach)</strong>
+                    <span class="small muted">Current: 80,120 km · Next: 80,000 km</span>
+                  </div>
+                  <span class="maint-status-pill overdue">${icon('AlertCircle')} Overdue Service</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Institutional Testimonial / Quote Card (Matching Reference Design) -->
+      <section class="landing-quote-section">
+        <div class="landing-container">
+          <div class="institutional-quote-card">
+            <div class="quote-crest-wrap">${icon('Quote')}</div>
+            <blockquote class="quote-text">
+              "UDD Go has modernized our campus transportation. Having real-time visibility over student boarding, bus telemetry, and driver safety checks gives parents, students, and administration total confidence every school day."
+            </blockquote>
+            <div class="quote-author-row">
+              <div class="quote-avatar-box">${icon('UserRoundCheck')}</div>
+              <div class="quote-author-info">
+                <strong>Engr. Alex Morgan</strong>
+                <span>Director of Campus Transit Operations · Universidad de Dagupan</span>
+              </div>
             </div>
           </div>
         </div>
@@ -2000,6 +2430,16 @@ async function handleAction(action, id) {
       faqOpen = faqOpen === Number(id) ? -1 : Number(id);
       render();
       break;
+    case 'scroll-to-features': {
+      const el = document.querySelector('#features-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      break;
+    }
+    case 'scroll-to-vehicles': {
+      const el = document.querySelector('#vehicles-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      break;
+    }
     case 'scroll-to-roles': {
       const el = document.querySelector('#demo-roles-section');
       if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -2020,6 +2460,10 @@ async function handleAction(action, id) {
       if (el) el.scrollIntoView({ behavior: 'smooth' });
       break;
     }
+    case 'select-hero-role':
+      loginRole = id;
+      renderLanding();
+      break;
     case 'select-login-role':
       loginRole = id;
       renderLogin();
