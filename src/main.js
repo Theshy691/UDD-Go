@@ -1145,7 +1145,7 @@ function routeModal(routeId='') {
 }
 function updateDraft() {
   document.querySelector('#stop-editor-list').innerHTML=routeDraft.map((s,i)=>`<div class="stop-editor-row"><span>${i+1}</span><input data-stop-index="${i}" aria-label="Name for stop ${i+1}" value="${esc(s.stop_name)}" maxlength="100" required/><button type="button" class="icon-button" data-action="remove-stop" data-id="${i}" aria-label="Remove stop ${i+1}">${icon('X')}</button><button type="button" class="icon-button" data-action="move-stop-up" data-id="${i}" aria-label="Move stop ${i+1} up">↑</button><button type="button" class="icon-button" data-action="move-stop-down" data-id="${i}" aria-label="Move stop ${i+1} down">↓</button></div>`).join('');
-  document.querySelector('#stop-remapping').innerHTML=(routeDraft.originalStops || []).filter(old=>!routeDraft.some(s=>s.id===old.id)).map(old=>selectField(`Remap removed stop: ${old.stop_name}`,`remap:${old.id}`,routeDraft.map(s=>`<option value="${esc(s.id)}">${esc(s.stop_name)}</option>`).join(''))).join('');
+  document.querySelector('#stop-remapping').innerHTML=(routeDraft.originalStops || []).filter(old=>!routeDraft.some(s=>s.id===old.id)).map(old=>selectField(`Remap removed stop: ${esc(old.stop_name)}`,`remap:${old.id}`,routeDraft.map(s=>`<option value="${esc(s.id)}">${esc(s.stop_name)}</option>`).join(''))).join('');
   document.querySelector('#stop-count').textContent=`${routeDraft.length} stops added`;modalMap.update(routeDraft);mountIcons();
 }
 function busDetail(id) {

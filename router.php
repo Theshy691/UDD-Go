@@ -8,6 +8,11 @@ if ($file && str_starts_with($file, $root . DIRECTORY_SEPARATOR) && is_file($fil
     return false;
 }
 if (str_starts_with($path, '/api/')) {
+    $apiFile = realpath(__DIR__ . '/public/api/index.php');
+    if ($apiFile && is_file($apiFile)) {
+        require $apiFile;
+        exit;
+    }
     http_response_code(404);
     header('Content-Type: application/json');
     echo json_encode(['error' => 'Endpoint not found.']);

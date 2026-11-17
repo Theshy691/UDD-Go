@@ -1,10 +1,13 @@
 <?php
 declare(strict_types=1);
 
-// Optional PHP middleware. Supabase verifies each forwarded bearer token and enforces RLS.
+// Production PHP middleware. Supabase verifies each forwarded bearer token and enforces RLS.
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('Permissions-Policy: geolocation=(self)');
 
 $url = rtrim(getenv('SUPABASE_URL') ?: '', '/');
 $key = getenv('SUPABASE_ANON_KEY') ?: '';
@@ -26,35 +29,61 @@ if (!preg_match('/^Bearer [A-Za-z0-9_.\-]+$/', $authorization)) {
 }
 $method = $_SERVER['REQUEST_METHOD'];
 $resource = $_GET['resource'] ?? '';
-$allowed = ['users', 'buses', 'routes', 'route_stops', 'student_assignments', 'activity'];
+$allowed = [
+    'users',
+    'buses',
+    'routes',
+    'route_stops',
+    'student_assignments',
+    'activity',
+    'service_schedules',
+    'student_subscriptions',
+    'calendar_exceptions',
+    'route_versions',
+    'trips',
+    'trip_passengers',
+    'trip_resource_events'
+];
 if ($action === 'list' && $method === 'GET' && in_array($resource, $allowed, true)) {
     $path = '/rest/v1/' . $resource . '?select=*&limit=10000';
     $body = null;
 } elseif ($action === 'mutate' && $method === 'POST') {
     if ((int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 65536) {
-        http_response_code(413); echo json_encode(['error' => 'Request too large.']); exit;
+        http_response_code(413);
+        echo json_encode(['error' => 'Request too large.']);
+        exit;
     }
     $body = file_get_contents('php://input', false, null, 0, 65537);
     if (strlen($body) > 65536 || json_decode($body, true) === null) {
-        http_response_code(400); echo json_encode(['error' => 'A JSON RPC payload is required.']); exit;
+        http_response_code(400);
+        echo json_encode(['error' => 'A JSON RPC payload is required.']);
+        exit;
     }
     $path = '/rest/v1/rpc/fleet_action';
 } else {
-    http_response_code(404); echo json_encode(['error' => 'Endpoint not found.']); exit;
+    http_response_code(404);
+    echo json_encode(['error' => 'Endpoint not found.']);
+    exit;
 }
+
 $curl = curl_init($url . $path);
+$isHttps = str_starts_with($url, 'https://');
 curl_setopt_array($curl, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_TIMEOUT => 15,
     CURLOPT_HTTPHEADER => ['apikey: ' . $key, 'Authorization: ' . $authorization, 'Content-Type: application/json'],
     CURLOPT_CUSTOMREQUEST => $method,
-    CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+    CURLOPT_PROTOCOLS => $isHttps ? CURLPROTO_HTTPS : (CURLPROTO_HTTP | CURLPROTO_HTTPS),
 ]);
-if ($body !== null) { curl_setopt($curl, CURLOPT_POSTFIELDS, $body); }
+if ($body !== null) {
+    curl_setopt($curl, CURLOPT_POSTFIELDS, $body);
+}
 $result = curl_exec($curl);
 if ($result === false) {
-    http_response_code(502); echo json_encode(['error' => 'The fleet service is unavailable. Try again shortly.']);
+    http_response_code(502);
+    echo json_encode(['error' => 'The fleet service is unavailable. Try again shortly.']);
 } else {
-    http_response_code(curl_getinfo($curl, CURLINFO_HTTP_CODE)); echo $result;
+    http_response_code(curl_getinfo($curl, CURLINFO_HTTP_CODE));
+    echo $result;
 }
 curl_close($curl);
