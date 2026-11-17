@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --test tests/*.test.js",
+    "format": "prettier --write \"src/**/*.{js,css}\" \"index.html\"",
     "php": "php -S 127.0.0.1:8080 -t dist router.php",
     "ios:setup": "npm run build && node scripts/setup-ios.mjs",
     "ios:run": "npm run ios:setup && node scripts/run-ios.mjs",
@@ -26,6 +27,7 @@
     "@capacitor/cli": "^7.0.0",
     "@electric-sql/pglite": "^0.5.16",
     "@tailwindcss/vite": "^4.1.0",
+    "prettier": "^3.10.1",
     "tailwindcss": "^4.1.0",
     "vite": "^7.0.0"
   }
