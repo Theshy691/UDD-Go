@@ -211,13 +211,15 @@ export class FleetMap {
       .map((s) => [s.latitude, s.longitude]);
     for (const marker of this.markers.values()) points.push(marker.getLatLng());
     this.userMoved = false;
-    if (points.length)
+    if (points.length) {
+      const compact = this.map.getSize().y < 300;
       this.map.fitBounds(L.latLngBounds(points), {
-        paddingTopLeft: [32, 58],
-        paddingBottomRight: [62, 82],
+        paddingTopLeft: compact ? [24, 52] : [32, 58],
+        paddingBottomRight: compact ? [48, 52] : [62, 82],
         maxZoom: 14.5,
         animate: false,
       });
+    }
   }
   highlight(busId) {
     if (this.destroyed) return;

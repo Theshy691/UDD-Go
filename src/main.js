@@ -1,4 +1,5 @@
 import './styles.css';
+import './console.css';
 import { mountLanding } from './landing.js';
 import { mountLogin } from './login.js';
 import {
@@ -33,7 +34,6 @@ import {
   Check,
   Clock3,
   ShieldCheck,
-  Leaf,
   School,
   MoreHorizontal,
   Play,
@@ -95,7 +95,6 @@ const iconSet = {
   Check,
   Clock3,
   ShieldCheck,
-  Leaf,
   School,
   MoreHorizontal,
   Play,
@@ -254,16 +253,16 @@ function navItem(key, name, iconName, count = '') {
 function shell(content) {
   const admin = store.profile.role === 'admin';
   const due = store.data.buses.filter((b) => maintenanceStatus(b).status !== 'healthy').length;
-  return `<div class="sidebar-overlay" data-action="close-menu"></div><aside class="sidebar" aria-label="Main navigation">
+  return `<div class="udd-console"><div class="sidebar-overlay" data-action="close-menu"></div><aside class="sidebar" aria-label="Main navigation">
     <a class="brand" href="#" data-page="${admin ? 'overview' : store.profile.role}" aria-label="UDD Go home"><span class="brand-icon">${icon('BusFront')}</span><div>UDD<span> Go</span></div></a>
-    <div class="campus-switch"><span class="campus-icon">${icon('School')}</span><div><strong>Universidad de Dagupan</strong><small>Main campus · Dagupan City</small></div>${icon('ChevronDown')}</div>
+    <div class="campus-switch"><span class="campus-icon">${icon('School')}</span><div><strong>Universidad de Dagupan</strong><small>Main campus · Dagupan City</small></div></div>
     <div class="nav-label">Workspace</div><nav class="nav-list">${admin ? `${navItem('overview', 'Overview', 'LayoutDashboard')}${navItem('fleet', 'Fleet management', 'BusFront')}${navItem('routes', 'Routes & stops', 'Route')}${navItem('services', 'Services & calendar', 'CalendarDays')}${navItem('students', 'Students', 'GraduationCap')}${navItem('drivers', 'Drivers', 'Users')}${navItem('maintenance', 'Maintenance', 'Wrench', due)}` : navItem(store.profile.role, store.profile.role === 'driver' ? 'My route' : 'My journey', store.profile.role === 'driver' ? 'Route' : 'MapPin')}
     </nav><div class="nav-separator"></div><div class="nav-label">Manage</div><nav class="nav-list">${admin ? navItem('activity', 'Activity log', 'Clock3') : ''}${navItem('trips', 'Trips & history', 'CalendarDays')}${navItem('settings', 'Settings', 'Settings')}</nav>
-    <div class="sidebar-bottom"><div class="help-card"><div class="help-icon">${icon('Leaf')}</div><strong>A little care. A safer journey.</strong><p>Keep your fleet ready for the road.</p><button class="link-button" data-action="help">Visit the help center ${icon('ArrowUpRight')}</button></div>
+    <div class="sidebar-bottom"><button type="button" class="nav-link sidebar-help" data-action="help">${icon('CircleHelp')} Help &amp; guidelines</button>
     <div class="sidebar-profile"><div class="avatar">${esc(initials(store.profile.name))}</div><div><strong>${esc(store.profile.name)}</strong><small>${admin ? 'Fleet administrator' : store.profile.role === 'driver' ? 'School bus driver' : 'Student account'}</small></div><button class="icon-button" data-action="logout" aria-label="Sign out / Switch account">${icon('LogOut')}</button></div></div>
   </aside><div class="app-main"><header class="topbar"><div class="flex gap-8"><button class="icon-button menu-toggle" data-action="menu" aria-label="Open navigation">${icon('Menu')}</button><div class="mobile-brand">UDD<span> Go</span></div><div class="breadcrumbs">Workspace ${icon('ChevronRight')}<span class="current">${titles[page]}</span></div></div>
     <div class="top-actions">${admin ? `<label class="global-search">${icon('Search')}<input id="global-search" placeholder="Search your fleet…" aria-label="Search fleet" value="${esc(query)}"/><kbd>⌘ K</kbd></label>` : ''}${store.mode === 'demo' ? `<div class="topbar-role-pill role-${store.profile.role}"><span class="role-pill-dot"></span><span>${admin ? 'Admin' : store.profile.role === 'driver' ? 'Driver' : 'Student'}</span></div><select id="demo-role" class="demo-switch" aria-label="Switch demo role"><option value="admin" ${admin ? 'selected' : ''}>Admin view</option><option value="driver" ${store.profile.role === 'driver' ? 'selected' : ''}>Driver view</option><option value="student" ${store.profile.role === 'student' ? 'selected' : ''}>Student view</option><option value="logout">Sign out to Landing</option></select>` : `<span class="live-label">${icon('ShieldCheck')}Secure workspace</span>`}<span class="top-divider"></span><button class="icon-button" data-action="notifications" aria-label="View notifications">${icon('Bell')}${due ? '<span class="notification-dot"></span>' : ''}</button><div class="avatar">${esc(initials(store.profile.name))}</div></div></header>
-    <main class="page" id="main-content">${content}<footer class="page-footer"><span>© ${new Date().getFullYear()} UDD Go. Every student. Every journey.</span><span>${store.mode === 'demo' ? `${icon('Info')} Sample data · stored in this browser` : `${icon('ShieldCheck')} Access controlled by your fleet role`}</span></footer></main></div>`;
+    <main class="page" id="main-content">${content}<footer class="page-footer"><span>© ${new Date().getFullYear()} UDD Go. Every student. Every journey.</span><span>${store.mode === 'demo' ? `${icon('Info')} Sample data · stored in this browser` : `${icon('ShieldCheck')} Access controlled by your fleet role`}</span></footer></main></div></div>`;
 }
 
 function pageHeader(title, subtitle, actions = '') {
@@ -291,25 +290,75 @@ function stat(label, value, iconName, color, detail, foot) {
   return `<div class="summary-card"><div class="summary-top"><span>${label}</span><span class="stat-icon ${color}">${icon(iconName)}</span></div><div class="summary-value">${value}</div><div class="summary-foot"><span class="${color === 'orange' ? 'orange-text' : 'green-text'}">${detail}</span></div><div class="summary-foot">${foot}</div></div>`;
 }
 
+const gpsClock = new Intl.DateTimeFormat('en-PH', {
+  hour: 'numeric',
+  minute: '2-digit',
+  second: '2-digit',
+  timeZone: 'Asia/Manila',
+});
+
+function gpsUpdate(at) {
+  const recorded = new Date(at ?? NaN);
+  return Number.isNaN(recorded.getTime())
+    ? 'Waiting for GPS'
+    : `GPS updated <time datetime="${recorded.toISOString()}">${gpsClock.format(recorded)} PHT</time>`;
+}
+
 function trackingDetail() {
-  const bus =
-    store.data.buses.find(
-      (b) => b.id === selectedBus && (!routeFilter || routeByBus(b.id)?.id === routeFilter)
-    ) ||
-    store.data.buses.find(
-      (b) => b.status === 'active' && (!routeFilter || routeByBus(b.id)?.id === routeFilter)
+  const active = store
+    .visibleTrips()
+    .filter((trip) => trip.status === 'active' && (!routeFilter || trip.route_id === routeFilter));
+  const trip = active.find((item) => item.bus_id === selectedBus) ?? active[0];
+  const route = store.data.routes.find((item) => item.id === (trip?.route_id ?? routeFilter));
+  const bus = store.data.buses.find((item) => item.id === (trip?.bus_id ?? route?.bus_id));
+  selectedBus = bus?.id ?? '';
+
+  if (!bus && !route)
+    return empty(
+      'No active trips',
+      'Prepare a trip or choose a route to see its stops.',
+      'Navigation'
     );
-  if (!bus)
-    return empty('A quieter moment', 'Start a route to see bus details here.', 'Navigation');
-  selectedBus = bus.id;
-  const route = routeByBus(bus.id),
-    driver = person(route?.driver_id),
-    capacity = route
-      ? routeCapacity(bus, route.id, store.data.student_assignments)
-      : { boarded: 0 };
-  return `<div class="detail-label">Fleet in focus ${icon('Radio')}</div><div class="bus-title"><span class="vehicle-icon">${icon('BusFront')}</span><div><h3>${esc(bus.label)}</h3><p>${esc(bus.plate_number)}</p></div>${badge(bus.status)}</div><div class="driver-mini"><span class="avatar peach">${esc(initials(driver?.name))}</span><div><strong>${esc(driver?.name || 'Unassigned')}</strong>Assigned driver</div></div>
-    <div class="occupancy"><div class="between"><span>Students on board</span><strong>${capacity.boarded} <span class="muted">/ ${bus.capacity}</span></strong></div><div class="progress"><span style="width:${Math.min(100, (capacity.boarded / bus.capacity) * 100)}%"></span></div></div>
-    <div class="stop-timeline">${timeline(stopsFor(route?.id).slice(-3))}</div><div class="detail-bottom between"><span class="small muted" style="font-size:9px">${store.mode === 'demo' ? 'Simulated location' : 'Location updates via GPS'}</span><button class="link-button" data-action="bus-detail" data-id="${esc(bus.id)}">View details ${icon('ArrowRight')}</button></div>`;
+
+  const driver = trip?.driver_name || person(route?.driver_id)?.name;
+  const stops = trip?.stops ?? stopsFor(route?.id);
+  const capacity = trip?.capacity ?? bus?.capacity;
+  const boarded = trip
+    ? tripCounts(store.data.trip_passengers.filter((passenger) => passenger.trip_id === trip.id))
+        .boarded
+    : 0;
+  const positionAt =
+    trip && bus?.position_trip_id === trip.id && bus.position_epoch === trip.location_epoch
+      ? bus.position_at
+      : null;
+
+  return `<div class="overview-bus-heading">
+      <span class="vehicle-icon">${icon(bus ? 'BusFront' : 'Route')}</span>
+      <div><h3>${esc(bus?.label ?? 'Unassigned bus')}</h3><p>${esc(trip?.route_name ?? route?.route_name ?? '')}</p></div>
+      ${bus ? badge(trip ? 'active' : bus.status) : ''}
+    </div>
+    <dl class="overview-bus-facts">
+      <div><dt>Driver</dt><dd>${esc(driver || 'Unassigned')}</dd></div>
+      ${trip ? `<div><dt>On board</dt><dd>${boarded} / ${capacity}</dd></div>` : ''}
+    </dl>
+    <div class="overview-location">
+      <span ${trip && store.mode === 'live' ? `data-gps-update="${esc(trip.id)}"` : ''}>${
+        trip
+          ? store.mode === 'demo'
+            ? 'Simulated location'
+            : gpsUpdate(positionAt)
+          : 'No active trip'
+      }</span>
+      ${bus ? button('View bus', 'bus-detail', { id: bus.id }) : ''}
+    </div>
+    ${
+      stops.length
+        ? `<details class="overview-route-stops">
+            <summary>Route stops <span class="count">${stops.length}</span> ${icon('ChevronDown')}</summary>
+            <ol>${stops.map((stop) => `<li>${esc(stop.stop_name)}</li>`).join('')}</ol>
+          </details>`
+        : ''
+    }`;
 }
 function timeline(stops, selectedStop = '') {
   return stops
@@ -334,23 +383,116 @@ function mapToolbar(allowFilter = true) {
 }
 
 function overview() {
-  return `${pageHeader('Every journey, in view.', 'A little oversight. A safer way to school.', `${button('<span class="export-label">Export report</span>', 'export', { iconName: 'Download', className: 'export-button' })}${button('Add bus', 'add-bus', { primary: true, iconName: 'Plus' })}`)}${stats()}
-    <section class="card tracking-card"><div class="card-head tracking-head"><div><h2>Live fleet tracking <span class="count">${store.data.buses.filter((b) => b.status === 'active').length}</span></h2><p>A clear view of the road ahead.</p></div><span class="live-label" data-live-status><span class="live-dot"></span>${store.mode === 'demo' ? 'Demo simulation' : store.connected ? 'Connected' : 'Connecting…'}</span></div><div class="tracking-layout"><div class="map-wrap"><div id="fleet-map" class="fleet-map" aria-label="Interactive school bus route map"></div>${mapToolbar()}</div><aside class="tracking-detail" id="tracking-detail">${trackingDetail()}</aside></div></section>
-    <div class="bottom-grid"><section class="card"><div class="card-head"><h2>Your fleet <span class="count">${store.data.buses.length}</span></h2><button class="link-button" data-page="fleet">View all buses ${icon('ArrowUpRight')}</button></div>${busTable(store.data.buses.slice(0, 4))}<div class="table-footer"><span>${Math.min(4, store.data.buses.length)} of ${store.data.buses.length} buses</span><span>Built for safer school runs</span></div></section><section class="card"><div class="card-head"><h2>Recent activity</h2><button class="icon-button" data-page="activity" aria-label="View all activity">${icon('MoreHorizontal')}</button></div><div class="activity-list">${activityItems(4)}</div></section></div>`;
+  const { buses, trip_passengers: passengers } = store.data;
+  const active = store.visibleTrips().filter((trip) => trip.status === 'active');
+  const activeIds = new Set(active.map((trip) => trip.id));
+  const activeBusIds = new Set(active.map((trip) => trip.bus_id));
+  const boarded = passengers.filter(
+    (passenger) => activeIds.has(passenger.trip_id) && passenger.status === 'boarded'
+  ).length;
+  const available = buses.filter(
+    (bus) => bus.status === 'idle' && !activeBusIds.has(bus.id)
+  ).length;
+  const maintenanceStates = buses.map((bus) => maintenanceStatus(bus).status);
+  const overdue = maintenanceStates.filter((status) => status === 'overdue').length;
+  const dueSoon = maintenanceStates.filter((status) => status === 'due_soon').length;
+  const stats = [
+    [active.length, 'Trips running', 'Navigation'],
+    [boarded, 'Students on board', 'GraduationCap'],
+    [available, 'Available buses', 'BusFront'],
+  ];
+
+  return `<div class="fleet-overview">
+    <header class="overview-heading">
+      <div>
+        <p class="overview-date">${icon('CalendarDays')} ${date()}</p>
+        <h1>Fleet overview</h1>
+      </div>
+      <div class="overview-actions">
+        ${button('Prepare trip', 'prepare-trip', { primary: true, iconName: 'Plus' })}
+        ${button('Export report', 'export', { iconName: 'Download' })}
+      </div>
+    </header>
+    <ul class="overview-status" aria-label="Fleet at a glance">
+      ${stats.map(([value, label, glyph]) => `<li>${icon(glyph)}<div><strong>${value}</strong><span>${label}</span></div></li>`).join('')}
+    </ul>
+    ${
+      overdue || dueSoon
+        ? `<div class="overview-maintenance ${overdue ? 'has-overdue' : ''}">
+            ${icon('Wrench')}
+            <div>
+              <strong>${overdue ? `${overdue} ${overdue === 1 ? 'bus' : 'buses'} overdue for service` : `${dueSoon} ${dueSoon === 1 ? 'bus' : 'buses'} due for service soon`}</strong>
+              ${overdue && dueSoon ? `<p>${dueSoon} more due soon</p>` : ''}
+            </div>
+            <button type="button" class="link-button" data-page="maintenance">Review maintenance ${icon('ChevronRight')}</button>
+          </div>`
+        : ''
+    }
+    <section class="card overview-tracking" aria-labelledby="fleet-map-title">
+      <div class="card-head">
+        <h2 id="fleet-map-title">Fleet tracking</h2>
+        <span class="live-label" data-live-status role="status"><span class="live-dot"></span>${store.mode === 'demo' ? 'Demo simulation' : store.connected ? 'Connected' : 'Connecting…'}</span>
+      </div>
+      <div class="overview-tracking-layout">
+        <div class="map-wrap">
+          <div id="fleet-map" class="fleet-map" aria-label="Interactive school bus route map"></div>
+          ${mapToolbar()}
+        </div>
+        <aside class="overview-bus-detail" id="tracking-detail" aria-label="Selected bus">
+          ${trackingDetail()}
+        </aside>
+      </div>
+    </section>
+    <div class="bottom-grid">
+      <section class="card">
+        <div class="card-head"><h2>Your fleet <span class="count">${buses.length}</span></h2><button type="button" class="link-button" data-page="fleet">View all buses ${icon('ArrowUpRight')}</button></div>
+        ${busTable(buses.slice(0, 4))}
+        ${buses.length > 4 ? `<div class="table-footer">Showing 4 of ${buses.length} buses</div>` : ''}
+      </section>
+      <section class="card">
+        <div class="card-head"><h2>Recent activity</h2><button type="button" class="link-button" data-page="activity">View activity ${icon('ArrowUpRight')}</button></div>
+        <div class="activity-list">${activityItems(4)}</div>
+      </section>
+    </div>
+  </div>`;
 }
 function safeColor(value) {
   return /^#[0-9a-f]{6}$/i.test(value) ? value : '#38bdf8';
 }
 function busTable(buses, full = false) {
   if (!buses.length) return empty('No buses found', 'Add a bus or try another search.');
-  return `<div class="table-wrap"><table><thead><tr><th>Vehicle</th><th>Assigned route</th><th class="table-driver">Driver</th><th>On board</th><th>Status</th>${full ? '<th>Odometer</th>' : ''}<th><span class="sr-only">Actions</span></th></tr></thead><tbody>${buses
-    .map((bus) => {
-      const route = routeByBus(bus.id),
-        driver = person(route?.driver_id),
-        cap = route ? routeCapacity(bus, route.id, store.data.student_assignments) : { boarded: 0 };
-      return `<tr><td><div class="table-person"><span class="vehicle-icon">${icon('BusFront')}</span><div><strong>${esc(bus.label)}</strong><small>${esc(bus.plate_number)}</small></div></div></td><td><span class="table-route">${route ? `<i class="route-dot" style="--c:${safeColor(route.color)}"></i>${esc(route.route_name)}` : '<span class="muted">Unassigned</span>'}</span></td><td class="table-driver"><span class="muted">${esc(driver?.name || '—')}</span></td><td><div class="table-capacity"><span><strong>${cap.boarded}</strong> / ${bus.capacity}</span><div class="progress"><span style="width:${(cap.boarded / bus.capacity) * 100}%"></span></div></div></td><td>${badge(bus.status)}</td>${full ? `<td class="muted">${formatNumber(bus.current_mileage)} km</td>` : ''}<td><button class="icon-button" data-action="bus-detail" data-id="${esc(bus.id)}" aria-label="View ${esc(bus.label)} details">${icon('MoreHorizontal')}</button></td></tr>`;
-    })
-    .join('')}</tbody></table></div>`;
+  return `<div class="table-wrap fleet-table-wrap"><table>
+    <thead><tr>
+      <th scope="col">Vehicle</th>
+      <th scope="col" class="fleet-table-desktop">Assigned route</th>
+      <th scope="col" class="table-driver fleet-table-desktop">Driver</th>
+      <th scope="col" class="fleet-table-desktop">On board</th>
+      <th scope="col" class="fleet-table-status">Status</th>
+      ${full ? '<th scope="col" class="fleet-table-desktop">Odometer</th>' : ''}
+      <th scope="col" class="fleet-table-action"><span class="sr-only">Actions</span></th>
+    </tr></thead>
+    <tbody>${buses
+      .map((bus) => {
+        const route = routeByBus(bus.id),
+          driver = person(route?.driver_id),
+          cap = route
+            ? routeCapacity(bus, route.id, store.data.student_assignments)
+            : { boarded: 0 },
+          routeName = esc(route?.route_name ?? 'Unassigned');
+        return `<tr>
+        <td><div class="table-person">
+          <span class="vehicle-icon">${icon('BusFront')}</span>
+          <div><strong>${esc(bus.label)}</strong><small class="fleet-table-desktop">${esc(bus.plate_number)}</small><small class="fleet-table-mobile">${routeName}</small></div>
+        </div></td>
+        <td class="fleet-table-desktop"><span class="table-route">${route ? `<i class="route-dot" style="--c:${safeColor(route.color)}"></i>` : ''}${routeName}</span></td>
+        <td class="table-driver fleet-table-desktop"><span class="muted">${esc(driver?.name || '—')}</span></td>
+        <td class="fleet-table-desktop"><div class="table-capacity"><span><strong>${cap.boarded}</strong> / ${bus.capacity}</span><div class="progress"><span style="width:${(cap.boarded / bus.capacity) * 100}%"></span></div></div></td>
+        <td class="fleet-table-status">${badge(bus.status)}</td>
+        ${full ? `<td class="muted fleet-table-desktop">${formatNumber(bus.current_mileage)} km</td>` : ''}
+        <td class="fleet-table-action"><button type="button" class="icon-button fleet-bus-view" data-action="bus-detail" data-id="${esc(bus.id)}" aria-label="View ${esc(bus.label)} details"><span class="fleet-table-desktop">${icon('MoreHorizontal')}</span><span class="fleet-table-mobile">View</span></button></td>
+      </tr>`;
+      })
+      .join('')}</tbody></table></div>`;
 }
 function activityItems(limit = 100) {
   const events = store.data.activity.slice(0, limit);
@@ -1495,7 +1637,12 @@ store.addEventListener('change', () => {
     stopGPS();
   render();
 });
-store.addEventListener('position', (event) => fleetMap?.update(event.detail));
+store.addEventListener('position', ({ detail }) => {
+  fleetMap?.update(detail);
+  if (detail.bus_id !== selectedBus || store.mode !== 'live') return;
+  const status = document.querySelector('[data-gps-update]');
+  if (status?.dataset.gpsUpdate === detail.trip_id) status.innerHTML = gpsUpdate(detail.at);
+});
 store.addEventListener('connectionerror', (event) => toast(event.detail, true));
 store.addEventListener('connection', (event) => {
   const status = document.querySelector('[data-live-status]');
