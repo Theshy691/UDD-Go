@@ -8516,88 +8516,6 @@ tr:last-child td {
   color: #991b1b;
 }
 
-/* Institutional Quote Card */
-.landing-quote-section {
-  padding: 20px 24px 60px;
-}
-
-.institutional-quote-card {
-  max-width: 860px;
-  margin: 0 auto;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
-  padding: 40px 48px;
-  text-align: center;
-  box-shadow: 0 12px 32px -8px rgba(2, 132, 199, 0.08);
-  position: relative;
-}
-
-.quote-crest-wrap {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #e0f2fe;
-  color: #0284c7;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 20px;
-}
-
-.quote-crest-wrap svg {
-  width: 24px;
-  height: 24px;
-}
-
-.quote-text {
-  font-size: 19px;
-  font-weight: 550;
-  line-height: 1.6;
-  color: #1e293b;
-  margin: 0 0 24px;
-  font-style: italic;
-}
-
-.quote-author-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-}
-
-.quote-avatar-box {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #f0fdf4;
-  color: #16a34a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.quote-avatar-box svg {
-  width: 20px;
-  height: 20px;
-}
-
-.quote-author-info {
-  text-align: left;
-}
-
-.quote-author-info strong {
-  display: block;
-  font-size: 14px;
-  color: #0f172a;
-}
-
-.quote-author-info span {
-  font-size: 12px;
-  color: #64748b;
-}
-
 /* 4. Stats Counter Grid */
 .landing-stats-container {
   max-width: 1240px;
@@ -9829,12 +9747,6 @@ tr:last-child td {
   }
   .vehicles-showcase-grid {
     grid-template-columns: 1fr !important;
-  }
-  .institutional-quote-card {
-    padding: 32px 20px !important;
-  }
-  .quote-text {
-    font-size: 16px !important;
   }
   .mockup-window-body {
     padding: 14px !important;

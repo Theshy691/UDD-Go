@@ -1307,25 +1307,6 @@ function renderLanding() {
         </div>
       </section>
 
-      <!-- Institutional Testimonial / Quote Card (Matching Reference Design) -->
-      <section class="landing-quote-section">
-        <div class="landing-container">
-          <div class="institutional-quote-card">
-            <div class="quote-crest-wrap">${icon('Quote')}</div>
-            <blockquote class="quote-text">
-              "UDD Go has modernized our campus transportation. Having real-time visibility over student boarding, bus telemetry, and driver safety checks gives parents, students, and administration total confidence every school day."
-            </blockquote>
-            <div class="quote-author-row">
-              <div class="quote-avatar-box">${icon('UserRoundCheck')}</div>
-              <div class="quote-author-info">
-                <strong>Engr. Alex Morgan</strong>
-                <span>Director of Campus Transit Operations · Universidad de Dagupan</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- The 3 Operational Roles Showcase (Main Attraction for Presentations) -->
       <section class="landing-section" id="demo-roles-section">
         <div class="section-heading-wrap">
