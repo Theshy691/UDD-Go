@@ -729,6 +729,7 @@
 }
 
 .udd-landing-guide-intro p,
+.udd-landing-roles > p,
 .udd-landing-workspace p,
 .udd-landing-faq p {
   font-size: 16px;
@@ -736,102 +737,93 @@
   line-height: 1.6;
 }
 
-.udd-landing-role-tabs {
-  display: flex;
-  gap: 6px;
-  margin-top: 25px;
-  border-bottom: 1px solid var(--landing-rule);
+.udd-landing-roles > p {
+  margin-top: 10px;
 }
 
-.udd-landing-role-tabs button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 8px 15px;
-  background: transparent;
-  border: 0;
-  border-bottom: 3px solid transparent;
-  font-weight: 700;
-  color: var(--landing-muted);
-}
-
-.udd-landing-role-tabs button:hover {
-  background: var(--landing-map);
-}
-
-.udd-landing-role-tabs button[aria-selected='true'] {
-  border-bottom-color: var(--landing-accent);
-  color: var(--landing-accent);
-}
-
-.udd-landing-role-tabs svg {
-  width: 17px;
-  height: 17px;
-}
-
-.udd-landing-workspace:not([hidden]) {
+.udd-landing-workspaces {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: center;
-  gap: 24px 60px;
-  padding-top: 30px;
-  animation: udd-workspace-in 180ms ease-out both;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--landing-rule);
+  border-radius: 11px;
 }
 
-@keyframes udd-workspace-in {
-  from {
-    opacity: 0.6;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+.udd-landing-workspace {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(16px, 2vw, 26px);
+}
+
+.udd-landing-workspace + .udd-landing-workspace {
+  border-left: 1px solid var(--landing-rule);
+}
+
+.udd-landing-workspace:target {
+  box-shadow: inset 0 3px var(--landing-accent);
 }
 
 .udd-landing-workspace h3 {
-  font-size: clamp(22px, 2.55vw, 35px);
-  letter-spacing: -0.055em;
-  line-height: 1.13;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: clamp(18px, 1.9vw, 23px);
+  letter-spacing: -0.035em;
+  line-height: 1.2;
 }
 
 .udd-landing-workspace p {
-  max-width: 40ch;
-  margin-block: 12px 20px;
+  margin-block: 12px 16px;
 }
 
 .udd-landing-workspace-preview {
-  background: #fff;
-  border: 1px solid var(--landing-rule);
-  border-left: 3px solid var(--landing-accent);
-  border-radius: 9px;
-  padding: 19px 22px;
+  margin-top: auto;
+  background: var(--landing-paper);
+  border-radius: 8px;
 }
 
-.udd-landing-workspace-preview h4 {
+.udd-landing-workspace-preview summary {
   display: flex;
   align-items: center;
-  gap: 9px;
-  font-weight: 800;
-  font-size: 15px;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  font-size: 14px;
 }
 
-.udd-landing-workspace-preview h4 svg {
+.udd-landing-workspace-preview summary::-webkit-details-marker {
+  display: none;
+}
+
+.udd-landing-workspace-preview summary svg {
+  width: 16px;
+  height: 16px;
   color: var(--landing-accent);
+  transition: transform 150ms ease;
+}
+
+.udd-landing-workspace-preview[open] summary svg {
+  transform: rotate(180deg);
 }
 
 .udd-landing-workspace-preview dl {
-  margin-top: 12px;
+  padding: 0 12px 6px;
+  font-size: 13px;
 }
 
 .udd-landing-workspace-preview dl > div {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px 16px;
-  padding-block: 8px;
+  gap: 8px;
+  padding-block: 6px;
   border-top: 1px solid var(--landing-rule);
 }
 
@@ -842,6 +834,14 @@
 .udd-landing-workspace-preview dd {
   font-weight: 700;
   text-align: right;
+}
+
+.udd-landing-workspace > .udd-landing-portal {
+  width: 100%;
+  margin-top: 14px;
+  justify-content: space-between;
+  color: var(--landing-accent);
+  background: var(--landing-map);
 }
 
 .udd-landing-project {
@@ -986,6 +986,15 @@
 
   .udd-landing h1 {
     font-size: clamp(38px, 7.5vw, 62px);
+  }
+
+  .udd-landing-workspaces {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .udd-landing-workspace + .udd-landing-workspace {
+    border-top: 1px solid var(--landing-rule);
+    border-left: 0;
   }
 
   .udd-route-body {
@@ -1135,20 +1144,6 @@
   .udd-landing-roles,
   .udd-landing-faq {
     padding-block: 30px 44px;
-  }
-
-  .udd-landing-workspace:not([hidden]) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .udd-landing-role-tabs {
-    gap: 2px;
-  }
-
-  .udd-landing-role-tabs button {
-    padding-inline: 7px;
-    gap: 5px;
-    font-size: 13px;
   }
 
   .udd-landing-guide-stops {

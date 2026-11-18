@@ -26,9 +26,8 @@ const roles = [
   {
     id: 'admin',
     label: 'Fleet admin',
-    demoLabel: 'Try the admin demo',
+    demoLabel: 'Open fleet admin demo',
     icon: 'LayoutDashboard',
-    title: 'Plan the next school run.',
     description:
       'Set stop order, assign buses and drivers, and prepare the passenger list before departure.',
     preview: 'Morning dispatch',
@@ -41,9 +40,8 @@ const roles = [
   {
     id: 'driver',
     label: 'Driver',
-    demoLabel: 'Try the driver demo',
+    demoLabel: 'Open driver demo',
     icon: 'BusFront',
-    title: 'Know who’s on board.',
     description:
       'See the stops in order, record each pickup and drop-off, and confirm the cabin is clear at the end of the trip.',
     preview: 'Trip checklist',
@@ -56,9 +54,8 @@ const roles = [
   {
     id: 'student',
     label: 'Student & family',
-    demoLabel: 'Try the student demo',
+    demoLabel: 'Open student demo',
     icon: 'GraduationCap',
-    title: 'Know where to meet your bus.',
     description:
       'Find your pickup stop and boarding ID in one place. Follow the bus when your driver shares their location.',
     preview: 'My journey',
@@ -118,6 +115,10 @@ function portalButton(icon, className = 'udd-landing-button') {
   </button>`;
 }
 
+function demoLink(icon, className) {
+  return `<a href="#workspaces" class="${className}">${icon('Users')} Choose a demo role</a>`;
+}
+
 function tripBenefits(icon) {
   return `<section class="udd-landing-benefits udd-landing-width" aria-labelledby="benefits-title">
     <h2 id="benefits-title">From dispatch to drop-off</h2>
@@ -158,7 +159,7 @@ function tripGuide(icon) {
               </summary>
               <div class="udd-landing-guide-body">
                 <p>${step.description}</p>
-                <a href="#workspaces" data-workspace-link="${step.workspace}">${step.link} ${icon('ArrowRight')}</a>
+                <a href="#workspace-${step.workspace}">${step.link} ${icon('ArrowRight')}</a>
               </div>
             </details>
           </li>`
@@ -169,45 +170,32 @@ function tripGuide(icon) {
 }
 
 function roleExplorer(icon, demo) {
-  return `<section class="udd-landing-roles udd-landing-width" id="workspaces" aria-labelledby="workspaces-title">
-    <h2 id="workspaces-title">One trip. Three points of view.</h2>
-    <div class="udd-landing-role-tabs" role="tablist" aria-label="Workspaces">
+  return `<section class="udd-landing-roles udd-landing-width" aria-labelledby="workspaces">
+    <h2 id="workspaces" tabindex="-1">${demo ? 'Choose a demo role' : 'One trip. Three points of view.'}</h2>
+    ${demo ? '<p>Explore a workspace with sample school trips. No account needed.</p>' : ''}
+    <ul class="udd-landing-workspaces" role="list">
       ${roles
         .map(
-          (role, index) => `<button type="button" role="tab" id="workspace-tab-${role.id}"
-            aria-selected="${index === 0}" aria-controls="workspace-${role.id}" tabindex="${index === 0 ? 0 : -1}">
-            ${icon(role.icon)} ${role.label}
-          </button>`
-        )
-        .join('')}
-    </div>
-    ${roles
-      .map(
-        (
-          role,
-          index
-        ) => `<article class="udd-landing-workspace" id="workspace-${role.id}" role="tabpanel"
-          aria-labelledby="workspace-tab-${role.id}" ${index === 0 ? '' : 'hidden'}>
-          <div>
-            <h3>${role.title}</h3>
+          (role) => `<li class="udd-landing-workspace" id="workspace-${role.id}" tabindex="-1">
+            <h3><span class="udd-landing-benefit-icon">${icon(role.icon)}</span>${role.label}</h3>
             <p>${role.description}</p>
+            <details class="udd-landing-workspace-preview">
+              <summary>${role.preview} ${icon('ChevronDown')}</summary>
+              <dl>
+                ${role.rows.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join('')}
+              </dl>
+            </details>
             ${
               demo
                 ? `<button type="button" class="udd-landing-portal" data-action="quick-login" data-id="${role.id}">
-                  ${role.demoLabel} ${icon('ArrowUpRight')}
-                </button>`
-                : portalButton(icon, 'udd-landing-portal')
+                    ${role.demoLabel} ${icon('ArrowUpRight')}
+                  </button>`
+                : ''
             }
-          </div>
-          <div class="udd-landing-workspace-preview">
-            <h4>${icon(role.icon)} ${role.preview}</h4>
-            <dl>
-              ${role.rows.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join('')}
-            </dl>
-          </div>
-        </article>`
-      )
-      .join('')}
+          </li>`
+        )
+        .join('')}
+    </ul>
   </section>`;
 }
 
@@ -223,7 +211,7 @@ export function mountLanding(app, { icon, demo }) {
         <nav aria-label="Landing page">
           <a href="#routes">Routes</a>
           <a href="#guidelines">Guidelines</a>
-          <a href="#workspaces">Workspaces</a>
+          <a href="#workspaces">${demo ? 'Demos' : 'Workspaces'}</a>
           <a href="#questions">FAQ</a>
         </nav>
         ${portalButton(icon, 'udd-landing-portal')}
@@ -238,16 +226,16 @@ export function mountLanding(app, { icon, demo }) {
           <p class="udd-landing-lead">UDD Go connects fleet staff, drivers, and families. Plan bus routes, record boarding, and check your trip from pickup to campus.</p>
           <div class="udd-landing-actions">
             ${portalButton(icon)}
-            <a href="#routes" class="udd-landing-portal">${icon('Route')} Try the route demo</a>
+            ${demo ? demoLink(icon, 'udd-landing-portal') : `<a href="#routes" class="udd-landing-portal">${icon('Route')} Try the route demo</a>`}
           </div>
         </div>
         <div class="udd-landing-demo udd-landing-width">
           ${routePreview(icon)}
         </div>
       </section>
+      ${roleExplorer(icon, demo)}
       ${tripBenefits(icon)}
       ${tripGuide(icon)}
-      ${roleExplorer(icon, demo)}
       <section class="udd-landing-project udd-landing-width" aria-labelledby="project-title">
         <div class="udd-landing-benefit-icon">${icon('School')}</div>
         <div>
@@ -274,7 +262,7 @@ export function mountLanding(app, { icon, demo }) {
           <h2 id="portal-title">Find your transport workspace</h2>
           <p>${demo ? 'Choose fleet admin, driver, or student to explore the portal with sample data.' : 'Sign in with your school account to access your workspace.'}</p>
         </div>
-        ${portalButton(icon)}
+        ${demo ? demoLink(icon, 'udd-landing-button') : portalButton(icon)}
       </section>
       ${landingWordmark()}
     </main>
@@ -285,39 +273,6 @@ export function mountLanding(app, { icon, demo }) {
       </div>
     </footer>
   </div>`;
-  const tabs = [...app.querySelectorAll('.udd-landing-role-tabs [role="tab"]')];
-
-  function selectTab(selected) {
-    for (const tab of tabs) {
-      const active = tab === selected;
-      tab.tabIndex = active ? 0 : -1;
-      tab.setAttribute('aria-selected', active);
-      app.querySelector(`#${tab.getAttribute('aria-controls')}`).hidden = !active;
-    }
-  }
-
-  tabs.forEach((tab, index) => {
-    tab.addEventListener('click', () => selectTab(tab));
-    tab.addEventListener('keydown', (event) => {
-      const next = {
-        ArrowLeft: (index + tabs.length - 1) % tabs.length,
-        ArrowRight: (index + 1) % tabs.length,
-        Home: 0,
-        End: tabs.length - 1,
-      }[event.key];
-      if (next === undefined) return;
-      event.preventDefault();
-      selectTab(tabs[next]);
-      tabs[next].focus();
-    });
-  });
-
-  app.querySelectorAll('[data-workspace-link]').forEach((link) => {
-    link.addEventListener('click', () => {
-      selectTab(app.querySelector(`#workspace-tab-${link.dataset.workspaceLink}`));
-    });
-  });
-
   const stopSignals = mountLandingSignals(app.querySelector('.udd-landing-signals'));
   const stopRoutePreview = mountRoutePreview(app.querySelector('#routes'));
   return () => {
