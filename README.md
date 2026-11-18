@@ -10,7 +10,7 @@ Start with Docker Compose.
 docker compose up --build -d
 ```
 
-Visit [localhost:8080](http://127.0.0.1:8080), select **Open school portal**, then choose a role under **Demo access**. The demo works without an account and saves changes in your browser.
+Visit [localhost:8080](http://127.0.0.1:8080) and select **Choose a demo role**. Open the Fleet admin, Driver, or Student demo from its own card. The demo works without an account and saves changes in your browser.
 
 For frontend development, use Node.js 22.12+.
 
@@ -28,7 +28,7 @@ Open the URL Vite prints, usually [localhost:5173](http://127.0.0.1:5173).
 - **Driver workspace** — Review trip stops, record boarding and drop-offs, and confirm the cabin check.
 - **Student workspace** — Check your pickup stop, boarding ID, and trip status.
 
-The landing page uses a short background sweep and a looping UDD Go wordmark. Visitors who prefer reduced motion see the still design. The route demo also moves stop by stop in reduced-motion mode.
+The landing page uses animated ASCII route traces and a looping UDD Go wordmark. Visitors who prefer reduced motion see the still design. The route demo also moves stop by stop in reduced-motion mode.
 
 ## Documentation
 
