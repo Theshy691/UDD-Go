@@ -1,6 +1,6 @@
 import './landing.css';
 import { mountRoutePreview, routePreview } from './landing-routes.js';
-import { landingWordmark, mountWordmark } from './landing-wordmark.js';
+import { landingWordmark } from './landing-wordmark.js';
 
 const benefits = [
   {
@@ -274,7 +274,7 @@ export function mountLanding(app, { icon, demo }) {
         </div>
         ${portalButton(icon)}
       </section>
-      ${landingWordmark(icon)}
+      ${landingWordmark()}
     </main>
     <footer class="udd-landing-footer">
       <div class="udd-landing-width">
@@ -316,10 +316,5 @@ export function mountLanding(app, { icon, demo }) {
     });
   });
 
-  const unmountRoute = mountRoutePreview(app.querySelector('#routes'));
-  const unmountWordmark = mountWordmark(app.querySelector('.udd-wordmark'));
-  return () => {
-    unmountRoute();
-    unmountWordmark();
-  };
+  return mountRoutePreview(app.querySelector('#routes'));
 }

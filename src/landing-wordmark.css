@@ -17,7 +17,7 @@
   display: flex;
   align-items: center;
   gap: clamp(12px, 3.8vw, 48px);
-  padding: 22px 12px 36px;
+  padding: 22px 12px;
 }
 
 .udd-wordmark-visual::before {
@@ -54,47 +54,21 @@
   background: currentColor;
 }
 
-.udd-wordmark-replay {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  padding-inline: 10px;
-  border: 1px solid #b4d9ef55;
-  border-radius: 7px;
-  background: #133c59;
-  color: #f1f9ff;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.udd-wordmark-replay svg {
-  width: 14px;
-  height: 14px;
-}
-
-.udd-wordmark-replay:hover {
-  background: #1a4c6c;
-}
-
-.udd-wordmark-replay:focus-visible {
-  outline-color: #7dd3fc;
-}
-
 @media (prefers-reduced-motion: no-preference) {
-  .udd-wordmark.is-playing .udd-wordmark-word {
-    animation: udd-wordmark-land 620ms cubic-bezier(0.22, 0.7, 0.3, 1) both;
+  .udd-wordmark {
+    --wordmark-cycle: 3200ms;
   }
 
-  .udd-wordmark.is-playing .udd-wordmark-word[data-word='GO'] {
+  .udd-wordmark-word {
+    animation: udd-wordmark-land var(--wordmark-cycle) cubic-bezier(0.22, 0.7, 0.3, 1) infinite both;
+  }
+
+  .udd-wordmark-word[data-word='GO'] {
     animation-delay: 460ms;
   }
 
-  .udd-wordmark.is-playing .udd-wordmark-visual::before {
-    animation: udd-wordmark-speed-line 1080ms ease-out;
+  .udd-wordmark-visual::before {
+    animation: udd-wordmark-speed-line var(--wordmark-cycle) ease-out infinite;
   }
 
   @keyframes udd-wordmark-land {
@@ -103,19 +77,20 @@
       transform: translateY(-18px) scale(2.35);
     }
 
-    41% {
+    8% {
       opacity: 1;
       transform: translateY(3px) scale(1.05, 0.88);
     }
 
-    57% {
+    11% {
       transform: translateX(-3px) scale(0.98, 1.04);
     }
 
-    72% {
+    14% {
       transform: translateX(2px) scale(1.015, 0.99);
     }
 
+    20%,
     100% {
       opacity: 1;
       transform: none;
@@ -124,20 +99,15 @@
 
   @keyframes udd-wordmark-speed-line {
     0%,
-    37%,
+    13%,
+    34%,
     100% {
       opacity: 0;
     }
 
-    24%,
-    66% {
+    8%,
+    22% {
       opacity: 0.8;
     }
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .udd-wordmark-replay {
-    display: none;
   }
 }

@@ -28,7 +28,7 @@ Open the URL Vite prints, usually [localhost:5173](http://127.0.0.1:5173).
 - **Driver workspace** — Review trip stops, record boarding and drop-offs, and confirm the cabin check.
 - **Student workspace** — Check your pickup stop, boarding ID, and trip status.
 
-The landing page uses a short background sweep and a replayable UDD Go wordmark. Visitors who prefer reduced motion see the still design. The route demo also moves stop by stop in reduced-motion mode.
+The landing page uses a short background sweep and a looping UDD Go wordmark. Visitors who prefer reduced motion see the still design. The route demo also moves stop by stop in reduced-motion mode.
 
 ## Documentation
 
