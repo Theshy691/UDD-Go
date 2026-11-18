@@ -14,6 +14,7 @@ const maxLon = Math.max(...points.map((point) => point.longitude));
 const minLat = Math.min(...points.map((point) => point.latitude));
 const maxLat = Math.max(...points.map((point) => point.latitude));
 const segmentDuration = 2300;
+const stopDuration = 2000;
 
 export function routePreview(icon) {
   return `<figure class="udd-route-preview" id="routes" aria-labelledby="preview-title">
@@ -53,7 +54,7 @@ export function routePreview(icon) {
           </div>
         </div>
         <ol class="udd-route-stops" aria-label="Sample trip stops"></ol>
-        <p class="udd-route-hint">Play the trip or select a stop to jump ahead.</p>
+        <p class="udd-route-hint">Select a stop to jump ahead. The bus waits two seconds at each stop.</p>
       </div>
     </div>
   </figure>`;
@@ -130,8 +131,14 @@ export function mountRoutePreview(root) {
   let positions = [];
   let stopButtons = [];
   let progress = 0;
+  let stopWaitRemaining = stopDuration;
   let lastReported = -1;
   let frame = null;
+
+  function goToStop(index) {
+    progress = index;
+    stopWaitRemaining = stopDuration;
+  }
 
   function renderProgress() {
     const current = Math.floor(progress);
@@ -176,7 +183,7 @@ export function mountRoutePreview(root) {
   function selectRoute(route, activeIndex) {
     pause();
     selected = route;
-    progress = 0;
+    goToStop(0);
     lastReported = -1;
     root.style.setProperty('--trip-color', route.color);
     buttons.forEach((button, index) => button.setAttribute('aria-pressed', index === activeIndex));
@@ -198,12 +205,23 @@ export function mountRoutePreview(root) {
     }
 
     const end = selected.stops.length - 1;
-    if (progress === end) progress = 0;
-    const start = progress;
-    const startedAt = performance.now();
-    const tick = (now) => {
-      progress = Math.min(end, start + Math.max(0, now - startedAt) / segmentDuration);
+    if (progress === end) {
+      goToStop(0);
       renderProgress();
+    }
+    let previousFrame = performance.now();
+    const tick = (now) => {
+      const elapsed = Math.max(0, now - previousFrame);
+      previousFrame = now;
+      if (stopWaitRemaining > 0) {
+        stopWaitRemaining = Math.max(0, stopWaitRemaining - elapsed);
+      } else {
+        const nextStop = Math.floor(progress) + 1;
+        progress = Math.min(nextStop, progress + elapsed / segmentDuration);
+        if (progress === nextStop) stopWaitRemaining = stopDuration;
+        renderProgress();
+      }
+
       if (progress === end) {
         frame = null;
         updatePlayButton();
@@ -218,7 +236,7 @@ export function mountRoutePreview(root) {
   timeline.addEventListener('click', (event) => {
     const stop = event.target.closest('[data-stop-index]');
     if (!stop) return;
-    progress = Number(stop.dataset.stopIndex);
+    goToStop(Number(stop.dataset.stopIndex));
     pause();
     renderProgress();
   });
