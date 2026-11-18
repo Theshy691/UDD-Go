@@ -4,6 +4,7 @@ const demoRoles = {
   admin: {
     label: 'Fleet admin',
     icon: 'LayoutDashboard',
+    name: 'Alex Morgan',
     email: 'admin@udd.edu.ph',
     title: 'See which buses are ready to go.',
     description: 'Review assignments and prepare the morning trips from the fleet workspace.',
@@ -17,6 +18,7 @@ const demoRoles = {
   driver: {
     label: 'Driver',
     icon: 'BusFront',
+    name: 'Roberto Santos',
     email: 'driver@udd.edu.ph',
     title: 'Follow your route, stop by stop.',
     description:
@@ -31,6 +33,7 @@ const demoRoles = {
   student: {
     label: 'Student',
     icon: 'GraduationCap',
+    name: 'Isabella Santos',
     email: 'student@udd.edu.ph',
     title: 'Know where to meet your bus.',
     description: 'Find your pickup stop, boarding ID, and trip status in your journey view.',
@@ -92,22 +95,30 @@ const loginCopy = {
 function demoPanel(icon, role, quick) {
   return `<div class="udd-login-panel" id="login-demo-panel" ${quick ? '' : 'hidden'}>
     <div class="udd-login-demo">
-      <p id="login-role-label">Choose a demo role</p>
-      <div class="udd-login-roles" data-selection="${role}" role="group" aria-labelledby="login-role-label">
+      <p id="login-role-label">Choose a demo workspace</p>
+      <div class="udd-login-role-cards" role="group" aria-labelledby="login-role-label">
         ${Object.entries(demoRoles)
           .map(
             ([
               id,
               item,
-            ]) => `<button type="button" data-action="select-login-role" data-id="${id}" aria-pressed="${id === role}">
-              ${icon(item.icon)} ${item.label}
-            </button>`
+            ]) => `<article class="udd-login-role-card" data-role-card="${id}" ${id === role ? 'data-selected="true"' : ''}>
+              <button type="button" class="udd-login-role-card-heading" data-action="select-login-role" data-id="${id}" aria-pressed="${id === role}">
+                <span class="udd-login-role-card-icon">${icon(item.icon)}</span>
+                <span><strong>${item.label}</strong><small>${item.name}</small></span>
+              </button>
+              <div class="udd-login-role-card-sample">
+                <span>${item.panel}</span>
+                <strong>${item.email}</strong>
+              </div>
+              <button type="button" class="udd-login-role-card-action" data-action="quick-login" data-id="${id}">
+                Use demo ${icon('ArrowUpRight')}
+              </button>
+            </article>`
           )
           .join('')}
       </div>
-      <button type="button" class="udd-login-submit" data-action="quick-login" data-id="${role}">
-        <span>Open ${demoRoles[role].label.toLowerCase()} demo</span> ${icon('ArrowRight')}
-      </button>
+      <p class="udd-login-demo-note">Every sample account uses <code>demo-password</code>. Your demo changes stay in this browser.</p>
     </div>
   </div>`;
 }
@@ -165,7 +176,7 @@ function loginView({ icon, demo, method, role }) {
         </button>
         <button class="udd-login-back" type="button" data-action="go-landing">${icon('ChevronLeft')} Back to home</button>
       </header>
-      <main class="udd-login-main" aria-labelledby="login-title">
+      <main class="udd-login-main ${demo ? 'udd-login-main-demo' : ''}" aria-labelledby="login-title">
         <h1 id="login-title">Sign in to UDD Go</h1>
         <p id="login-description">${loginCopy[quick ? 'quick' : 'credentials']}</p>
         ${
@@ -200,9 +211,11 @@ function initControls(root) {
 
   root.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-    const group = event.target.closest('.udd-login-switch, .udd-login-roles');
+    const group = event.target.closest('.udd-login-switch, .udd-login-role-cards');
     if (!group) return;
-    const buttons = [...group.querySelectorAll('button')];
+    const buttons = [
+      ...group.querySelectorAll('.udd-login-switch button, .udd-login-role-card-heading'),
+    ];
     const delta = event.key === 'ArrowRight' ? 1 : -1;
     const next = (buttons.indexOf(event.target) + delta + buttons.length) % buttons.length;
     event.preventDefault();
@@ -239,10 +252,14 @@ export function mountLogin(app, options) {
 
   if (root.dataset.role !== role) {
     root.dataset.role = role;
-    selectSegment(root.querySelector('.udd-login-roles'), role);
-    const action = root.querySelector('[data-action="quick-login"]');
-    action.dataset.id = role;
-    action.querySelector('span').textContent = `Open ${demoRoles[role].label.toLowerCase()} demo`;
+    for (const card of root.querySelectorAll('[data-role-card]')) {
+      const selected = card.dataset.roleCard === role;
+      if (selected) card.setAttribute('data-selected', 'true');
+      else card.removeAttribute('data-selected');
+      card
+        .querySelector('[data-action="select-login-role"]')
+        .setAttribute('aria-pressed', selected);
+    }
     root.querySelector('.udd-login-preview-content').innerHTML =
       `<div class="udd-login-reveal">${previewContent(icon, demoRoles[role], demo)}</div>`;
   }
