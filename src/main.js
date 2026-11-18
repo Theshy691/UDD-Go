@@ -1,5 +1,6 @@
 import './styles.css';
 import { mountLanding } from './landing.js';
+import { mountLogin } from './login.js';
 import {
   createIcons,
   LayoutDashboard,
@@ -666,7 +667,10 @@ function render() {
       destroyLanding = mountLanding(app, { icon, demo: store.mode === 'demo' });
       mountIcons();
     }
-    document.title = 'UDD Go · Universidad de Dagupan Transport Operations';
+    document.title =
+      publicView === 'login'
+        ? 'Sign in · UDD Go'
+        : 'UDD Go · Universidad de Dagupan Transport Operations';
     return;
   }
   if (store.profile.role !== 'admin' && ![store.profile.role, 'settings', 'trips'].includes(page))
@@ -759,234 +763,14 @@ function navigate(next) {
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
-function renderLogin() {
-  const roleConfig = {
-    admin: {
-      title: 'Fleet Administrator',
-      badge: 'Operations Hub',
-      iconName: 'LayoutDashboard',
-      colorClass: 'role-admin',
-      desc: 'Central command for live GPS fleet tracking, stop sequence editing, calendar dispatches, bus maintenance intervals, and student allocations.',
-      email: 'admin@udd.edu.ph',
-      name: 'Alex Morgan',
-      tags: ['Live Tracking', 'Dispatch Engine', 'Audit Logs'],
-    },
-    driver: {
-      title: 'School Bus Driver',
-      badge: 'In-Cabin Console',
-      iconName: 'BusFront',
-      colorClass: 'role-driver',
-      desc: 'Driver-optimized console with turn-by-turn stop manifest, live GPS beacon sharing, one-tap boarding check-in, and post-trip cabin verification.',
-      email: 'driver@udd.edu.ph',
-      name: 'Roberto Santos',
-      tags: ['GPS Beacon', '1-Tap Boarding', 'Cabin Safety'],
-    },
-    student: {
-      title: 'Student & Parent',
-      badge: 'Journey Radar',
-      iconName: 'GraduationCap',
-      colorClass: 'role-student',
-      desc: 'Real-time school bus arrival radar, estimated pickup and dropoff times, digital passenger boarding pass, and departure notifications.',
-      email: 'student@udd.edu.ph',
-      name: 'Isabella Santos',
-      tags: ['Bus Radar', 'Digital ID', 'Trip Alerts'],
-    },
-  };
-
-  const current = roleConfig[loginRole] || roleConfig.admin;
-
-  app.innerHTML = `<main class="login-page">
-    <aside class="login-brand-panel">
-      <div class="login-brand-top">
-        <div class="brand">
-          <span class="brand-icon">${icon('BusFront')}</span>
-          <div>UDD<span> Go</span></div>
-        </div>
-        <span class="campus-pill">${icon('School')} Universidad de Dagupan</span>
-      </div>
-
-      <div class="login-brand-content">
-        <div class="login-badge-live">${icon('Radio')} Campus Transport System</div>
-        <h1>Every student.<br/><span class="text-sky">A safer journey.</span></h1>
-        <p class="login-hero-desc">
-          Next-generation school transit operations. Connecting fleet managers, drivers, and campus families through live telemetry, instant boarding verification, and automated dispatch.
-        </p>
-
-        <div class="login-feature-list">
-          <div class="login-feature-item">
-            <span class="feature-icon blue">${icon('Navigation')}</span>
-            <div>
-              <strong>Live Fleet Radar</strong>
-              <p>Real-time vehicle GPS telemetry, active routes, and driver location beacons.</p>
-            </div>
-          </div>
-          <div class="login-feature-item">
-            <span class="feature-icon green">${icon('UserRoundCheck')}</span>
-            <div>
-              <strong>O(1) Boarding Verification</strong>
-              <p>One-tap manifest check-in, capacity enforcement, and parent arrival visibility.</p>
-            </div>
-          </div>
-          <div class="login-feature-item">
-            <span class="feature-icon orange">${icon('CalendarDays')}</span>
-            <div>
-              <strong>Autonomous Scheduling</strong>
-              <p>Deterministic trip generation synchronized with the academic service calendar.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="login-brand-footer">
-        <div class="between small muted">
-          <span>Main Campus · Dagupan City, Pangasinan</span>
-          <span>Version 2.0</span>
-        </div>
-      </div>
-    </aside>
-
-    <section class="login-panel">
-      <div class="login-panel-inner">
-        <div class="login-card-topbar">
-          <button type="button" class="login-back-pill" data-action="go-landing">
-            ${icon('ChevronLeft')} Back to Home
-          </button>
-          <span class="login-campus-pill">
-            ${icon('School')} Universidad de Dagupan
-          </span>
-        </div>
-
-        <div class="login-brand-header">
-          <div class="login-brand-badge">
-            <span class="brand-icon">${icon('BusFront')}</span>
-            <div class="login-brand-text">
-              <span class="login-brand-name">UDD<span> Go</span></span>
-              <span class="login-brand-tagline">Campus Transit Operations</span>
-            </div>
-          </div>
-          <div class="login-header">
-            <h2>Welcome to UDD Go</h2>
-            <p>Select your transport workspace view or sign in with school credentials.</p>
-          </div>
-        </div>
-
-        <div class="login-tab-bar" role="tablist" aria-label="Sign-in method">
-          <button type="button" class="login-tab-btn ${loginMethod === 'quick' ? 'selected' : ''}" data-action="set-login-method" data-id="quick" role="tab" aria-selected="${loginMethod === 'quick'}">
-            ${icon('Radio')} Quick Role Access (Demo)
-          </button>
-          <button type="button" class="login-tab-btn ${loginMethod === 'credentials' ? 'selected' : ''}" data-action="set-login-method" data-id="credentials" role="tab" aria-selected="${loginMethod === 'credentials'}">
-            ${icon('Mail')} School Credentials
-          </button>
-        </div>
-
-        ${
-          loginMethod === 'quick'
-            ? `
-          <div class="role-selector-section">
-            <div class="between role-section-heading">
-              <span>Choose a role to explore:</span>
-              <span class="count">3 available views</span>
-            </div>
-
-            <div class="role-panel-grid">
-              ${Object.entries(roleConfig)
-                .map(
-                  ([key, item]) => `
-                <article class="role-card ${item.colorClass} ${loginRole === key ? 'selected' : ''}" data-action="select-login-role" data-id="${key}" tabindex="0" role="button" aria-pressed="${loginRole === key}">
-                  <div class="role-card-top">
-                    <div class="role-identity">
-                      <span class="role-icon-box ${item.colorClass}">
-                        ${icon(item.iconName)}
-                      </span>
-                      <div>
-                        <div class="role-title-row">
-                          <h3>${item.title}</h3>
-                          <span class="role-badge ${item.colorClass}">${item.badge}</span>
-                        </div>
-                        <span class="role-account-preview">${item.name} · ${item.email}</span>
-                      </div>
-                    </div>
-                    <span class="role-radio-indicator">
-                      ${loginRole === key ? icon('Check') : ''}
-                    </span>
-                  </div>
-
-                  <p class="role-card-desc">${item.desc}</p>
-
-                  <div class="role-card-footer">
-                    <div class="role-tags">
-                      ${item.tags.map((tag) => `<span class="role-tag">${tag}</span>`).join('')}
-                    </div>
-                    <button type="button" class="role-enter-btn ${item.colorClass}" data-action="quick-login" data-id="${key}" title="Launch ${item.title}">
-                      Launch ${icon('ArrowRight')}
-                    </button>
-                  </div>
-                </article>
-              `
-                )
-                .join('')}
-            </div>
-
-            <div class="login-cta-box">
-              <button type="button" class="button primary full login-primary-cta" data-action="quick-login" data-id="${loginRole}">
-                Enter as ${current.title} ${icon('ArrowRight')}
-              </button>
-              <div class="login-cta-hint muted small">
-                ${icon('ShieldCheck')} Sample fleet database pre-loaded · Changes stay isolated in this browser
-              </div>
-            </div>
-          </div>
-        `
-            : `
-          <form id="login-form" class="credentials-form">
-            <div class="credentials-autofill-box">
-              <span class="small muted">Quickly prefill role account:</span>
-              <div class="autofill-chips">
-                <button type="button" class="autofill-chip ${loginRole === 'admin' ? 'active' : ''}" data-action="prefill-role" data-id="admin">
-                  ${icon('LayoutDashboard')} Admin
-                </button>
-                <button type="button" class="autofill-chip ${loginRole === 'driver' ? 'active' : ''}" data-action="prefill-role" data-id="driver">
-                  ${icon('BusFront')} Driver
-                </button>
-                <button type="button" class="autofill-chip ${loginRole === 'student' ? 'active' : ''}" data-action="prefill-role" data-id="student">
-                  ${icon('GraduationCap')} Student
-                </button>
-              </div>
-            </div>
-
-            <label class="field">
-              School email address
-              <input type="email" id="login-email" name="email" autocomplete="username" placeholder="name@udd.edu.ph" value="${current.email}" required />
-              <small>Use your official Universidad de Dagupan email account.</small>
-            </label>
-
-            <label class="field">
-              Password
-              <input type="password" id="login-password" name="password" autocomplete="current-password" minlength="6" placeholder="••••••••••••" value="demo-password" required />
-              <small>In demo mode, any password grants access.</small>
-            </label>
-
-            <div class="form-error" role="alert"></div>
-
-            <button type="submit" class="button primary full login-primary-cta">
-              Sign in to Transport Workspace ${icon('ArrowRight')}
-            </button>
-
-            <div class="note">
-              ${icon('Info')} Live mode authenticates against Supabase Auth with Row-Level Security. In demo mode, role views switch without server dependency.
-            </div>
-          </form>
-        `
-        }
-
-        <div class="login-footer-meta muted small">
-          <span>Universidad de Dagupan Transport Operations</span>
-          <span>·</span>
-          <button type="button" data-action="help" class="link-button">Help & Guidelines</button>
-        </div>
-      </div>
-    </section>
-  </main>`;
+function renderLogin({ prefill = false } = {}) {
+  mountLogin(app, {
+    icon,
+    demo: store.mode === 'demo',
+    method: loginMethod,
+    role: loginRole,
+    prefill,
+  });
   mountIcons();
 }
 
@@ -1475,19 +1259,24 @@ async function handleAction(action, id) {
       if (publicView === 'login' && store.mode === 'live') loginMethod = 'credentials';
       render();
       window.scrollTo({ top: 0, behavior: 'instant' });
-      app.querySelector(publicView === 'login' ? '.login-back-pill' : '.udd-landing-brand')?.focus();
+      app.querySelector(publicView === 'login' ? '.udd-login-back' : '.udd-landing-brand')?.focus();
       break;
     case 'select-login-role':
+      if (loginRole === id) break;
       loginRole = id;
       renderLogin();
+      app.querySelector('[data-action="select-login-role"][aria-pressed="true"]')?.focus();
       break;
     case 'set-login-method':
+      if (loginMethod === id) break;
       loginMethod = id;
       renderLogin();
+      app.querySelector('[data-action="set-login-method"][aria-pressed="true"]')?.focus();
       break;
     case 'prefill-role':
       loginRole = id;
-      renderLogin();
+      renderLogin({ prefill: true });
+      app.querySelector('#login-email')?.focus();
       break;
     case 'quick-login': {
       const targetRole = id || loginRole;
