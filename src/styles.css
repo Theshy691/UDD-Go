@@ -7725,12 +7725,12 @@ tr:last-child td {
   height: 12px;
 }
 
-/* Hero Right Column Form Card */
-.hero-form-card {
+/* Hero Right Column Live Telemetry & Operations HUD Card */
+.hero-telemetry-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 20px;
-  padding: 28px 24px;
+  padding: 26px 24px;
   box-shadow:
     0 20px 40px -15px rgba(2, 132, 199, 0.12),
     0 0 0 1px rgba(226, 232, 240, 0.8);
@@ -7738,190 +7738,221 @@ tr:last-child td {
   text-align: left;
 }
 
-.hero-form-card:hover {
+.hero-telemetry-card:hover {
   box-shadow:
     0 24px 48px -15px rgba(2, 132, 199, 0.18),
     0 0 0 1px rgba(186, 230, 253, 0.9);
 }
 
-.hero-form-header {
-  margin-bottom: 18px;
+.hero-telemetry-header {
+  margin-bottom: 16px;
 }
 
-.hero-form-badge {
+.hero-telemetry-badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #f0f9ff;
-  color: #0284c7;
-  font-size: 11.5px;
-  font-weight: 700;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 750;
   padding: 4px 10px;
   border-radius: 9999px;
-  border: 1px solid #bae6fd;
-  margin-bottom: 10px;
+  border: 1px solid #bbf7d0;
+  letter-spacing: 0.5px;
 }
 
-.hero-form-badge .brand-icon.small {
-  width: 18px;
-  height: 18px;
+.live-dot-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  animation: pulse-green 2s infinite;
 }
 
-.hero-form-header h3 {
-  font-size: 21px;
+@keyframes pulse-green {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+.hero-telemetry-header h3 {
+  font-size: 20px;
   font-weight: 750;
   color: #0f172a;
-  margin: 0 0 4px;
+  margin: 10px 0 3px;
   letter-spacing: -0.3px;
 }
 
-.hero-form-header p {
-  font-size: 13px;
+.hero-telemetry-header p {
+  font-size: 12.5px;
   color: #64748b;
   margin: 0;
-  line-height: 1.45;
 }
 
-.hero-role-pills {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  background: #f1f5f9;
-  padding: 4px;
-  border-radius: 12px;
+.hero-telemetry-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-bottom: 18px;
 }
 
-.hero-role-pill {
+.hero-telemetry-row {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 10px;
-  font-size: 12.5px;
-  font-weight: 600;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  cursor: pointer;
+  justify-content: space-between;
+  gap: 10px;
   transition: all 0.15s ease;
 }
 
-.hero-role-pill svg {
-  width: 14px;
-  height: 14px;
+.hero-telemetry-row:hover {
+  background: #ffffff;
+  border-color: #bae6fd;
+  transform: translateX(2px);
 }
 
-.hero-role-pill:hover {
+.hero-bus-chip {
+  font-size: 11px;
+  font-weight: 750;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.hero-bus-chip.blue {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.hero-bus-chip.green {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.hero-bus-chip.purple {
+  background: #9333ea;
+  color: #ffffff;
+}
+
+.hero-route-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+}
+
+.hero-route-info strong {
+  font-size: 12.5px;
   color: #0f172a;
 }
 
-.hero-role-pill.active {
-  background: #ffffff;
+.hero-bus-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hero-speed-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  background: #e0f2fe;
   color: #0284c7;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.hero-cap-tag {
+  font-size: 11px;
+  font-weight: 650;
+  padding: 2px 7px;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.hero-cap-tag.full {
+  background: #fee2e2;
+  color: #dc2626;
   font-weight: 700;
 }
 
-.hero-input-group {
-  margin-bottom: 14px;
-  text-align: left;
+.hero-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 10px;
+  border-radius: 12px;
+  margin-bottom: 18px;
+  text-align: center;
 }
 
-.hero-input-group label {
+.hero-kpi-item strong {
   display: block;
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.hero-kpi-item span {
+  display: block;
+  font-size: 10px;
   font-weight: 600;
-  color: #475569;
-  margin-bottom: 6px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
-.hero-input-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.hero-input-wrap .input-icon {
-  position: absolute;
-  left: 12px;
-  color: #94a3b8;
-  display: flex;
-  align-items: center;
-  pointer-events: none;
-}
-
-.hero-input-wrap .input-icon svg {
-  width: 16px;
-  height: 16px;
-}
-
-.hero-field {
-  width: 100%;
-  padding: 10px 14px 10px 38px;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  background: #f8fafc;
-  font-size: 13.5px;
-  color: #1e293b;
-  outline: none;
-  box-sizing: border-box;
-}
-
-.hero-role-summary-box {
-  padding: 10px 12px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 10px;
+.hero-gateway-action {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 10px;
 }
 
-.hero-role-summary-box strong {
-  font-size: 13.5px;
-  color: #166534;
-}
-
-.hero-role-summary-box span {
-  font-size: 11.5px;
-  color: #15803d;
-}
-
-.hero-form-submit {
+.hero-portal-cta-btn {
   width: 100%;
-  padding: 12px;
-  margin-top: 6px;
-  font-size: 14.5px;
+  padding: 13px;
+  font-size: 14px;
   font-weight: 700;
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
 }
 
-.hero-form-notice {
-  margin-top: 14px;
-  padding: 10px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+.hero-gateway-hint {
   display: flex;
-  gap: 8px;
   align-items: flex-start;
-  font-size: 11.5px;
+  gap: 7px;
+  font-size: 11px;
   color: #64748b;
   line-height: 1.45;
 }
 
-.hero-form-notice svg {
-  flex-shrink: 0;
-  margin-top: 1px;
+.hero-gateway-hint svg {
   width: 14px;
   height: 14px;
+  flex-shrink: 0;
   color: #0284c7;
+  margin-top: 1px;
 }
 
 /* Trust & Arterial Corridor Strip */

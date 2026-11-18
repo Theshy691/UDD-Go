@@ -759,34 +759,6 @@ function renderLanding() {
   const totalStops = store.data.route_stops.length;
   const activeBuses = store.data.buses.filter((b) => b.status === 'active').length;
 
-  const heroRoles = {
-    admin: {
-      label: 'Admin',
-      name: 'Alex Morgan',
-      email: 'admin@udd.edu.ph',
-      title: 'Fleet Operations Director',
-      roleBadge: 'Central Command',
-      iconName: 'LayoutDashboard',
-    },
-    driver: {
-      label: 'Driver',
-      name: 'Roberto Santos',
-      email: 'driver@udd.edu.ph',
-      title: 'School Bus Driver',
-      roleBadge: 'In-Cabin Console',
-      iconName: 'BusFront',
-    },
-    student: {
-      label: 'Student',
-      name: 'Isabella Santos',
-      email: 'student@udd.edu.ph',
-      title: 'Student & Parent',
-      roleBadge: 'Passenger Radar',
-      iconName: 'GraduationCap',
-    },
-  };
-  const activeHeroRole = heroRoles[loginRole] || heroRoles.admin;
-
   const faqs = [
     {
       q: 'What is UDD Go and how does it relate to Universidad de Dagupan?',
@@ -806,7 +778,7 @@ function renderLanding() {
     },
     {
       q: 'How can evaluators test all 3 roles during capstone presentations?',
-      a: 'Right from the Role Showcase below or the Quick Role Access card in the hero! Click any of the three role cards (Admin Console, Driver Cockpit, Student Radar) to immediately launch an interactive live demo session with pre-populated Dagupan route data, live GPS simulation, and boarding records.',
+      a: 'Click "School Portal" in the navigation bar or below to open the dedicated login portal. From there, you can choose any of the three operational roles (Fleet Administrator, School Bus Driver, or Student & Parent) to explore the full interactive system with sample Dagupan data.',
     },
   ];
 
@@ -850,13 +822,13 @@ function renderLanding() {
     </header>
 
     <main class="landing-main-content">
-      <!-- 2-Column Split Hero Section (Inspired by Enterprise Fleet Platform) -->
+      <!-- 2-Column Split Hero Section (Enterprise Fleet Platform Layout) -->
       <section class="landing-hero-section">
         <div class="hero-radial-halo"></div>
         <div class="hero-split-container">
           <!-- Hero Left Column -->
           <div class="hero-left-col">
-            <div class="hero-capsule-wrap" data-action="scroll-to-roles" role="button" tabindex="0" title="Explore interactive console roles">
+            <div class="hero-capsule-wrap" data-action="scroll-to-corridors" role="button" tabindex="0" title="Explore active campus corridors">
               <span class="capsule-beam"></span>
               <div class="hero-capsule">
                 <span class="capsule-badge">TRANSIT OS</span>
@@ -877,8 +849,8 @@ function renderLanding() {
             </p>
 
             <div class="hero-cta-buttons">
-              <button type="button" class="button primary hero-btn-primary" data-action="scroll-to-roles">
-                ${icon('Play')} Explore Console Roles ${icon('ArrowRight')}
+              <button type="button" class="button primary hero-btn-primary" data-action="go-login">
+                ${icon('School')} School Portal ${icon('ArrowRight')}
               </button>
               <button type="button" class="button hero-btn-secondary" data-action="scroll-to-corridors">
                 ${icon('Route')} Active Campus Corridors
@@ -902,63 +874,87 @@ function renderLanding() {
             </div>
           </div>
 
-          <!-- Hero Right Column (Interactive Workspace Dispatch Card) -->
+          <!-- Hero Right Column (Live Operations & Telematics Showcase Card) -->
           <div class="hero-right-col">
-            <div class="hero-form-card">
-              <div class="hero-form-header">
-                <div class="hero-form-badge">
-                  <span class="brand-icon small">${icon('BusFront')}</span>
-                  <span>UDD Go · Quick Role Access</span>
+            <div class="hero-telemetry-card">
+              <div class="hero-telemetry-header">
+                <div class="between">
+                  <div class="hero-telemetry-badge">
+                    <span class="live-dot-pulse"></span>
+                    <span>ACTIVE RADAR · DAGUPAN CITY</span>
+                  </div>
+                  <span class="badge active">${routes.length} Corridors</span>
                 </div>
-                <h3>Experience UDD Go</h3>
-                <p>Select your transport workspace view or sign in with school credentials.</p>
+                <h3>Campus Transit Operations HUD</h3>
+                <p>Live satellite telemetry & verified student manifests</p>
               </div>
 
-              <!-- Quick role selection pills -->
-              <div class="hero-role-pills" role="tablist" aria-label="Role selector">
-                ${Object.entries(heroRoles)
-                  .map(
-                    ([k, r]) => `
-                  <button type="button" class="hero-role-pill ${loginRole === k ? 'active' : ''}" data-action="select-hero-role" data-id="${k}">
-                    ${icon(r.iconName)} ${esc(r.label)}
-                  </button>
-                `
-                  )
-                  .join('')}
+              <!-- Live Bus Telemetry Rows -->
+              <div class="hero-telemetry-rows">
+                <div class="hero-telemetry-row">
+                  <div class="hero-bus-chip blue">Bus #1</div>
+                  <div class="hero-route-info">
+                    <strong>Bonuan – Tondaligan Line</strong>
+                    <span class="small muted">Next: Nepo Mall Junction</span>
+                  </div>
+                  <div class="hero-bus-meta">
+                    <span class="hero-speed-tag">38 km/h</span>
+                    <span class="hero-cap-tag">22/28 Seats</span>
+                  </div>
+                </div>
+
+                <div class="hero-telemetry-row">
+                  <div class="hero-bus-chip green">Bus #2</div>
+                  <div class="hero-route-info">
+                    <strong>Calasiao Highway Line</strong>
+                    <span class="small muted">Next: Robinsons Place</span>
+                  </div>
+                  <div class="hero-bus-meta">
+                    <span class="hero-speed-tag">42 km/h</span>
+                    <span class="hero-cap-tag">16/20 Seats</span>
+                  </div>
+                </div>
+
+                <div class="hero-telemetry-row">
+                  <div class="hero-bus-chip purple">Bus #3</div>
+                  <div class="hero-route-info">
+                    <strong>Lucao District Express</strong>
+                    <span class="small muted">Next: UDD Main Campus</span>
+                  </div>
+                  <div class="hero-bus-meta">
+                    <span class="hero-speed-tag">35 km/h</span>
+                    <span class="hero-cap-tag full">28/28 Full</span>
+                  </div>
+                </div>
               </div>
 
-              <div class="hero-form-body">
-                <div class="hero-input-group">
-                  <label for="hero-email-input">School email address</label>
-                  <div class="hero-input-wrap">
-                    <span class="input-icon">${icon('Mail')}</span>
-                    <input type="email" id="hero-email-input" readonly value="${esc(activeHeroRole.email)}" class="hero-field" />
-                  </div>
+              <!-- Live Operations KPI strip -->
+              <div class="hero-kpi-strip">
+                <div class="hero-kpi-item">
+                  <strong>${totalBuses}</strong>
+                  <span>Fleet Buses</span>
                 </div>
-
-                <div class="hero-input-group">
-                  <label for="hero-password-input">Password / Passcode</label>
-                  <div class="hero-input-wrap">
-                    <span class="input-icon">${icon('Lock')}</span>
-                    <input type="password" id="hero-password-input" readonly value="••••••••••••" class="hero-field" />
-                  </div>
+                <div class="hero-kpi-item">
+                  <strong>${totalStops}</strong>
+                  <span>Safe Stops</span>
                 </div>
-
-                <div class="hero-input-group">
-                  <label>Assigned profile / workspace view</label>
-                  <div class="hero-role-summary-box">
-                    <strong>${esc(activeHeroRole.name)}</strong>
-                    <span>${esc(activeHeroRole.title)} · ${esc(activeHeroRole.roleBadge)}</span>
-                  </div>
+                <div class="hero-kpi-item">
+                  <strong>&lt; 10ms</strong>
+                  <span>Boarding Speed</span>
                 </div>
+                <div class="hero-kpi-item">
+                  <strong>RLS</strong>
+                  <span>Zero-Trust</span>
+                </div>
+              </div>
 
-                <button type="button" class="button primary hero-form-submit" data-action="quick-login" data-id="${loginRole}">
-                  ${icon('LogIn')} Sign in to Transport Workspace ${icon('ArrowRight')}
+              <!-- Primary Gateway Action to Dedicated School Portal -->
+              <div class="hero-gateway-action">
+                <button type="button" class="button primary full hero-portal-cta-btn" data-action="go-login">
+                  ${icon('School')} Access School Portal ${icon('ArrowRight')}
                 </button>
-
-                <div class="hero-form-notice">
-                  ${icon('Info')}
-                  <span>Live mode authenticates against Supabase Auth with Row-Level Security. In demo mode, role views switch without server dependency.</span>
+                <div class="hero-gateway-hint">
+                  ${icon('ShieldCheck')} Sign in with official Universidad de Dagupan school credentials or explore demo roles.
                 </div>
               </div>
             </div>
