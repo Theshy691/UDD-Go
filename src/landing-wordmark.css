@@ -1,0 +1,143 @@
+.udd-wordmark {
+  --wordmark-pixel: clamp(6px, 1.1vw, 15px);
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: clamp(174px, 22vw, 278px);
+  overflow: hidden;
+  margin-bottom: 44px;
+  border: 1px solid #163e59;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle, #8cd7ff2e 1px, transparent 1px) center / 17px 17px,
+    #0c2e48;
+}
+
+.udd-wordmark-visual {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 3.8vw, 48px);
+  padding: 22px 12px 36px;
+}
+
+.udd-wordmark-visual::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 48%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #77d5ff80, transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.udd-wordmark-word {
+  position: relative;
+  display: flex;
+  gap: calc(var(--wordmark-pixel) * 0.9);
+  color: #f1f9ff;
+}
+
+.udd-wordmark-word[data-word='GO'] {
+  color: #7dd3fc;
+}
+
+.udd-wordmark-letter {
+  display: grid;
+  grid-template-columns: repeat(5, var(--wordmark-pixel));
+  grid-auto-rows: var(--wordmark-pixel);
+}
+
+.udd-wordmark-letter > [data-lit] {
+  margin: 0.5px;
+  border-radius: 1px;
+  background: currentColor;
+}
+
+.udd-wordmark-replay {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding-inline: 10px;
+  border: 1px solid #b4d9ef55;
+  border-radius: 7px;
+  background: #133c59;
+  color: #f1f9ff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.udd-wordmark-replay svg {
+  width: 14px;
+  height: 14px;
+}
+
+.udd-wordmark-replay:hover {
+  background: #1a4c6c;
+}
+
+.udd-wordmark-replay:focus-visible {
+  outline-color: #7dd3fc;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .udd-wordmark.is-playing .udd-wordmark-word {
+    animation: udd-wordmark-land 620ms cubic-bezier(0.22, 0.7, 0.3, 1) both;
+  }
+
+  .udd-wordmark.is-playing .udd-wordmark-word[data-word='GO'] {
+    animation-delay: 460ms;
+  }
+
+  .udd-wordmark.is-playing .udd-wordmark-visual::before {
+    animation: udd-wordmark-speed-line 1080ms ease-out;
+  }
+
+  @keyframes udd-wordmark-land {
+    0% {
+      opacity: 0;
+      transform: translateY(-18px) scale(2.35);
+    }
+
+    41% {
+      opacity: 1;
+      transform: translateY(3px) scale(1.05, 0.88);
+    }
+
+    57% {
+      transform: translateX(-3px) scale(0.98, 1.04);
+    }
+
+    72% {
+      transform: translateX(2px) scale(1.015, 0.99);
+    }
+
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes udd-wordmark-speed-line {
+    0%,
+    37%,
+    100% {
+      opacity: 0;
+    }
+
+    24%,
+    66% {
+      opacity: 0.8;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .udd-wordmark-replay {
+    display: none;
+  }
+}
