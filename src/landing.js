@@ -1,6 +1,25 @@
 import './landing.css';
 import { mountRoutePreview, routePreview } from './landing-routes.js';
 
+const benefits = [
+  {
+    icon: 'CalendarDays',
+    title: 'Prepare the morning run',
+    description:
+      'Assign a bus and driver, set the stop order, and prepare the passenger list before departure.',
+  },
+  {
+    icon: 'UserRoundCheck',
+    title: 'Keep track of riders',
+    description: 'Record boarding and drop-offs during the trip, then confirm the cabin is clear.',
+  },
+  {
+    icon: 'MapPin',
+    title: 'Know where to meet the bus',
+    description: 'Check your assigned pickup stop, boarding ID, and trip status in My journey.',
+  },
+];
+
 const roles = [
   {
     id: 'admin',
@@ -64,6 +83,89 @@ const questions = [
   ],
 ];
 
+const guidelines = [
+  {
+    title: 'Before departure',
+    summary: 'Confirm the trip and pickup stop',
+    description:
+      'Fleet admins prepare the trip in Trips & history and confirm the bus, driver, and passenger list. Students and families can check My journey for their pickup stop and boarding ID.',
+    workspace: 'admin',
+    link: 'Explore fleet admin',
+  },
+  {
+    title: 'At pickup',
+    summary: 'Have your boarding ID ready',
+    description:
+      'Wait at your assigned stop and have your boarding ID ready when the bus arrives. Drivers record boarding in their trip checklist. Families can follow the active trip when the driver shares their location.',
+    workspace: 'student',
+    link: 'Explore the student view',
+  },
+  {
+    title: 'After the last stop',
+    summary: 'Record drop-offs and check the cabin',
+    description:
+      'Drivers record each drop-off, confirm the cabin is empty, and complete the trip. Fleet admins can review the completed run in Trips & history.',
+    workspace: 'driver',
+    link: 'Explore the driver view',
+  },
+];
+
+function portalButton(icon, className = 'udd-landing-button') {
+  return `<button type="button" class="${className}" data-action="go-login">
+    Open school portal ${icon('ArrowUpRight')}
+  </button>`;
+}
+
+function tripBenefits(icon) {
+  return `<section class="udd-landing-benefits udd-landing-width" aria-labelledby="benefits-title">
+    <h2 id="benefits-title">From dispatch to drop-off</h2>
+    <ul>
+      ${benefits
+        .map(
+          (benefit) => `<li>
+            <div class="udd-landing-benefit-icon">${icon(benefit.icon)}</div>
+            <div>
+              <h3>${benefit.title}</h3>
+              <p>${benefit.description}</p>
+            </div>
+          </li>`
+        )
+        .join('')}
+    </ul>
+  </section>`;
+}
+
+function tripGuide(icon) {
+  return `<section class="udd-landing-guide udd-landing-width" id="guidelines" aria-labelledby="guidelines-title">
+    <div class="udd-landing-guide-intro">
+      <h2 id="guidelines-title">School run guidelines</h2>
+      <p>From the first pickup to the final cabin check, here’s what to do at each stage of a UDD Go trip.</p>
+    </div>
+    <ol class="udd-landing-guide-stops">
+      ${guidelines
+        .map(
+          (step, index) => `<li>
+            <details name="landing-guidelines" ${index === 0 ? 'open' : ''}>
+              <summary>
+                <span class="udd-landing-guide-stop" aria-hidden="true">${index + 1}</span>
+                <span class="udd-landing-guide-label">
+                  <strong>${step.title}</strong>
+                  <span>${step.summary}</span>
+                </span>
+                ${icon('ChevronDown')}
+              </summary>
+              <div class="udd-landing-guide-body">
+                <p>${step.description}</p>
+                <a href="#workspaces" data-workspace-link="${step.workspace}">${step.link} ${icon('ArrowRight')}</a>
+              </div>
+            </details>
+          </li>`
+        )
+        .join('')}
+    </ol>
+  </section>`;
+}
+
 function roleExplorer(icon, demo) {
   return `<section class="udd-landing-roles udd-landing-width" id="workspaces" aria-labelledby="workspaces-title">
     <h2 id="workspaces-title">One trip. Three points of view.</h2>
@@ -87,10 +189,13 @@ function roleExplorer(icon, demo) {
           <div>
             <h3>${role.title}</h3>
             <p>${role.description}</p>
-            <button type="button" class="udd-landing-button" data-action="${demo ? 'quick-login' : 'go-login'}" data-id="${role.id}">
-              ${demo ? role.demoLabel : 'Open school portal'}
-              ${icon('ArrowUpRight')}
-            </button>
+            ${
+              demo
+                ? `<button type="button" class="udd-landing-portal" data-action="quick-login" data-id="${role.id}">
+                  ${role.demoLabel} ${icon('ArrowUpRight')}
+                </button>`
+                : portalButton(icon, 'udd-landing-portal')
+            }
           </div>
           <div class="udd-landing-workspace-preview">
             <h4>${icon(role.icon)} ${role.preview}</h4>
@@ -110,35 +215,44 @@ export function mountLanding(app, { icon, demo }) {
     <header class="udd-landing-header">
       <div class="udd-landing-nav udd-landing-width">
         <a class="udd-landing-brand" href="#landing-home" aria-label="UDD Go home">
-          <span class="udd-landing-brand-mark">${icon('BusFront')}</span>
-          <strong>UDD Go</strong>
+          <span class="brand-icon">${icon('BusFront')}</span>
+          <strong>UDD <span>Go</span></strong>
         </a>
         <nav aria-label="Landing page">
           <a href="#routes">Routes</a>
+          <a href="#guidelines">Guidelines</a>
           <a href="#workspaces">Workspaces</a>
           <a href="#questions">FAQ</a>
         </nav>
-        <button type="button" class="udd-landing-portal" data-action="go-login">
-          School portal ${icon('ArrowUpRight')}
-        </button>
+        ${portalButton(icon, 'udd-landing-portal')}
       </div>
     </header>
     <main id="landing-content" tabindex="-1">
-      <section class="udd-landing-hero udd-landing-width" aria-labelledby="landing-title">
-        <div class="udd-landing-intro">
+      <section class="udd-landing-hero" aria-labelledby="landing-title">
+        <div class="udd-landing-intro udd-landing-width">
           <p class="udd-landing-campus">${icon('MapPin')} Universidad de Dagupan</p>
-          <h1 id="landing-title">The school<br /> run, mapped.</h1>
-          <p class="udd-landing-lead">Plan bus routes, check students in, and follow the trip from pickup to campus.</p>
+          <h1 id="landing-title">Plan and follow the school run.</h1>
+          <p class="udd-landing-lead">UDD Go connects fleet staff, drivers, and families. Plan bus routes, record boarding, and check your trip from pickup to campus.</p>
           <div class="udd-landing-actions">
-            <button type="button" class="udd-landing-button" data-action="go-login">
-              Open school portal ${icon('ArrowUpRight')}
-            </button>
-            <a href="#workspaces">${demo ? 'Try a demo' : 'Explore workspaces'}</a>
+            ${portalButton(icon)}
+            <a href="#routes" class="udd-landing-portal">${icon('Route')} Try the route demo</a>
           </div>
         </div>
-        ${routePreview(icon)}
+        <div class="udd-landing-demo udd-landing-width">
+          ${routePreview(icon)}
+        </div>
       </section>
+      ${tripBenefits(icon)}
+      ${tripGuide(icon)}
       ${roleExplorer(icon, demo)}
+      <section class="udd-landing-project udd-landing-width" aria-labelledby="project-title">
+        <div class="udd-landing-benefit-icon">${icon('School')}</div>
+        <div>
+          <h2 id="project-title">A Universidad de Dagupan student project</h2>
+          <p>UDD Go was developed for the ITECC04 Data Structure and Algorithm course. The interactive demo uses sample Dagupan-area routes and fictional passenger records.</p>
+        </div>
+        <a href="https://github.com/Theshy691/UDD-Go/blob/main/md/README.md">Read project documentation ${icon('ExternalLink')}</a>
+      </section>
       <section class="udd-landing-faq udd-landing-width" id="questions" aria-labelledby="questions-title">
         <h2 id="questions-title">Common questions</h2>
         <div>
@@ -152,11 +266,18 @@ export function mountLanding(app, { icon, demo }) {
             .join('')}
         </div>
       </section>
+      <section class="udd-landing-close udd-landing-width" aria-labelledby="portal-title">
+        <div>
+          <h2 id="portal-title">Find your transport workspace</h2>
+          <p>${demo ? 'Choose fleet admin, driver, or student to explore the portal with sample data.' : 'Sign in with your school account to access your workspace.'}</p>
+        </div>
+        ${portalButton(icon)}
+      </section>
     </main>
     <footer class="udd-landing-footer">
       <div class="udd-landing-width">
         <p><strong>UDD Go</strong> <span>Universidad de Dagupan</span></p>
-        <button type="button" data-action="help">Help &amp; guidelines ${icon('ArrowUpRight')}</button>
+        <a href="#guidelines">School run guidelines ${icon('ArrowUpRight')}</a>
       </div>
     </footer>
   </div>`;
@@ -184,6 +305,12 @@ export function mountLanding(app, { icon, demo }) {
       event.preventDefault();
       selectTab(tabs[next]);
       tabs[next].focus();
+    });
+  });
+
+  app.querySelectorAll('[data-workspace-link]').forEach((link) => {
+    link.addEventListener('click', () => {
+      selectTab(app.querySelector(`#workspace-tab-${link.dataset.workspaceLink}`));
     });
   });
 

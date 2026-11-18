@@ -2,7 +2,7 @@ import { escapeHtml } from './domain.js';
 import { CAMPUS, makeSeed } from './seed.js';
 
 const sample = makeSeed();
-const routeColors = ['#ffce78', '#7bdbc5', '#bdb6ff', '#86bcff'];
+const routeColors = ['#0369a1', '#6d55a5', '#187662', '#a05b14'];
 const routes = sample.routes.map((route, index) => ({
   name: route.area,
   color: routeColors[index],
@@ -19,7 +19,7 @@ export function routePreview(icon) {
   return `<figure class="udd-route-preview" id="routes" aria-labelledby="preview-title">
     <figcaption class="udd-route-caption">
       <h2 id="preview-title">${icon('Route')} Dagupan route map</h2>
-      <span>Sample routes</span>
+      <span class="udd-route-sample">Sample routes</span>
     </figcaption>
     <div class="udd-route-filters" role="group" aria-label="Choose a sample route">
       ${routes
@@ -34,24 +34,27 @@ export function routePreview(icon) {
         )
         .join('')}
     </div>
-    <div class="udd-route-map">
-      <canvas aria-hidden="true"></canvas>
-      <div class="udd-route-bus" aria-hidden="true">${icon('BusFront')}</div>
-    </div>
-    <div class="udd-route-controls">
-      <div class="udd-route-controls-row">
-        <button class="udd-route-play" type="button" data-state="ready">
-          <span class="udd-route-play-icon" aria-hidden="true">${icon('Play')}</span>
-          <span class="udd-route-pause-icon" aria-hidden="true">${icon('Pause')}</span>
-          <span class="udd-route-replay-icon" aria-hidden="true">${icon('RefreshCw')}</span>
-          <span class="udd-route-play-label">Play trip</span>
-        </button>
-        <div class="udd-route-status" role="status" aria-atomic="true">
-          <strong></strong>
-          <span></span>
-        </div>
+    <div class="udd-route-body">
+      <div class="udd-route-map">
+        <canvas aria-hidden="true"></canvas>
+        <div class="udd-route-bus" aria-hidden="true">${icon('BusFront')}</div>
       </div>
-      <ol class="udd-route-stops" aria-label="Sample trip stops"></ol>
+      <div class="udd-route-controls">
+        <div class="udd-route-controls-row">
+          <button class="udd-route-play" type="button" data-state="ready">
+            <span class="udd-route-play-icon" aria-hidden="true">${icon('Play')}</span>
+            <span class="udd-route-pause-icon" aria-hidden="true">${icon('Pause')}</span>
+            <span class="udd-route-replay-icon" aria-hidden="true">${icon('RefreshCw')}</span>
+            <span class="udd-route-play-label">Play trip</span>
+          </button>
+          <div class="udd-route-status" role="status" aria-atomic="true">
+            <strong></strong>
+            <span></span>
+          </div>
+        </div>
+        <ol class="udd-route-stops" aria-label="Sample trip stops"></ol>
+        <p class="udd-route-hint">Play the trip or select a stop to jump ahead.</p>
+      </div>
     </div>
   </figure>`;
 }
@@ -90,7 +93,7 @@ function drawNetwork(canvas, selected, width, height) {
     for (const [x, y] of positions) {
       context.beginPath();
       context.arc(x, y, active ? 4.5 : 3, 0, Math.PI * 2);
-      context.fillStyle = '#182348';
+      context.fillStyle = '#fff';
       context.fill();
       context.lineWidth = active ? 2.5 : 1.5;
       context.stroke();
@@ -99,11 +102,17 @@ function drawNetwork(canvas, selected, width, height) {
 
   context.globalAlpha = 1;
   const [campusX, campusY] = project(...CAMPUS);
-  context.fillStyle = '#fff';
+  context.fillStyle = '#263748';
   context.fillRect(campusX - 3.5, campusY - 3.5, 7, 7);
   context.font = '700 11px "DM Sans", sans-serif';
   context.textBaseline = 'middle';
-  context.fillText('UDD campus', campusX + 14, campusY - 16);
+  const label = 'UDD campus';
+  const labelX = campusX + 14;
+  const labelY = campusY - 16;
+  context.strokeStyle = '#fff';
+  context.lineWidth = 3;
+  context.strokeText(label, labelX, labelY);
+  context.fillText(label, labelX, labelY);
   return selectedPositions;
 }
 
@@ -172,10 +181,10 @@ export function mountRoutePreview(root) {
     root.style.setProperty('--trip-color', route.color);
     buttons.forEach((button, index) => button.setAttribute('aria-pressed', index === activeIndex));
     timeline.innerHTML = route.stops
-      .map(
-        (stop, index) =>
-          `<li><button type="button" data-stop-index="${index}" aria-label="Stop ${index + 1}: ${escapeHtml(stop.stop_name)}" title="${escapeHtml(stop.stop_name)}"></button></li>`
-      )
+      .map((stop, index) => {
+        const name = escapeHtml(stop.stop_name);
+        return `<li><button type="button" data-stop-index="${index}" aria-label="Stop ${index + 1}: ${name}" title="${name}"><span>${name}</span></button></li>`;
+      })
       .join('');
     stopButtons = [...timeline.querySelectorAll('button')];
     updatePlayButton();
