@@ -92,29 +92,22 @@ const loginCopy = {
 function demoPanel(icon, role, quick) {
   return `<div class="udd-login-panel" id="login-demo-panel" ${quick ? '' : 'hidden'}>
     <div class="udd-login-demo">
-      <div class="udd-login-role-cards" role="group" aria-label="Choose a demo role">
+      <p id="login-role-label">Choose a demo role</p>
+      <div class="udd-login-roles" data-selection="${role}" role="group" aria-labelledby="login-role-label">
         ${Object.entries(demoRoles)
           .map(
             ([
               id,
               item,
-            ]) => `<article class="udd-login-role-card" data-role-card="${id}" ${id === role ? 'data-selected="true"' : ''}>
-              <button type="button" class="udd-login-role-card-heading" data-action="select-login-role" data-id="${id}" aria-pressed="${id === role}">
-                <span class="udd-login-role-card-icon">${icon(item.icon)}</span>
-                <span><strong>${item.label}</strong><small>${item.title}</small></span>
-              </button>
-              <div class="udd-login-role-card-sample">
-                <span>${item.panel}</span>
-                <strong>${item.email}</strong>
-              </div>
-              <button type="button" class="udd-login-role-card-action" data-action="quick-login" data-id="${id}">
-                Use ${item.label.toLowerCase()} demo ${icon('ArrowUpRight')}
-              </button>
-            </article>`
+            ]) => `<button type="button" data-action="select-login-role" data-id="${id}" aria-pressed="${id === role}">
+              ${icon(item.icon)} ${item.label}
+            </button>`
           )
           .join('')}
       </div>
-      <p class="udd-login-demo-note">Sample accounts use <code>demo-password</code>. Choose a card to open that workspace.</p>
+      <button type="button" class="udd-login-submit" data-action="quick-login" data-id="${role}">
+        <span>Open ${demoRoles[role].label.toLowerCase()} demo</span> ${icon('ArrowRight')}
+      </button>
     </div>
   </div>`;
 }
@@ -207,11 +200,9 @@ function initControls(root) {
 
   root.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-    const group = event.target.closest('.udd-login-switch, .udd-login-role-cards');
+    const group = event.target.closest('.udd-login-switch, .udd-login-roles');
     if (!group) return;
-    const buttons = [
-      ...group.querySelectorAll('.udd-login-role-card-heading, .udd-login-switch button'),
-    ];
+    const buttons = [...group.querySelectorAll('button')];
     const delta = event.key === 'ArrowRight' ? 1 : -1;
     const next = (buttons.indexOf(event.target) + delta + buttons.length) % buttons.length;
     event.preventDefault();
@@ -248,14 +239,10 @@ export function mountLogin(app, options) {
 
   if (root.dataset.role !== role) {
     root.dataset.role = role;
-    for (const card of root.querySelectorAll('[data-role-card]')) {
-      const selected = card.dataset.roleCard === role;
-      if (selected) card.setAttribute('data-selected', 'true');
-      else card.removeAttribute('data-selected');
-      card
-        .querySelector('[data-action="select-login-role"]')
-        .setAttribute('aria-pressed', selected);
-    }
+    selectSegment(root.querySelector('.udd-login-roles'), role);
+    const action = root.querySelector('[data-action="quick-login"]');
+    action.dataset.id = role;
+    action.querySelector('span').textContent = `Open ${demoRoles[role].label.toLowerCase()} demo`;
     root.querySelector('.udd-login-preview-content').innerHTML =
       `<div class="udd-login-reveal">${previewContent(icon, demoRoles[role], demo)}</div>`;
   }
