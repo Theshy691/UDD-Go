@@ -190,6 +190,140 @@
   row-gap: 10px;
 }
 
+.udd-login-role-cards {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.udd-login-role-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--login-rule);
+  border-radius: 10px;
+  background: #fff;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.udd-login-role-card[data-selected='true'] {
+  border-color: #74b6d9;
+  box-shadow: 0 0 0 3px #e0f2fe;
+  transform: translateY(-1px);
+}
+
+.udd-login-role-card-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--login-ink);
+  text-align: left;
+}
+
+.udd-login-role-card-heading:focus-visible {
+  outline-offset: 3px;
+}
+
+.udd-login-role-card-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  background: var(--login-tint);
+  color: var(--login-accent);
+}
+
+.udd-login-role-card-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.udd-login-role-card-heading strong,
+.udd-login-role-card-heading small {
+  display: block;
+}
+
+.udd-login-role-card-heading strong {
+  font-size: 14px;
+}
+
+.udd-login-role-card-heading small {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--login-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.udd-login-role-card-sample {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--login-rule);
+  color: var(--login-muted);
+  font-size: 12px;
+}
+
+.udd-login-role-card-sample strong {
+  overflow: hidden;
+  color: var(--login-ink);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.udd-login-role-card-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid #bae6fd;
+  border-radius: 7px;
+  background: var(--login-tint);
+  color: var(--login-accent);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.udd-login-role-card-action:hover {
+  border-color: var(--login-accent);
+  background: #d4edfc;
+}
+
+.udd-login-role-card-action svg {
+  width: 15px;
+  height: 15px;
+}
+
+.udd-login-demo-note {
+  margin: 2px 2px 0;
+  color: var(--login-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.udd-login-demo-note code {
+  border-radius: 4px;
+  padding: 2px 4px;
+  background: var(--login-tint);
+  color: var(--login-ink);
+  font-size: 11px;
+}
+
 .udd-login-roles {
   --login-segments: 3;
   --login-segment-surface: var(--login-tint);
@@ -512,6 +646,12 @@
       opacity: 1;
       transform: none;
     }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .udd-login-role-card {
+    transition: none;
   }
 }
 
