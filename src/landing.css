@@ -186,6 +186,22 @@
   text-align: center;
 }
 
+.udd-landing-signals {
+  position: absolute;
+  z-index: -1;
+  inset: auto 0 -12px;
+  display: flex;
+  justify-content: space-between;
+  color: var(--landing-accent);
+  pointer-events: none;
+}
+
+.udd-landing-signals canvas {
+  display: block;
+  width: clamp(98px, 17vw, 228px);
+  height: auto;
+}
+
 .udd-landing-demo {
   position: relative;
   z-index: 1;
@@ -1073,6 +1089,10 @@
     height: 300px;
   }
 
+  .udd-landing-signals {
+    bottom: -24px;
+  }
+
   .udd-landing-demo {
     padding: 4px;
     border-radius: 15px;
@@ -1156,35 +1176,6 @@
 @media (prefers-reduced-motion: no-preference) {
   html:has(.udd-landing) {
     scroll-behavior: smooth;
-  }
-
-  .udd-landing-hero::after {
-    content: '';
-    position: absolute;
-    top: 10px;
-    left: 22%;
-    width: 55%;
-    height: 320px;
-    background: radial-gradient(ellipse, #a5daf780, #bce5fc29 44%, transparent 72%);
-    opacity: 0;
-    pointer-events: none;
-    animation: udd-hero-map-sweep 3800ms ease-in-out;
-  }
-
-  @keyframes udd-hero-map-sweep {
-    0% {
-      opacity: 0;
-      transform: translateX(-34%);
-    }
-
-    43% {
-      opacity: 0.85;
-    }
-
-    100% {
-      opacity: 0;
-      transform: translateX(34%);
-    }
   }
 }
 

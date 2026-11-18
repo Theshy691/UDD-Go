@@ -1,5 +1,6 @@
 import './landing.css';
 import { mountRoutePreview, routePreview } from './landing-routes.js';
+import { mountLandingSignals } from './landing-signals.js';
 import { landingWordmark } from './landing-wordmark.js';
 
 const benefits = [
@@ -231,6 +232,7 @@ export function mountLanding(app, { icon, demo }) {
     <main id="landing-content" tabindex="-1">
       <section class="udd-landing-hero" aria-labelledby="landing-title">
         <div class="udd-landing-intro udd-landing-width">
+          <div class="udd-landing-signals" aria-hidden="true"><canvas></canvas><canvas></canvas></div>
           <p class="udd-landing-campus">${icon('MapPin')} Universidad de Dagupan</p>
           <h1 id="landing-title">Plan and follow the school run.</h1>
           <p class="udd-landing-lead">UDD Go connects fleet staff, drivers, and families. Plan bus routes, record boarding, and check your trip from pickup to campus.</p>
@@ -316,5 +318,10 @@ export function mountLanding(app, { icon, demo }) {
     });
   });
 
-  return mountRoutePreview(app.querySelector('#routes'));
+  const stopSignals = mountLandingSignals(app.querySelector('.udd-landing-signals'));
+  const stopRoutePreview = mountRoutePreview(app.querySelector('#routes'));
+  return () => {
+    stopSignals();
+    stopRoutePreview();
+  };
 }
