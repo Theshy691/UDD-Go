@@ -182,11 +182,13 @@
 
 .udd-landing-intro {
   position: relative;
+  z-index: 1;
   text-align: center;
 }
 
 .udd-landing-demo {
   position: relative;
+  z-index: 1;
   margin-top: clamp(28px, 4vw, 52px);
   padding: 7px;
   border: 1px solid var(--landing-rule);
@@ -1154,6 +1156,35 @@
 @media (prefers-reduced-motion: no-preference) {
   html:has(.udd-landing) {
     scroll-behavior: smooth;
+  }
+
+  .udd-landing-hero::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 22%;
+    width: 55%;
+    height: 320px;
+    background: radial-gradient(ellipse, #a5daf780, #bce5fc29 44%, transparent 72%);
+    opacity: 0;
+    pointer-events: none;
+    animation: udd-hero-map-sweep 3800ms ease-in-out;
+  }
+
+  @keyframes udd-hero-map-sweep {
+    0% {
+      opacity: 0;
+      transform: translateX(-34%);
+    }
+
+    43% {
+      opacity: 0.85;
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateX(34%);
+    }
   }
 }
 
