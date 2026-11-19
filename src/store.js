@@ -9,6 +9,7 @@ import {
   applySchedulingAction,
 } from './scheduling.js';
 import { capacityFor, validCoordinates } from './domain.js';
+import { REPORT_ACTIONS, applyDemoReportAction } from './reports.js';
 
 const DATA_KEY = 'udd-go-demo-v1';
 const PREF_KEY = 'udd-go-preferences';
@@ -21,6 +22,7 @@ const emptyData = () => ({
   activity: [],
   trips: [],
   trip_passengers: [],
+  trip_reports: [],
   service_schedules: [],
   student_subscriptions: [],
   route_versions: [],
@@ -126,6 +128,7 @@ class FleetStore extends EventTarget {
     }
     upgradeDemoTrips(this.data);
     upgradeScheduling(this.data);
+    this.data.trip_reports ??= [];
     localStorage.setItem(DATA_KEY, JSON.stringify(this.data));
   }
   setDemoRole(role, emit = true) {
@@ -203,10 +206,16 @@ class FleetStore extends EventTarget {
       'student_subscriptions',
       'calendar_exceptions',
     ];
-    const [results, tripData] = await Promise.all([
+    const [results, tripData, reportData] = await Promise.all([
       Promise.all(names.map((name) => this.readTable(name))),
       this.loadTrips(),
+      profile.role === 'driver' ? { data: [] } : this.readTable('trip_reports', {
+        openOnly: profile.role === 'admin',
+      }),
     ]);
+    // Existing installations can load the portal before migration 003 is rolled out.
+    if (reportData.error && !['PGRST205', '42P01'].includes(reportData.error.code)) throw reportData.error;
+    next.trip_reports = reportData.error ? null : reportData.data;
     Object.assign(next, tripData);
     results.forEach((result, i) => {
       if (result.error) throw result.error;
@@ -317,6 +326,25 @@ class FleetStore extends EventTarget {
     if (data.length > 100) throw new Error('Manifest exceeds supported vehicle capacity.');
     return data;
   }
+  tripReports() {
+    if (!this.data.trip_reports || !this.profile || this.profile.role === 'driver') return null;
+    return this.data.trip_reports.filter((report) =>
+      this.profile.role === 'admin' ? report.status !== 'resolved' : report.student_id === this.profile.id
+    );
+  }
+  async tripForReport(reportId) {
+    if (this.profile?.role !== 'admin') return null;
+    const report = this.tripReports()?.find((item) => item.id === reportId);
+    if (!report) return null;
+    return this.tripRecord(report.trip_id);
+  }
+  async tripRecord(tripId) {
+    const trip = this.visibleTrips().find((item) => item.id === tripId);
+    if (trip || this.mode === 'demo') return trip;
+    const { data, error } = await this.client.from('trips').select('*').eq('id', tripId).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
   async tripResourceHistory(tripId) {
     if (this.profile.role !== 'admin') return [];
     if (this.mode === 'demo')
@@ -348,7 +376,7 @@ class FleetStore extends EventTarget {
       throw new Error('More than 200 trips match. Choose a shorter date range.');
     return data;
   }
-  async readTable(name) {
+  async readTable(name, { openOnly = false } = {}) {
     if (name === 'activity')
       return this.client
         .from(name)
@@ -358,9 +386,9 @@ class FleetStore extends EventTarget {
     const records = [];
     let total = Infinity;
     while (records.length < total) {
-      const { data, error, count } = await this.client
-        .from(name)
-        .select('*', { count: 'exact' })
+      const query = this.client.from(name).select('*', { count: 'exact' });
+      if (openOnly) query.neq('status', 'resolved');
+      const { data, error, count } = await query
         .order('id')
         .range(records.length, records.length + 999);
       if (error) return { error };
@@ -520,14 +548,16 @@ class FleetStore extends EventTarget {
   async action(action, payload) {
     if (['start_route', 'end_route', 'board_student'].includes(action))
       throw new Error('Use a dated trip for passenger operations.');
-    if (TRIP_ACTIONS.includes(action) || SCHEDULING_ACTIONS.includes(action)) {
+    const reportAction = REPORT_ACTIONS.includes(action);
+    if (reportAction || TRIP_ACTIONS.includes(action) || SCHEDULING_ACTIONS.includes(action)) {
       payload = { ...payload, operation_id: payload.operation_id || crypto.randomUUID() };
       if (this.mode === 'demo') {
         const mutate = () => {
           this.loadDemo();
           const next = structuredClone(this.data);
           const repeated = next.trip_operations.some((op) => op.id === payload.operation_id);
-          const result = schedulingActions.has(action)
+          const result = reportAction ? applyDemoReportAction(next, this.profile, action, payload)
+            : schedulingActions.has(action)
             ? applySchedulingAction(next, this.profile, action, payload)
             : applyDemoTripAction(next, this.profile, action, payload);
           this.data = next;

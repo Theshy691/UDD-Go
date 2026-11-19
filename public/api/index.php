@@ -42,6 +42,7 @@ $allowed = [
     'route_versions',
     'trips',
     'trip_passengers',
+    'trip_reports',
     'trip_resource_events'
 ];
 if ($action === 'list' && $method === 'GET' && in_array($resource, $allowed, true)) {
