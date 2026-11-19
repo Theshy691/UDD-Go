@@ -30,6 +30,21 @@ Open the URL Vite prints, usually [localhost:5173](http://127.0.0.1:5173).
 
 The landing page uses animated ASCII route traces and a looping UDD Go wordmark. Visitors who prefer reduced motion see the still design. The route demo also moves stop by stop in reduced-motion mode.
 
+## Landing page help chatbot
+
+**Ask UDD Go** answers public questions in English and Tagalog. The PHP backend retrieves matching entries from [`public/api/help-guide.php`](public/api/help-guide.php), and the local Ollama model selects from those entries. The app renders the approved text and its source link. It can return a matching guide entry if Ollama is busy or offline. The chat reads only the public guide and does not access accounts, live bus locations, or trip reports.
+
+Run the demo with the local model, without an API key or per-message usage fees:
+
+```sh
+docker compose --profile chat up -d --build
+docker compose exec -T help-model ollama pull qwen3:1.7b
+```
+
+The first model download is about 1.4 GB. Ollama is available to PHP over Docker’s internal network. Set `CHAT_OLLAMA_URL` and `CHAT_OLLAMA_MODEL` only if you are using a different local Ollama instance or model. Use the Docker/PHP app on port 8080 for chat, since static hosting only serves the landing page and FAQ.
+
+Run the help retrieval checks in Docker with `docker compose exec -T -e UDD_HELP_API_DIR=/var/www/html/api web php < tests/help-chat.php`.
+
 ## Driver route traffic
 
 The driver demo includes sample delays and a map overlay. For a connected school workspace, set `TOMTOM_TRAFFIC_KEY` in `.env` and rebuild Docker, or set `VITE_TOMTOM_TRAFFIC_KEY` for a frontend build. Use a browser key restricted to the Routing product and your app’s domains. The app sends the assigned stop coordinates to TomTom for a full-route driving estimate. [TomTom key restrictions](https://docs.tomtom.com/platform/documentation/api-best-practices/api-key-management-best-practices)
