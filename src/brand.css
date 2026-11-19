@@ -1,0 +1,36 @@
+:root {
+  --udd-paper: #f8fafc;
+  --udd-ink: #263748;
+  --udd-muted: #526174;
+  --udd-rule: #dde7ee;
+  --udd-blue: #0369a1;
+  --udd-tint: #e0f2fe;
+  --udd-map: #f0f9ff;
+  --udd-heading: 'Manrope', 'DM Sans', system-ui, sans-serif;
+}
+
+.udd-brand-lockup {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--udd-ink);
+  font: 800 20px / 1 var(--udd-heading);
+  letter-spacing: -0.055em;
+  white-space: nowrap;
+}
+
+.udd-brand-lockup .brand-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+}
+
+.udd-brand-lockup .brand-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.udd-brand-lockup strong span {
+  color: var(--udd-blue);
+}

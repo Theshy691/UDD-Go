@@ -1,11 +1,11 @@
 .udd-landing {
-  --landing-paper: #f8fafc;
-  --landing-ink: var(--ink, #263748);
-  --landing-muted: #526174;
-  --landing-rule: #dde7ee;
-  --landing-accent: #0369a1;
-  --landing-tint: #e0f2fe;
-  --landing-map: #f0f9ff;
+  --landing-paper: var(--udd-paper);
+  --landing-ink: var(--udd-ink);
+  --landing-muted: var(--udd-muted);
+  --landing-rule: var(--udd-rule);
+  --landing-accent: var(--udd-blue);
+  --landing-tint: var(--udd-tint);
+  --landing-map: var(--udd-map);
   --landing-header-offset: 84px;
   background: var(--landing-paper);
   color: var(--landing-ink);
@@ -65,32 +65,6 @@
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 16px;
-}
-
-.udd-landing-brand {
-  width: fit-content;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-family: 'Manrope', system-ui, sans-serif;
-  font-size: 20px;
-  letter-spacing: -0.055em;
-  white-space: nowrap;
-}
-
-.udd-landing-brand .brand-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-}
-
-.udd-landing-brand .brand-icon svg {
-  width: 21px;
-  height: 21px;
-}
-
-.udd-landing-brand strong span {
-  color: var(--landing-accent);
 }
 
 .udd-landing-nav nav {

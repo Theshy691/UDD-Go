@@ -1,11 +1,11 @@
 .udd-console {
-  --console-paper: #f8fafc;
+  --console-paper: var(--udd-paper);
   --console-surface: #fff;
-  --console-ink: #263748;
-  --console-muted: #526174;
-  --console-accent: #0369a1;
-  --console-tint: #e0f2fe;
-  --line: #dce4eb;
+  --console-ink: var(--udd-ink);
+  --console-muted: var(--udd-muted);
+  --console-accent: var(--udd-blue);
+  --console-tint: var(--udd-tint);
+  --line: var(--udd-rule);
   min-height: 100dvh;
   background: var(--console-paper);
   color: var(--console-ink);
@@ -19,6 +19,64 @@
 
 .udd-console .sidebar {
   overflow-y: auto;
+}
+
+.udd-console :is(h1, h2, .console-page-title) {
+  font-family: var(--udd-heading);
+}
+
+.console-skip {
+  position: fixed;
+  z-index: 100;
+  inset: 8px auto auto 8px;
+  padding: 10px 14px;
+  background: white;
+  color: var(--udd-blue);
+  transform: translateY(-150%);
+}
+
+.console-skip:focus {
+  transform: none;
+}
+
+.console-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.console-page-title {
+  font-size: 15px;
+  font-weight: 800;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.udd-console .topbar :is(.menu-toggle, .icon-button, .console-role-switch) {
+  min-height: 44px;
+}
+
+.udd-console .topbar .icon-button {
+  min-width: 44px;
+}
+
+.udd-console .console-role-switch {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 8px;
+  color: var(--console-ink);
+  background: var(--udd-map);
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .console-title-group { gap: 3px; }
+  .console-page-title { font-size: 14px; }
+  .udd-console .topbar .live-label { display: none; }
+  .udd-console .console-role-switch { font-size: 12px; }
 }
 
 .udd-console :is(.nav-label, .breadcrumbs, .sidebar-profile small, .campus-switch small) {

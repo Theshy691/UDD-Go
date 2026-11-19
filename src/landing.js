@@ -204,7 +204,7 @@ export function mountLanding(app, { icon, demo }) {
     <a class="udd-landing-skip" href="#landing-content">Skip to content</a>
     <header class="udd-landing-header">
       <div class="udd-landing-nav udd-landing-width">
-        <a class="udd-landing-brand" href="#landing-home" aria-label="UDD Go home">
+        <a class="udd-landing-brand udd-brand-lockup" href="#landing-home" aria-label="UDD Go home">
           <span class="brand-icon">${icon('BusFront')}</span>
           <strong>UDD <span>Go</span></strong>
         </a>
