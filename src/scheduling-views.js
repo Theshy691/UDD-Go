@@ -9,19 +9,23 @@ const option = (id, label, selected) =>
 export function schedulingPage(ui) {
   const admin = store.profile.role === 'admin',
     services = store.data.service_schedules;
+  const serviceGrid = (rows) =>
+    `<div class="route-grid">${
+      rows
+        .map((s) => {
+          const route = store.data.routes.find((r) => r.id === s.route_id),
+            bus = store.data.buses.find((b) => b.id === s.bus_id),
+            driver = store.data.users.find((u) => u.id === s.driver_id);
+          return `<section class="card route-card"><div class="between"><h2>${esc(s.name)}</h2>${ui.badge(s.active ? 'scheduled' : 'cancelled')}</div><p>${esc(route?.route_name || 'Archived route')} · ${esc(s.direction)}</p><p><strong>${esc(s.departure_time.slice(0, 5))}</strong> · ${s.duration_minutes} minutes · ${s.turnaround_minutes} minute turnaround</p><p>${s.weekdays.map((d) => dayNames[d - 1]).join(', ')}<br>${esc(s.start_date)} → ${esc(s.end_date)}</p><div class="route-meta"><div><span>Bus</span>${esc(bus?.label || 'Unavailable')}</div><div><span>Driver</span>${esc(driver?.name || 'Unavailable')}</div></div>${admin ? `<div class="trip-actions">${ui.button('Edit service', 'save-service', { id: s.id })}${ui.button('Passengers', 'service-passengers', { id: s.id })}${ui.button('Generate trips', 'generate-service-trips', { id: s.id })}</div>` : ''}</section>`;
+        })
+        .join('') ||
+      '<section class="card"><div class="empty">Create a route, then add its first service.</div></section>'
+    }</div>`;
+  const exceptions = (rows) =>
+    `<div class="activity-list">${rows.map((e) => `<div class="setting-row"><div><strong>${esc(e.service_date)} · ${esc(e.type === 'cancelled' ? 'No service' : 'Extra service day')}</strong><p>${esc(services.find((s) => s.id === e.schedule_id)?.name || 'All services')} · ${esc(e.reason)}</p></div>${ui.button('Remove', 'remove-calendar-exception', { id: e.id })}</div>`).join('') || '<p class="muted">No exceptions. Services follow their weekday calendars.</p>'}</div>`;
   return `<div class="service-page-heading">${ui.pageHeader('Plan the school week.', 'Separate services, shared resources, and a calendar for every school run.', admin ? `${ui.button('Generate trips', 'generate-service-trips')}${ui.button('Create service', 'save-service', { primary: true })}` : '')}</div>
- <div class="route-grid">${
-   services
-     .map((s) => {
-       const route = store.data.routes.find((r) => r.id === s.route_id),
-         bus = store.data.buses.find((b) => b.id === s.bus_id),
-         driver = store.data.users.find((u) => u.id === s.driver_id);
-       return `<section class="card route-card"><div class="between"><h2>${esc(s.name)}</h2>${ui.badge(s.active ? 'scheduled' : 'cancelled')}</div><p>${esc(route?.route_name || 'Archived route')} · ${esc(s.direction)}</p><p><strong>${esc(s.departure_time.slice(0, 5))}</strong> · ${s.duration_minutes} minutes · ${s.turnaround_minutes} minute turnaround</p><p>${s.weekdays.map((d) => dayNames[d - 1]).join(', ')}<br>${esc(s.start_date)} → ${esc(s.end_date)}</p><div class="route-meta"><div><span>Bus</span>${esc(bus?.label || 'Unavailable')}</div><div><span>Driver</span>${esc(driver?.name || 'Unavailable')}</div></div>${admin ? `<div class="trip-actions">${ui.button('Edit service', 'save-service', { id: s.id })}${ui.button('Passengers', 'service-passengers', { id: s.id })}${ui.button('Generate trips', 'generate-service-trips', { id: s.id })}</div>` : ''}</section>`;
-     })
-     .join('') ||
-   '<section class="card"><div class="empty">Create a route, then add its first service.</div></section>'
- }</div>
- ${admin ? `<section class="card" style="margin-top:24px"><div class="card-head"><h2>School calendar exceptions</h2>${ui.button('Add exception', 'calendar-exception')}</div><div class="activity-list">${store.data.calendar_exceptions.map((e) => `<div class="setting-row"><div><strong>${esc(e.service_date)} · ${esc(e.type === 'cancelled' ? 'No service' : 'Extra service day')}</strong><p>${esc(store.data.service_schedules.find((s) => s.id === e.schedule_id)?.name || 'All services')} · ${esc(e.reason)}</p></div>${ui.button('Remove', 'remove-calendar-exception', { id: e.id })}</div>`).join('') || '<p class="muted">No exceptions. Services follow their weekday calendars.</p>'}</div></section>` : ''}`;
+  ${ui.paginate('services', services, serviceGrid, { label: 'Services', size: 9 })}
+  ${admin ? `<section class="card" style="margin-top:24px"><div class="card-head"><h2>School calendar exceptions</h2>${ui.button('Add exception', 'calendar-exception')}</div>${ui.paginate('calendar-exceptions', store.data.calendar_exceptions, exceptions, { label: 'Calendar exceptions' })}</section>` : ''}`;
 }
 export async function schedulingAction(action, id, ui) {
   if (
@@ -140,10 +144,13 @@ export async function schedulingAction(action, id, ui) {
     if (!s) throw new Error('Service not found.');
     const subs = store.data.student_subscriptions.filter((a) => a.schedule_id === id),
       stops = store.data.route_versions.find((v) => v.id === s.route_version_id)?.stops || [];
+    const passengers = (rows) =>
+      `<div class="trip-passenger-list">${rows.map((a) => `<article class="trip-passenger"><div><strong>${esc(store.data.users.find((u) => u.id === a.student_id)?.name)}</strong><p>${esc(stops.find((s) => s.id === a.pickup_stop_id)?.stop_name)} → ${esc(stops.find((s) => s.id === a.dropoff_stop_id)?.stop_name)}</p><p class="small muted">${esc(a.start_date)} → ${esc(a.end_date)}</p></div>${ui.button('Remove subscription', 'unsubscribe-service', { id: a.id })}</article>`).join('') || '<p class="note">No subscriptions yet.</p>'}</div>`;
     ui.showModal(
       esc(s.name),
       'Subscriptions reserve seats on applicable dates. Changes do not rewrite prepared manifests.',
-      `<div class="trip-passenger-list">${subs.map((a) => `<article class="trip-passenger"><div><strong>${esc(store.data.users.find((u) => u.id === a.student_id)?.name)}</strong><p>${esc(stops.find((s) => s.id === a.pickup_stop_id)?.stop_name)} → ${esc(stops.find((s) => s.id === a.dropoff_stop_id)?.stop_name)}</p><p class="small muted">${esc(a.start_date)} → ${esc(a.end_date)}</p></div>${ui.button('Remove subscription', 'unsubscribe-service', { id: a.id })}</article>`).join('') || '<p class="note">No subscriptions yet.</p>'}</div><div class="modal-footer">${ui.button('Close', 'close-modal')}${ui.button('Add passenger', 'subscribe-service', { id: `schedule:${id}`, primary: true })}</div>`,
+      (paginate) =>
+        `${paginate('service-passengers', subs, passengers, { label: 'Service passengers' })}<div class="modal-footer">${ui.button('Close', 'close-modal')}${ui.button('Add passenger', 'subscribe-service', { id: `schedule:${id}`, primary: true })}</div>`,
       { wide: true }
     );
   } else if (action === 'subscribe-service') {
