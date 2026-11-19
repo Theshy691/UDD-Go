@@ -36,4 +36,17 @@ $decline = helpAnswer('Does live tracking show the bus fare?', 'en', $guide, sta
 ]);
 check($decline['mode'] === 'model' && $decline['passages'] === [], 'Honor a valid model abstention.');
 
-echo "Help retrieval, language selection, source validation, abstention, and fallback passed.\n";
+$mixed = helpAnswer('Paano ko i-check ang pickup stop?', 'auto', $guide, static fn () => null);
+check($mixed['language'] === 'tgl' && $mixed['passages'][0]['text'] === $guide['pickup']['tgl'], 'Detect and use approved Taglish copy.');
+$follow = helpAnswer('And how do I know they got it?', 'auto', $guide,
+    static function (string $question, string $preference, array $candidates): array {
+        check($candidates['issue']['previous'] && !$candidates['issue-status']['previous'], 'Retrieve the previous topic and related passages.');
+        return ['language' => 'en', 'passages' => ['issue-status']];
+    }, $answer['topics']);
+check($follow['topics'] === ['issue-status'] && $follow['passages'][0]['text'] === $guide['issue-status']['en'], 'Use followed-up content and return only the selected context.');
+$topicReset = helpAnswer('How much is tuition?', 'auto', $guide, static function (): array {
+    throw new RuntimeException('Old context should not carry over to an unrelated question.');
+}, ['unknown-topic', 'issue']);
+check($topicReset['topics'] === [] && $topicReset['passages'] === [], 'Use only retrieved guide topics.');
+
+echo "Help retrieval, three languages, follow-up context, source validation, abstention, and fallback passed.\n";

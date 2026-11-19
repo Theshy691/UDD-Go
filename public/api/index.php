@@ -33,13 +33,14 @@ if ($action === 'help-chat') {
     $request = json_decode($body, true);
     $question = is_string($request['question'] ?? null) ? trim($request['question']) : '';
     $language = $request['language'] ?? 'auto';
-    if ($question === '' || preg_match_all('/./us', $question) > 400 || !in_array($language, ['auto', 'en', 'tl'], true)) {
+    if ($question === '' || preg_match_all('/./us', $question) > 400 || !in_array($language, ['auto', 'en', 'tl', 'tgl'], true)) {
         http_response_code(400);
         echo json_encode(['error' => 'Enter a question of up to 400 characters and choose a supported language.']);
         exit;
     }
     require __DIR__ . '/help-chat.php';
-    echo json_encode(helpAnswer($question, $language, require __DIR__ . '/help-guide.php', 'selectHelpPassages'), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+    $topics = is_array($request['topics'] ?? null) ? $request['topics'] : [];
+    echo json_encode(helpAnswer($question, $language, require __DIR__ . '/help-guide.php', 'selectHelpPassages', $topics), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
     exit;
 }
 if ($action === 'config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
