@@ -7,6 +7,7 @@ import { mountLogin } from './login.js';
 import { createPagination } from './pagination.js';
 import { driverTripSummary, studentTripSummary, tripTime } from './portal-views.js';
 import { dispatchBoard } from './dispatch-views.js';
+import { portalAlerts } from './portal-alerts.js';
 import { driverTrafficPanel, mountDriverTraffic } from './traffic.js';
 import {
   createIcons,
@@ -259,9 +260,19 @@ function navItem(key, name, iconName, count = '') {
   return `<button class="nav-link ${page === key ? 'selected' : ''}" data-page="${key}" ${page === key ? 'aria-current="page"' : ''}>${icon(iconName)}<span>${name}</span>${count ? `<span class="nav-badge">${count}</span>` : ''}</button>`;
 }
 
+function currentAlerts() {
+  return portalAlerts(store.profile, store.visibleTrips(), store.data);
+}
+
+function unreadAlerts(alerts) {
+  const seen = new Set(preferences.seenTripAlerts?.[store.profile.id] ?? []);
+  return alerts.filter((alert) => !alert.key || !seen.has(alert.key)).length;
+}
+
 function shell(content) {
   const admin = store.profile.role === 'admin';
   const due = store.data.buses.filter((b) => maintenanceStatus(b).status !== 'healthy').length;
+  const unread = unreadAlerts(currentAlerts());
   return `<div class="udd-console"><a class="console-skip" href="#main-content">Skip to content</a><div class="sidebar-overlay" data-action="close-menu"></div><aside class="sidebar" aria-label="Main navigation">
     <a class="udd-brand-lockup" href="#" data-page="${admin ? 'overview' : store.profile.role}" aria-label="UDD Go home"><span class="brand-icon">${icon('BusFront')}</span><strong>UDD <span>Go</span></strong></a>
     <div class="campus-switch"><span class="campus-icon">${icon('School')}</span><div><strong>Universidad de Dagupan</strong><small>Main campus · Dagupan City</small></div></div>
@@ -270,7 +281,7 @@ function shell(content) {
     <div class="sidebar-bottom"><button type="button" class="nav-link sidebar-help" data-action="help">${icon('CircleHelp')} Help &amp; guidelines</button>
     <div class="sidebar-profile"><div class="avatar">${esc(initials(store.profile.name))}</div><div><strong>${esc(store.profile.name)}</strong><small>${admin ? 'Fleet administrator' : store.profile.role === 'driver' ? 'School bus driver' : 'Student account'}</small></div><button class="icon-button" data-action="logout" aria-label="Sign out / Switch account">${icon('LogOut')}</button></div></div>
   </aside><div class="app-main"><header class="topbar"><div class="console-title-group"><button class="icon-button menu-toggle" data-action="menu" aria-label="Open navigation">${icon('Menu')}</button><span class="console-page-title">${titles[page]}</span></div>
-    <div class="top-actions">${admin ? `<label class="global-search">${icon('Search')}<input id="global-search" placeholder="Search your fleet…" aria-label="Search fleet" value="${esc(query)}"/><kbd>⌘ K</kbd></label>` : ''}${store.mode === 'demo' ? `<select id="demo-role" class="console-role-switch" aria-label="Switch demo role"><option value="admin" ${admin ? 'selected' : ''}>Admin demo</option><option value="driver" ${store.profile.role === 'driver' ? 'selected' : ''}>Driver demo</option><option value="student" ${store.profile.role === 'student' ? 'selected' : ''}>Student demo</option><option value="logout">Back to landing</option></select>` : `<span class="live-label">${icon('ShieldCheck')}Secure workspace</span>`}<span class="top-divider"></span><button class="icon-button" data-action="notifications" aria-label="View notifications">${icon('Bell')}${due ? '<span class="notification-dot"></span>' : ''}</button><div class="avatar">${esc(initials(store.profile.name))}</div></div></header>
+    <div class="top-actions">${admin ? `<label class="global-search">${icon('Search')}<input id="global-search" placeholder="Search your fleet…" aria-label="Search fleet" value="${esc(query)}"/><kbd>⌘ K</kbd></label>` : ''}${store.mode === 'demo' ? `<select id="demo-role" class="console-role-switch" aria-label="Switch demo role"><option value="admin" ${admin ? 'selected' : ''}>Admin demo</option><option value="driver" ${store.profile.role === 'driver' ? 'selected' : ''}>Driver demo</option><option value="student" ${store.profile.role === 'student' ? 'selected' : ''}>Student demo</option><option value="logout">Back to landing</option></select>` : `<span class="live-label">${icon('ShieldCheck')}Secure workspace</span>`}<span class="top-divider"></span><button class="icon-button" data-action="notifications" aria-label="View notifications${unread ? ` (${unread} ${admin ? 'maintenance due' : 'unread'})` : ''}">${icon('Bell')}${unread ? '<span class="notification-dot" aria-hidden="true"></span>' : ''}</button><div class="avatar">${esc(initials(store.profile.name))}</div></div></header>
     <main class="page" id="main-content" tabindex="-1">${content}<footer class="page-footer"><span>© ${new Date().getFullYear()} UDD Go. Every student. Every journey.</span><span>${store.mode === 'demo' ? `${icon('Info')} Sample data · stored in this browser` : `${icon('ShieldCheck')} Access controlled by your fleet role`}</span></footer></main></div></div>`;
 }
 
@@ -1366,14 +1377,29 @@ async function handleAction(action, id, target) {
         }
       );
       break;
-    case 'notifications':
+    case 'notifications': {
+      const admin = store.profile.role === 'admin';
+      const alerts = currentAlerts();
+      if (!admin) {
+        savePreferences({ seenTripAlerts: {
+          ...preferences.seenTripAlerts,
+          [store.profile.id]: alerts.map((alert) => alert.key),
+        } });
+        target.setAttribute('aria-label', 'View notifications');
+        target.querySelector('.notification-dot')?.remove();
+      }
       showModal(
-        'A little heads-up.',
-        'The latest updates from your fleet.',
-        (paginate) =>
-          `${paginate('notifications', store.data.activity.slice(0, 15), (rows) => activityItems(rows, 'activity-list notification-list'), { label: 'Notifications', size: 8 })}<div class="modal-footer">${button('Close', 'close-modal')}</div>`
+        'Notifications',
+        admin ? 'Buses that are due for service.' : 'Updates for your assigned trips today and any trips underway.',
+        (paginate) => `${alerts.length ? paginate('notifications', alerts, (rows) => `
+          <ul class="portal-alerts">${rows.map((alert) => `
+            <li><button type="button" class="portal-alert" data-action="${alert.action}" data-id="${esc(alert.id)}">
+              ${icon(admin ? 'Wrench' : 'Route')}<span><strong>${esc(alert.title)}</strong><small>${esc(alert.detail)}</small></span>${icon('ChevronRight')}
+            </button></li>`).join('')}</ul>`, { label: 'Notifications', size: 8 }) : `<p class="note">${admin ? 'No buses are due for service.' : 'No assigned trip updates today.'}</p>`}
+          <div class="modal-footer">${button('Close', 'close-modal')}</div>`
       );
       break;
+    }
     case 'add-campus':
       routeDraft.push({
         id: crypto.randomUUID(),

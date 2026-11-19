@@ -104,6 +104,27 @@
   margin-bottom: 8px;
 }
 
+.portal-alerts {
+  list-style: none;
+  padding: 0;
+}
+
+.portal-alert {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  border-bottom: 1px solid var(--udd-rule);
+  padding: 8px 4px;
+  text-align: start;
+}
+
+.portal-alert:hover { background: var(--udd-map); }
+.portal-alert svg { width: 100%; color: var(--udd-blue); }
+.portal-alert small { display: block; color: var(--udd-muted); }
+
 .udd-console .global-search {
   border: 1px solid var(--line);
   border-radius: 8px;
