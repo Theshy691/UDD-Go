@@ -12,6 +12,36 @@ header('Permissions-Policy: geolocation=(self)');
 $url = rtrim(getenv('SUPABASE_URL') ?: '', '/');
 $key = getenv('SUPABASE_ANON_KEY') ?: '';
 $action = $_GET['action'] ?? '';
+if ($action === 'help-chat') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        header('Allow: POST');
+        echo json_encode(['error' => 'Method not allowed.']);
+        exit;
+    }
+    if (!preg_match('~^application/json(?:\s*;|$)~i', $_SERVER['CONTENT_TYPE'] ?? '')) {
+        http_response_code(415);
+        echo json_encode(['error' => 'A JSON request is required.']);
+        exit;
+    }
+    $body = file_get_contents('php://input', false, null, 0, 4097);
+    if (strlen($body) > 4096) {
+        http_response_code(413);
+        echo json_encode(['error' => 'Question is too long.']);
+        exit;
+    }
+    $request = json_decode($body, true);
+    $question = is_string($request['question'] ?? null) ? trim($request['question']) : '';
+    $language = $request['language'] ?? 'auto';
+    if ($question === '' || preg_match_all('/./us', $question) > 400 || !in_array($language, ['auto', 'en', 'tl'], true)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Enter a question of up to 400 characters and choose a supported language.']);
+        exit;
+    }
+    require __DIR__ . '/help-chat.php';
+    echo json_encode(helpAnswer($question, $language, require __DIR__ . '/help-guide.php', 'selectHelpPassages'), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+    exit;
+}
 if ($action === 'config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     echo json_encode(['url' => $url, 'key' => $key, 'cartoKey' => getenv('CARTO_API_KEY') ?: '', 'trafficKey' => getenv('TOMTOM_TRAFFIC_KEY') ?: '', 'middleware' => true], JSON_THROW_ON_ERROR);
     exit;
