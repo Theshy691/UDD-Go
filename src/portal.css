@@ -19,8 +19,8 @@
 }
 
 .journey-summary {
-  /* Keep WebKit from clipping the summary beside the composited Leaflet map. */
-  isolation: isolate;
+  /* The shared card's rounded overflow clip can hide content on WebKit. */
+  overflow: visible;
   padding: clamp(14px, 2vw, 22px);
 }
 
