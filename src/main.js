@@ -6,6 +6,7 @@ import { mountLogin } from './login.js';
 import { createPagination } from './pagination.js';
 import { driverTripSummary, studentTripSummary, tripTime } from './portal-views.js';
 import { dispatchBoard } from './dispatch-views.js';
+import { driverTrafficPanel, mountDriverTraffic } from './traffic.js';
 import {
   createIcons,
   LayoutDashboard,
@@ -636,6 +637,9 @@ function portal() {
         badge,
         demo: store.mode === 'demo',
         sharing: gpsWatch !== null && gpsRouteId === trip.id,
+        traffic: ['scheduled', 'active'].includes(trip.status)
+          ? driverTrafficPanel(store.mode === 'demo', store.config.trafficKey)
+          : '',
       })
     : studentTripSummary(trip, myPassenger, {
         button,
@@ -779,6 +783,15 @@ function mountMap() {
       }
     },
   });
+  const traffic = document.querySelector('[data-driver-traffic]');
+  if (traffic) {
+    mountDriverTraffic(traffic, {
+      trip: store.visibleTrips().find((trip) => trip.id === portalTripId),
+      demo: store.mode === 'demo',
+      key: store.config.trafficKey,
+      map: fleetMap,
+    });
+  }
 }
 
 function navigate(next) {

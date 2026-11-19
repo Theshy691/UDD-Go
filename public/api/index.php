@@ -13,7 +13,7 @@ $url = rtrim(getenv('SUPABASE_URL') ?: '', '/');
 $key = getenv('SUPABASE_ANON_KEY') ?: '';
 $action = $_GET['action'] ?? '';
 if ($action === 'config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    echo json_encode(['url' => $url, 'key' => $key, 'cartoKey' => getenv('CARTO_API_KEY') ?: '', 'middleware' => true], JSON_THROW_ON_ERROR);
+    echo json_encode(['url' => $url, 'key' => $key, 'cartoKey' => getenv('CARTO_API_KEY') ?: '', 'trafficKey' => getenv('TOMTOM_TRAFFIC_KEY') ?: '', 'middleware' => true], JSON_THROW_ON_ERROR);
     exit;
 }
 if (!$url || !$key) {

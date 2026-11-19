@@ -3,6 +3,7 @@ import 'leaflet/dist/leaflet.css';
 import './map.css';
 import { CAMPUS } from './seed.js';
 import { escapeHtml, buildRouteGraph } from './domain.js';
+import { trafficColor } from './traffic.js';
 
 const busSvg =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6v6m8-6v6M5 6a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v12H5V6Z"/><path d="M5 12h14M7 18v3m10-3v3M8 15h.01M16 15h.01M3 8v4m18-4v4"/></svg>';
@@ -300,6 +301,20 @@ export class FleetMap {
     }
     this.markers.get(bus_id)?.setLatLng([lat, lng]);
     this.alignMarkerLabels();
+  }
+  showTraffic(legs) {
+    this.trafficLayer?.remove();
+    this.trafficLayer = L.layerGroup(
+      legs.map(({ points, seconds }) =>
+        L.polyline(points, {
+          color: trafficColor(seconds),
+          weight: 7,
+          opacity: 0.85,
+          className: 'traffic-route-line',
+          interactive: false,
+        })
+      )
+    ).addTo(this.map);
   }
   destroy() {
     if (this.destroyed) return;

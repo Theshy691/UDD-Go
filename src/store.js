@@ -75,6 +75,7 @@ class FleetStore extends EventTarget {
       url: import.meta.env.VITE_SUPABASE_URL,
       key: import.meta.env.VITE_SUPABASE_ANON_KEY,
       cartoKey: import.meta.env.VITE_CARTO_API_KEY,
+      trafficKey: import.meta.env.VITE_TOMTOM_TRAFFIC_KEY,
     };
     if (!config.url) {
       try {

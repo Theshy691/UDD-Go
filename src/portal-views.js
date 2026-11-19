@@ -11,7 +11,12 @@ export function tripTime(value) {
   return Number.isFinite(timestamp.getTime()) ? tripClock.format(timestamp) : 'Time unavailable';
 }
 
-export function driverTripSummary(trip, passengers, counts, { button, badge, demo, sharing }) {
+export function driverTripSummary(
+  trip,
+  passengers,
+  counts,
+  { button, badge, demo, sharing, traffic }
+) {
   const stops = trip.stops ?? [];
   const finalStop = stops.at(-1);
   const pendingStops = new Set();
@@ -56,6 +61,7 @@ export function driverTripSummary(trip, passengers, counts, { button, badge, dem
       ${active && !sharing ? button('Enable GPS sharing', 'enable-gps', { id: trip.id, iconName: 'LocateFixed' }) : ''}
       ${active ? `<p id="gps-status" data-trip-id="${esc(trip.id)}" role="status">${sharing ? 'Sharing GPS' : demo ? 'Simulated bus location' : 'GPS sharing is off'}</p>` : ''}
     </div>
+    ${traffic}
   </section>`;
 }
 

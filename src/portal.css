@@ -80,6 +80,64 @@
   margin-top: 14px;
 }
 
+.journey-traffic {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.journey-traffic [hidden] {
+  display: none;
+}
+
+.journey-traffic > :first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.journey-traffic :is(p, .traffic-source) {
+  color: var(--console-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.traffic-source a {
+  color: var(--console-accent);
+  text-decoration: underline;
+}
+
+.traffic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.traffic-actions .button {
+  min-height: 44px;
+}
+
+.traffic-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 4px;
+  margin-inline: 4px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.traffic-slow {
+  background: #b45309;
+}
+
+.traffic-heavy {
+  background: #b42318;
+}
+
 .journey-workspace
   :is(.journey-heading, .journey-actions, .journey-picker, .portal-map, .trip-card)
   .button {
