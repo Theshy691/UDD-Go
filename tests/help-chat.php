@@ -49,4 +49,33 @@ $topicReset = helpAnswer('How much is tuition?', 'auto', $guide, static function
 }, ['unknown-topic', 'issue']);
 check($topicReset['topics'] === [] && $topicReset['passages'] === [], 'Use only retrieved guide topics.');
 
-echo "Help retrieval, three languages, follow-up context, source validation, abstention, and fallback passed.\n";
+foreach ($guide as $id => $entry) {
+    foreach (['en', 'tl', 'tgl'] as $language) {
+        check(trim($entry[$language] ?? '') !== '', "Missing $language text for $id.");
+    }
+    check(!empty($entry['terms']) && !empty($entry['source']['href']), "Missing aliases or source for $id.");
+    foreach ($entry['related'] ?? [] as $related) {
+        check(isset($guide[$related]), "Unknown related topic $related for $id.");
+    }
+}
+
+// Exercise the retriever independently of the local model with public workflow questions.
+$examples = [
+    ['What is UDD Go?', 'about', 'en'],
+    ['How can I generate trips for the week?', 'prepare-trips', 'en'],
+    ['Paano gumawa ng ruta na may bagong stop?', 'route-editing', 'tl'],
+    ['How ko i-enable ang GPS sharing?', 'gps-sharing', 'tgl'],
+    ['What happens on a school holiday?', 'calendar-exception', 'en'],
+    ['Paano mag-assign ng student?', 'service-passengers', 'tl'],
+    ['What is a cabin check?', 'driver-finish', 'en'],
+    ['How do I record an active handover?', 'resource-handover', 'en'],
+    ['How do I export passenger record?', 'export-records', 'en'],
+    ['Kailan due na ang bus?', 'maintenance', 'tl'],
+];
+foreach ($examples as [$question, $id, $language]) {
+    $result = helpAnswer($question, 'auto', $guide, static fn () => null);
+    check($result['topics'] === [$id], "Incorrect retrieval for: $question");
+    check($result['language'] === $language, "Incorrect language for: $question");
+}
+
+echo 'Help retrieval, three languages, follow-ups, sources, and fallback passed for a guide with ' . count($guide) . " topics.\n";
