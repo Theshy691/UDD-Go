@@ -10,7 +10,7 @@ Start with Docker Compose.
 docker compose up --build -d
 ```
 
-Visit [localhost:8080](http://127.0.0.1:8080) and select **Choose a demo role**. Open the Fleet admin, Driver, or Student demo from its own card. The demo works without an account and saves changes in your browser.
+Visit [localhost:8080](http://127.0.0.1:8080) and select **Open school portal → Demo access**. Pick a named sample account in the Fleet admin, Driver, or Student panel, then select **Open demo**. To try typing credentials, select **School credentials → Demo accounts** and choose an account to fill the form. Demo changes stay in your browser.
 
 For frontend development, use Node.js 22.12+.
 
