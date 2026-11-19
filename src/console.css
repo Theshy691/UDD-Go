@@ -309,6 +309,25 @@
   list-style: none;
 }
 
+.dispatch-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 14px 12px;
+}
+
+.dispatch-filters .button { min-height: 44px; }
+.dispatch-filters .button[aria-pressed='true'] {
+  background: var(--udd-tint);
+  border-color: var(--udd-tint);
+  color: var(--udd-blue);
+}
+
+.dispatch-trip-info > .dispatch-next {
+  color: var(--udd-blue);
+  font-weight: 700;
+}
+
 .dispatch-list li {
   border-top: 1px solid var(--line);
 }

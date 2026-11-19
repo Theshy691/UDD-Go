@@ -71,7 +71,8 @@ export async function tripAction(action, id, ui, pages = {}) {
     return true;
   }
   const cabinCheck = action === 'trip-cabin-check';
-  if (action !== 'trip-detail' && !cabinCheck) return false;
+  const reviewAssignment = action === 'trip-review-assignment';
+  if (action !== 'trip-detail' && !cabinCheck && !reviewAssignment) return false;
   const trip =
     store.visibleTrips().find((t) => t.id === id) ||
     (historyOwner === store.profile.id ? history?.find((t) => t.id === id) : null);
@@ -123,7 +124,8 @@ export async function tripAction(action, id, ui, pages = {}) {
     <div class="form-error" id="trip-action-error" role="alert"></div><button type="button" class="button" id="export-trip">Export passenger record</button>`,
     {
       wide: true,
-      initialFocus: cabinCheck ? '#trip-complete-form input[name="cabin_checked"]' : '',
+      initialFocus: cabinCheck ? '#trip-complete-form input[name="cabin_checked"]' :
+        reviewAssignment ? '[data-action="replace-trip-resources"]' : '',
       onSubmit: async (f) => {
         if (trip.status === 'scheduled')
           await store.action('start_trip', { trip_id: id, operation_id });

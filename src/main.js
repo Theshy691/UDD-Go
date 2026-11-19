@@ -149,6 +149,7 @@ let destroyLanding = null;
 const consolePagination = createPagination();
 const modalPagination = createPagination();
 let paginationOwner;
+let dispatchAttentionOnly = false;
 const titles = {
   overview: 'Overview',
   trips: 'Trips & history',
@@ -402,6 +403,12 @@ function mapToolbar(allowFilter = true) {
   }<button class="button map-fit-button" data-action="recenter" aria-label="Fit all route stops" title="Fit all route stops">${icon('LocateFixed')}</button></div>`;
 }
 
+function todayDispatch(trips = store.visibleTrips()) {
+  return dispatchBoard(trips, store.data.buses, store.data.users, {
+    badge, paginate: consolePagination.list, attentionOnly: dispatchAttentionOnly,
+  });
+}
+
 function overview() {
   const { buses, trip_passengers: passengers } = store.data;
   const trips = store.visibleTrips();
@@ -450,7 +457,7 @@ function overview() {
         : ''
     }
     <div class="overview-operations">
-    ${dispatchBoard(trips, buses, store.data.users, { badge, paginate: consolePagination.list })}
+    ${todayDispatch(trips)}
     <section class="card overview-tracking" aria-labelledby="fleet-map-title">
       <div class="card-head">
         <h2 id="fleet-map-title">Fleet tracking</h2>
@@ -697,6 +704,7 @@ function render() {
   if (paginationOwner !== store.profile?.id) {
     paginationOwner = store.profile?.id;
     consolePagination.reset();
+    dispatchAttentionOnly = false;
   }
   consolePagination.beginRender();
   destroyLanding?.();
@@ -1208,6 +1216,13 @@ async function handleAction(action, id, target) {
   if (await schedulingAction(action, id, tripUI())) return;
   if (await tripAction(action, id, tripUI())) return;
   switch (action) {
+    case 'filter-dispatch': {
+      dispatchAttentionOnly = id === 'attention';
+      consolePagination.reset('overview-today');
+      target.closest('.dispatch-board').outerHTML = todayDispatch();
+      document.querySelector('.dispatch-filters [aria-pressed="true"]')?.focus();
+      break;
+    }
     case 'open-trips':
       navigate('trips');
       break;
