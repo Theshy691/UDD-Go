@@ -49,6 +49,9 @@ class FleetStore extends EventTarget {
   connected = false;
   subscriptionKey = '';
   refreshTimer = null;
+  refreshTask = null;
+  refreshQueued = false;
+  sessionGeneration = 0;
   channelStates = new Map();
   constructor() {
     super();
@@ -95,6 +98,7 @@ class FleetStore extends EventTarget {
       if (data.session) await this.loadLive();
       this.client.auth.onAuthStateChange((event) => {
         if (event === 'SIGNED_OUT') {
+          this.sessionGeneration++;
           this.profile = null;
           this.data = emptyData();
           this.unsubscribe();
@@ -171,6 +175,7 @@ class FleetStore extends EventTarget {
     }
   }
   async loadLive() {
+    const generation = this.sessionGeneration;
     const {
       data: { user },
       error,
@@ -186,7 +191,7 @@ class FleetStore extends EventTarget {
       throw new Error(
         'Your account needs a fleet profile. Ask your administrator to link your Auth user ID.'
       );
-    this.profile = profile;
+    const next = emptyData();
     const names = [
       'users',
       'buses',
@@ -198,32 +203,18 @@ class FleetStore extends EventTarget {
       'student_subscriptions',
       'calendar_exceptions',
     ];
-    const positions = new Map(
-      this.data.buses
-        .filter((bus) => bus.position_at)
-        .map((bus) => [
-          bus.id,
-          {
-            current_lat: bus.current_lat,
-            current_lng: bus.current_lng,
-            position_at: bus.position_at,
-            position_trip_id: bus.position_trip_id,
-            position_epoch: bus.position_epoch,
-          },
-        ])
-    );
-    const results = await Promise.all(names.map((name) => this.readTable(name)));
+    const [results, tripData] = await Promise.all([
+      Promise.all(names.map((name) => this.readTable(name))),
+      this.loadTrips(),
+    ]);
+    Object.assign(next, tripData);
     results.forEach((result, i) => {
       if (result.error) throw result.error;
-      this.data[names[i]] = result.data;
+      next[names[i]] = result.data;
     });
-    this.data.buses.forEach((bus) => {
-      if (positions.has(bus.id)) Object.assign(bus, positions.get(bus.id));
-    });
-    this.routeSummaries.clear();
-    const versionIds = [...new Set(this.data.service_schedules.map((s) => s.route_version_id))];
-    this.data.route_versions = [];
-    const versionResults = await Promise.all(
+    const routeSummaries = new Map();
+    const versionIds = [...new Set(next.service_schedules.map((s) => s.route_version_id))];
+    const versions = Promise.all(
       Array.from({ length: Math.ceil(versionIds.length / 500) }, (_, i) =>
         this.client
           .from('route_versions')
@@ -232,35 +223,40 @@ class FleetStore extends EventTarget {
           .limit(500)
       )
     );
+    const summaries = profile.role === 'student' ? Promise.all(
+      next.trips
+        .filter((t) => t.service_date === schoolDate() || t.status === 'active')
+        .map(async (t) => {
+          const { data, error } = await this.client.rpc('fleet_trip_capacity', { p_id: t.id });
+          if (error) throw error;
+          routeSummaries.set(t.id, data);
+        })
+    ) : Promise.resolve();
+    const [versionResults] = await Promise.all([versions, summaries]);
     for (const result of versionResults) {
       if (result.error) throw result.error;
-      this.data.route_versions.push(...result.data);
+      next.route_versions.push(...result.data);
     }
-    await this.loadTrips();
-    if (this.profile.role === 'student')
-      await Promise.all(
-        this.data.trips
-          .filter((t) => t.service_date === schoolDate() || t.status === 'active')
-          .map(async (t) => {
-            const { data, error } = await this.client.rpc('fleet_trip_capacity', { p_id: t.id });
-            if (error) throw error;
-            this.routeSummaries.set(t.id, data);
-          })
-      );
-    for (const bus of this.data.buses)
-      if (
-        !this.data.trips.some(
-          (t) =>
-            t.id === bus.position_trip_id &&
-            t.bus_id === bus.id &&
-            t.location_epoch === bus.position_epoch &&
-            t.status === 'active'
-        )
-      ) {
-        delete bus.position_at;
-        delete bus.position_trip_id;
-        delete bus.position_epoch;
+    if (generation !== this.sessionGeneration) return;
+    // Keep GPS events that arrived while the tables were loading, for the same active trip.
+    if (this.profile?.id === profile.id) {
+      const currentBuses = new Map(this.data.buses.map((bus) => [bus.id, bus]));
+      const activeTrips = new Map(next.trips.filter((t) => t.status === 'active').map((t) => [t.bus_id, t]));
+      for (const bus of next.buses) {
+        const position = currentBuses.get(bus.id);
+        const trip = activeTrips.get(bus.id);
+        if (
+          position?.position_at && trip && trip.id === position.position_trip_id &&
+          trip.location_epoch === position.position_epoch
+        ) {
+          for (const key of ['current_lat', 'current_lng', 'position_at', 'position_trip_id', 'position_epoch'])
+            bus[key] = position[key];
+        }
       }
+    }
+    this.profile = profile;
+    this.data = next;
+    this.routeSummaries = routeSummaries;
     await this.subscribe();
   }
   async loadTrips() {
@@ -281,17 +277,13 @@ class FleetStore extends EventTarget {
       throw new Error(
         'More than 200 trips in this window. Narrow server-side trip loading before continuing.'
       );
-    this.data.trips = data;
-    this.data.trip_passengers = [];
     // Each manifest is bounded by the enforced maximum vehicle capacity of 100.
-    await Promise.all(
+    const manifests = await Promise.all(
       data
         .filter((t) => t.status === 'active' || t.service_date === today)
-        .map(async (trip) => {
-          const passengers = await this.tripManifest(trip.id);
-          this.data.trip_passengers.push(...passengers);
-        })
+        .map((trip) => this.tripManifest(trip.id))
     );
+    return { trips: data, trip_passengers: manifests.flat() };
   }
   visibleTrips() {
     if (this.mode === 'live') return this.data.trips;
@@ -397,6 +389,7 @@ class FleetStore extends EventTarget {
     this.unsubscribe();
     this.subscriptionKey = key;
     await this.client.realtime.setAuth();
+    if (this.subscriptionKey !== key) return;
     const topics = this.data.trips
       .filter((t) => t.status === 'active')
       .map((t) => ({ topic: `trip:${t.id}:${t.location_epoch}`, id: t.id }));
@@ -404,6 +397,7 @@ class FleetStore extends EventTarget {
     if (this.profile.role === 'admin') topics.push({ topic: 'fleet:admin', id: 'admin' });
     this.channelStates = new Map(topics.map((topic) => [topic.id, 'CONNECTING']));
     const queueRefresh = () => {
+      if (this.subscriptionKey !== key) return;
       clearTimeout(this.refreshTimer);
       this.refreshTimer = setTimeout(
         () =>
@@ -423,11 +417,10 @@ class FleetStore extends EventTarget {
       channel.on('broadcast', { event: 'data_changed' }, queueRefresh);
       channel.on('broadcast', { event: 'trip' }, ({ payload }) => {
         this.dispatchEvent(new CustomEvent('trip', { detail: payload }));
-        this.refresh().catch((error) =>
-          this.dispatchEvent(new CustomEvent('connectionerror', { detail: error.message }))
-        );
+        queueRefresh();
       });
       channel.subscribe((status) => {
+        if (this.subscriptionKey !== key) return;
         this.channelStates.set(topic.id, status);
         this.connected = [...this.channelStates.values()].every((value) => value === 'SUBSCRIBED');
         this.dispatchEvent(new CustomEvent('connection', { detail: status }));
@@ -436,16 +429,31 @@ class FleetStore extends EventTarget {
     }
   }
   unsubscribe() {
+    this.subscriptionKey = '';
+    clearTimeout(this.refreshTimer);
     for (const channel of this.channels.values()) this.client?.removeChannel(channel);
     this.channels.clear();
     this.connected = false;
-    this.subscriptionKey = '';
     this.channelStates.clear();
   }
   async refresh() {
-    if (this.mode === 'demo') this.loadDemo();
-    else await this.loadLive();
-    this.emit();
+    if (this.mode === 'demo') {
+      this.loadDemo();
+      this.emit();
+      return;
+    }
+    if (!this.profile) return;
+    this.refreshQueued = true;
+    if (!this.refreshTask) {
+      this.refreshTask = (async () => {
+        while (this.refreshQueued && this.profile) {
+          this.refreshQueued = false;
+          await this.loadLive();
+          this.emit();
+        }
+      })().finally(() => { this.refreshTask = null; });
+    }
+    await this.refreshTask;
   }
   emit() {
     this.dispatchEvent(new Event('change'));
@@ -555,7 +563,8 @@ class FleetStore extends EventTarget {
           },
           body: JSON.stringify({ p_action: action, p_payload: payload }),
         });
-        const result = await response.json();
+        const result = await response.json().catch(() => null);
+        if (!result) throw new Error('The fleet service sent an unexpected response. Try again shortly.');
         mutationResult = result;
         if (!response.ok)
           throw new Error(result.message || result.error || 'Your change could not be saved.');

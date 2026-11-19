@@ -46,6 +46,17 @@
   min-width: 0;
 }
 
+.console-sidebar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.udd-console .console-close-menu {
+  display: none;
+}
+
 .console-page-title {
   font-size: 15px;
   font-weight: 800;
@@ -64,19 +75,47 @@
 }
 
 .udd-console .console-role-switch {
+  appearance: none;
+  height: 44px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 0 8px;
+  padding: 0 22px 0 8px;
   color: var(--console-ink);
-  background: var(--udd-map);
+  background:
+    linear-gradient(45deg, transparent 50%, var(--udd-blue) 50%) right 11px center / 5px 5px
+      no-repeat,
+    linear-gradient(135deg, var(--udd-blue) 50%, transparent 50%) right 6px center / 5px 5px
+      no-repeat,
+    var(--udd-map);
   font-size: 13px;
 }
 
 @media (max-width: 720px) {
-  .console-title-group { gap: 3px; }
-  .console-page-title { font-size: 14px; }
-  .udd-console .topbar .live-label { display: none; }
-  .udd-console .console-role-switch { font-size: 12px; }
+  .udd-console .sidebar:not(.open) {
+    visibility: hidden;
+  }
+  .udd-console .console-close-menu {
+    display: flex;
+    width: 44px;
+    height: 44px;
+  }
+  .console-title-group {
+    gap: 3px;
+  }
+  .console-page-title {
+    font-size: 14px;
+    line-height: 1.2;
+    white-space: normal;
+  }
+  .udd-console .topbar {
+    gap: 6px;
+  }
+  .udd-console .topbar .live-label {
+    display: none;
+  }
+  .udd-console .console-role-switch {
+    font-size: 13px !important;
+  }
 }
 
 .udd-console :is(.nav-label, .breadcrumbs, .sidebar-profile small, .campus-switch small) {
@@ -121,9 +160,23 @@
   text-align: start;
 }
 
-.portal-alert:hover { background: var(--udd-map); }
-.portal-alert svg { width: 100%; color: var(--udd-blue); }
-.portal-alert small { display: block; color: var(--udd-muted); }
+.portal-alert:hover {
+  background: var(--udd-map);
+}
+.portal-alert svg {
+  width: 100%;
+  color: var(--udd-blue);
+}
+.portal-alert small {
+  display: block;
+  color: var(--udd-muted);
+}
+
+.udd-console [aria-busy='true'],
+.modal [aria-busy='true'] {
+  cursor: progress;
+  opacity: 0.65;
+}
 
 .udd-console .global-search {
   border: 1px solid var(--line);
@@ -316,7 +369,9 @@
   padding: 0 14px 12px;
 }
 
-.dispatch-filters .button { min-height: 44px; }
+.dispatch-filters .button {
+  min-height: 44px;
+}
 .dispatch-filters .button[aria-pressed='true'] {
   background: var(--udd-tint);
   border-color: var(--udd-tint);

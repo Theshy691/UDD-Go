@@ -78,10 +78,14 @@ export async function tripAction(action, id, ui, pages = {}) {
     store.visibleTrips().find((t) => t.id === id) ||
     (historyOwner === store.profile.id ? history?.find((t) => t.id === id) : null);
   if (!trip) throw new Error('Refresh the trip list and try again.');
-  const passengers = await store.tripManifest(id),
-    resources = await store.tripResourceHistory(id),
-    counts = tripCounts(passengers),
-    isStudent = store.profile.role === 'student';
+  const owner = store.profile.id;
+  const [passengers, resources] = await Promise.all([
+    store.tripManifest(id),
+    stopOnly ? Promise.resolve([]) : store.tripResourceHistory(id),
+  ]);
+  if (store.profile?.id !== owner || pages.cancelled?.()) return true;
+  const counts = tripCounts(passengers);
+  const isStudent = store.profile.role === 'student';
   const canDrive =
     store.profile.role === 'admin' ||
     (store.profile.role === 'driver' && trip.driver_id === store.profile.id);
@@ -184,8 +188,8 @@ export async function tripAction(action, id, ui, pages = {}) {
   dialog.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-trip-movement]');
     if (!button) return;
-    const { tripMovement, student, stop } = button.dataset;
-    const key = JSON.stringify([tripMovement, student, stop]);
+    const { tripMovement, student, stop: movementStop } = button.dataset;
+    const key = JSON.stringify([tripMovement, student, movementStop]);
     const operation = movementOperations.get(key) ?? { id: crypto.randomUUID() };
     if (operation.pending) return;
     operation.pending = true;
@@ -195,12 +199,13 @@ export async function tripAction(action, id, ui, pages = {}) {
       await store.action(tripMovement, {
         trip_id: id,
         student_code: student,
-        stop_id: stop,
+        stop_id: movementStop,
         operation_id: operation.id,
       });
       if (dialog.isConnected) {
         await tripAction(stop ? 'trip-stop-passengers' : 'trip-detail', id, ui, {
           stopId: stop?.id,
+          cancelled: () => !dialog.isConnected,
           manifest: ui.modalPage('manifest'),
           handovers: ui.modalPage('handovers'),
         });

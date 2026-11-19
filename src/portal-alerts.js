@@ -31,10 +31,10 @@ export function portalAlerts(profile, trips, { buses, trip_passengers: passenger
         completed: 'Trip completed',
         cancelled: 'Trip cancelled',
       }[trip.status];
-      const detail =
-        trip.status === 'cancelled' ? status :
-        passenger?.status === 'alighted' ? 'Drop-off recorded' :
-        passenger?.status === 'boarded' ? 'Boarding recorded' : status;
+      let detail = status;
+      if (trip.status === 'active' && passenger?.status === 'alighted')
+        detail = 'Drop-off recorded';
+      if (trip.status === 'active' && passenger?.status === 'boarded') detail = 'Boarding recorded';
       return {
         key: JSON.stringify([trip.id, trip.status, trip.location_epoch, passenger?.status]),
         title: trip.route_name,

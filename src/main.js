@@ -150,6 +150,7 @@ const consolePagination = createPagination();
 const modalPagination = createPagination();
 let paginationOwner;
 let dispatchAttentionOnly = false;
+let tripDetailsPending = false;
 const titles = {
   overview: 'Overview',
   trips: 'Trips & history',
@@ -274,14 +275,14 @@ function shell(content) {
   const admin = store.profile.role === 'admin';
   const due = store.data.buses.filter((b) => maintenanceStatus(b).status !== 'healthy').length;
   const unread = unreadAlerts(currentAlerts());
-  return `<div class="udd-console"><a class="console-skip" href="#main-content">Skip to content</a><div class="sidebar-overlay" data-action="close-menu"></div><aside class="sidebar" aria-label="Main navigation">
-    <a class="udd-brand-lockup" href="#" data-page="${admin ? 'overview' : store.profile.role}" aria-label="UDD Go home"><span class="brand-icon">${icon('BusFront')}</span><strong>UDD <span>Go</span></strong></a>
+  return `<div class="udd-console"><a class="console-skip" href="#main-content">Skip to content</a><div class="sidebar-overlay" data-action="close-menu"></div><aside class="sidebar" id="console-sidebar" aria-label="Main navigation">
+    <div class="console-sidebar-heading"><a class="udd-brand-lockup" href="#" data-page="${admin ? 'overview' : store.profile.role}" aria-label="UDD Go home"><span class="brand-icon">${icon('BusFront')}</span><strong>UDD <span>Go</span></strong></a><button type="button" class="icon-button console-close-menu" data-action="close-menu" aria-label="Close navigation">${icon('X')}</button></div>
     <div class="campus-switch"><span class="campus-icon">${icon('School')}</span><div><strong>Universidad de Dagupan</strong><small>Main campus · Dagupan City</small></div></div>
     <div class="nav-label">Workspace</div><nav class="nav-list">${admin ? `${navItem('overview', 'Overview', 'LayoutDashboard')}${navItem('fleet', 'Fleet management', 'BusFront')}${navItem('routes', 'Routes & stops', 'Route')}${navItem('services', 'Services & calendar', 'CalendarDays')}${navItem('students', 'Students', 'GraduationCap')}${navItem('drivers', 'Drivers', 'Users')}${navItem('maintenance', 'Maintenance', 'Wrench', due)}` : navItem(store.profile.role, store.profile.role === 'driver' ? 'My route' : 'My journey', store.profile.role === 'driver' ? 'Route' : 'MapPin')}
     </nav><div class="nav-separator"></div><div class="nav-label">Manage</div><nav class="nav-list">${admin ? navItem('activity', 'Activity log', 'Clock3') : ''}${navItem('trips', 'Trips & history', 'CalendarDays')}${navItem('settings', 'Settings', 'Settings')}</nav>
     <div class="sidebar-bottom"><button type="button" class="nav-link sidebar-help" data-action="help">${icon('CircleHelp')} Help &amp; guidelines</button>
     <div class="sidebar-profile"><div class="avatar">${esc(initials(store.profile.name))}</div><div><strong>${esc(store.profile.name)}</strong><small>${admin ? 'Fleet administrator' : store.profile.role === 'driver' ? 'School bus driver' : 'Student account'}</small></div><button class="icon-button" data-action="logout" aria-label="Sign out / Switch account">${icon('LogOut')}</button></div></div>
-  </aside><div class="app-main"><header class="topbar"><div class="console-title-group"><button class="icon-button menu-toggle" data-action="menu" aria-label="Open navigation">${icon('Menu')}</button><span class="console-page-title">${titles[page]}</span></div>
+  </aside><div class="app-main"><header class="topbar"><div class="console-title-group"><button class="icon-button menu-toggle" data-action="menu" aria-label="Open navigation" aria-expanded="false" aria-controls="console-sidebar">${icon('Menu')}</button><span class="console-page-title">${titles[page]}</span></div>
     <div class="top-actions">${admin ? `<label class="global-search">${icon('Search')}<input id="global-search" placeholder="Search your fleet…" aria-label="Search fleet" value="${esc(query)}"/><kbd>⌘ K</kbd></label>` : ''}${store.mode === 'demo' ? `<select id="demo-role" class="console-role-switch" aria-label="Switch demo role"><option value="admin" ${admin ? 'selected' : ''}>Admin demo</option><option value="driver" ${store.profile.role === 'driver' ? 'selected' : ''}>Driver demo</option><option value="student" ${store.profile.role === 'student' ? 'selected' : ''}>Student demo</option><option value="logout">Back to landing</option></select>` : `<span class="live-label">${icon('ShieldCheck')}Secure workspace</span>`}<span class="top-divider"></span><button class="icon-button" data-action="notifications" aria-label="View notifications${unread ? ` (${unread} ${admin ? 'maintenance due' : 'unread'})` : ''}">${icon('Bell')}${unread ? '<span class="notification-dot" aria-hidden="true"></span>' : ''}</button><div class="avatar">${esc(initials(store.profile.name))}</div></div></header>
     <main class="page" id="main-content" tabindex="-1">${content}<footer class="page-footer"><span>© ${new Date().getFullYear()} UDD Go. Every student. Every journey.</span><span>${store.mode === 'demo' ? `${icon('Info')} Sample data · stored in this browser` : `${icon('ShieldCheck')} Access controlled by your fleet role`}</span></footer></main></div></div>`;
 }
@@ -664,7 +665,7 @@ function portal() {
         button,
         badge,
         icon,
-        boardingId: store.profile.student_code || (store.mode === 'demo' ? store.profile.id : ''),
+        boardingId: store.profile.student_code,
         phone: person(trip.driver_id)?.contact_number,
       });
   return `<div class="journey-workspace">${heading}${picker}${summary}
@@ -815,6 +816,7 @@ function mountMap() {
 }
 
 function navigate(next) {
+  const movingFromMenu = Boolean(document.querySelector('.sidebar.open'));
   consolePagination.reset();
   page = next;
   query = '';
@@ -822,6 +824,17 @@ function navigate(next) {
   routeFilter = '';
   render();
   window.scrollTo({ top: 0, behavior: 'instant' });
+  if (movingFromMenu) document.querySelector('#main-content')?.focus({ preventScroll: true });
+}
+
+function setMobileMenu(open) {
+  const sidebar = document.querySelector('#console-sidebar');
+  if (!sidebar || sidebar.classList.contains('open') === open) return;
+  sidebar.classList.toggle('open', open);
+  document.querySelector('.sidebar-overlay').classList.toggle('open', open);
+  const toggle = document.querySelector('.menu-toggle');
+  toggle.setAttribute('aria-expanded', String(open));
+  (open ? sidebar.querySelector('.console-close-menu') : toggle).focus();
 }
 
 function renderLogin({ prefill } = {}) {
@@ -842,8 +855,9 @@ function showModal(
   body,
   { wide = false, onSubmit = null, cleanup = null, initialFocus = '' } = {}
 ) {
+  const returnFocus = modalReturnFocus || document.activeElement;
   closeModal();
-  modalReturnFocus = document.activeElement;
+  modalReturnFocus = returnFocus;
   modalCleanup = cleanup;
   const modalRoot = document.querySelector('#modal-root');
   const content = typeof body === 'function' ? body(modalPagination.list) : body;
@@ -1214,7 +1228,24 @@ async function stopGPS() {
 
 async function handleAction(action, id, target) {
   if (await schedulingAction(action, id, tripUI())) return;
-  if (await tripAction(action, id, tripUI(), { stopId: target.dataset.stopId })) return;
+  if (['trip-detail', 'trip-stop-passengers', 'trip-review-assignment', 'trip-cabin-check'].includes(action)) {
+    if (tripDetailsPending) return;
+    const openPage = page;
+    const openDialog = target.closest('.modal');
+    tripDetailsPending = true;
+    target.setAttribute('aria-busy', 'true');
+    try {
+      await tripAction(action, id, tripUI(), {
+        stopId: target.dataset.stopId,
+        cancelled: () => page !== openPage || Boolean(openDialog && !openDialog.isConnected),
+      });
+    } finally {
+      target.removeAttribute('aria-busy');
+      tripDetailsPending = false;
+    }
+    return;
+  }
+  if (await tripAction(action, id, tripUI())) return;
   switch (action) {
     case 'filter-dispatch': {
       dispatchAttentionOnly = id === 'attention';
@@ -1234,9 +1265,10 @@ async function handleAction(action, id, target) {
       if (store.profile.role !== 'student' || !['scheduled', 'active'].includes(trip?.status) || passenger?.status !== 'expected' || !code) {
         throw new Error('Your boarding ID is no longer available for this trip.');
       }
-      showModal('Boarding ID', 'Show this code to your driver when you board.', `
+      const dialog = showModal('Boarding ID', 'Show this code to your driver when you board.', `
         <div class="boarding-pass"><strong>${esc(code)}</strong><p>${esc(store.profile.name)}</p><p>${esc(passenger.pickup_name)} · ${esc(trip.bus_label)}</p></div>
         <div class="modal-footer">${button('Close', 'close-modal')}</div>`);
+      dialog.dataset.boardingTrip = id;
       break;
     }
     case 'choose-portal-trip':
@@ -1320,9 +1352,15 @@ async function handleAction(action, id, target) {
       exportFleet();
       break;
     case 'refresh':
-      resetTripHistory();
-      await store.refresh();
-      toast('Your fleet is up to date.');
+      target.disabled = true;
+      target.setAttribute('aria-busy', 'true');
+      try {
+        await store.refresh();
+        toast('Your fleet is up to date.');
+      } finally {
+        target.disabled = false;
+        target.removeAttribute('aria-busy');
+      }
       break;
     case 'recenter':
       fleetMap?.fit();
@@ -1331,12 +1369,10 @@ async function handleAction(action, id, target) {
       closeModal();
       break;
     case 'menu':
-      document.querySelector('.sidebar').classList.add('open');
-      document.querySelector('.sidebar-overlay').classList.add('open');
+      setMobileMenu(true);
       break;
     case 'close-menu':
-      document.querySelector('.sidebar').classList.remove('open');
-      document.querySelector('.sidebar-overlay').classList.remove('open');
+      setMobileMenu(false);
       break;
     case 'profile':
       navigate('settings');
@@ -1590,8 +1626,7 @@ document.addEventListener('keydown', (event) => {
   }
   if (event.key === 'Escape') {
     closeModal();
-    document.querySelector('.sidebar')?.classList.remove('open');
-    document.querySelector('.sidebar-overlay')?.classList.remove('open');
+    setMobileMenu(false);
   }
   if (event.key === 'Tab' && document.querySelector('[role="dialog"]')) {
     const elements = [
@@ -1612,6 +1647,7 @@ document.addEventListener('keydown', (event) => {
   }
 });
 store.addEventListener('change', () => {
+  const openPass = document.querySelector('[data-boarding-trip]')?.dataset.boardingTrip;
   if (
     gpsRouteId &&
     !store.data.trips.some(
@@ -1623,6 +1659,10 @@ store.addEventListener('change', () => {
   )
     stopGPS();
   render();
+  if (openPass && document.querySelector('[data-action="show-boarding-id"]')?.dataset.id !== openPass) {
+    closeModal();
+    document.querySelector('#main-content')?.focus({ preventScroll: true });
+  }
 });
 store.addEventListener('position', ({ detail }) => {
   fleetMap?.update(detail);

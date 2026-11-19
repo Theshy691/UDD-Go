@@ -121,8 +121,14 @@
   font-variant-numeric: tabular-nums;
 }
 
-.boarding-pass p { margin: 7px 0 0; color: var(--udd-ink); }
-.trip-passenger [data-trip-movement] { min-height: 44px; white-space: normal; }
+.boarding-pass p {
+  margin: 7px 0 0;
+  color: var(--udd-ink);
+}
+.trip-passenger [data-trip-movement] {
+  min-height: 44px;
+  white-space: normal;
+}
 
 .journey-actions {
   display: flex;
