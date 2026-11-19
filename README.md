@@ -45,6 +45,8 @@ The first model download is about 1.4 GB. Ollama is available to PHP over Docker
 
 Run the help retrieval checks in Docker with `docker compose exec -T -e UDD_HELP_API_DIR=/var/www/html/api web php < tests/help-chat.php`.
 
+See the [system prompt](public/api/help-system-prompt.md) and [prompt examples](md/CHATBOT_PROMPTS.md) for the request format, English/Tagalog/Taglish examples, follow-ups, and guide maintenance.
+
 ## Driver route traffic
 
 The driver demo includes sample delays and a map overlay. For a connected school workspace, set `TOMTOM_TRAFFIC_KEY` in `.env` and rebuild Docker, or set `VITE_TOMTOM_TRAFFIC_KEY` for a frontend build. Use a browser key restricted to the Routing product and your app’s domains. The app sends the assigned stop coordinates to TomTom for a full-route driving estimate. [TomTom key restrictions](https://docs.tomtom.com/platform/documentation/api-best-practices/api-key-management-best-practices)
