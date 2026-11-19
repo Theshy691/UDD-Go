@@ -5,6 +5,7 @@ import { mountLanding } from './landing.js';
 import { mountLogin } from './login.js';
 import { createPagination } from './pagination.js';
 import { driverTripSummary, studentTripSummary, tripTime } from './portal-views.js';
+import { dispatchBoard } from './dispatch-views.js';
 import {
   createIcons,
   LayoutDashboard,
@@ -390,7 +391,8 @@ function mapToolbar(allowFilter = true) {
 
 function overview() {
   const { buses, trip_passengers: passengers } = store.data;
-  const active = store.visibleTrips().filter((trip) => trip.status === 'active');
+  const trips = store.visibleTrips();
+  const active = trips.filter((trip) => trip.status === 'active');
   const activeIds = new Set(active.map((trip) => trip.id));
   const activeBusIds = new Set(active.map((trip) => trip.bus_id));
   const boarded = passengers.filter(
@@ -434,6 +436,8 @@ function overview() {
           </div>`
         : ''
     }
+    <div class="overview-operations">
+    ${dispatchBoard(trips, buses, store.data.users, { badge, paginate: consolePagination.list })}
     <section class="card overview-tracking" aria-labelledby="fleet-map-title">
       <div class="card-head">
         <h2 id="fleet-map-title">Fleet tracking</h2>
@@ -449,6 +453,7 @@ function overview() {
         </aside>
       </div>
     </section>
+    </div>
     <div class="bottom-grid">
       <section class="card">
         <div class="card-head"><h2>Your fleet <span class="count">${buses.length}</span></h2><button type="button" class="link-button" data-page="fleet">View all buses ${icon('ArrowUpRight')}</button></div>
