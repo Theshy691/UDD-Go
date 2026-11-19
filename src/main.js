@@ -2,6 +2,7 @@ import './styles.css';
 import './brand.css';
 import './console.css';
 import './portal.css';
+import './workspace-theme.css';
 import { mountLanding } from './landing.js';
 import { mountLogin } from './login.js';
 import { createPagination } from './pagination.js';
@@ -253,7 +254,7 @@ const empty = (name, text, iconName = 'BusFront') =>
 function toast(message, error = false) {
   clearTimeout(toastTimer);
   document.querySelector('#toast-root').innerHTML =
-    `<div class="toast ${error ? 'error' : ''}">${icon(error ? 'CircleAlert' : 'CircleCheck')}<span>${esc(message)}</span></div>`;
+    `<div class="toast ${store.profile ? 'workspace-toast' : ''} ${error ? 'error' : ''}">${icon(error ? 'CircleAlert' : 'CircleCheck')}<span>${esc(message)}</span></div>`;
   mountIcons();
   toastTimer = setTimeout(() => document.querySelector('#toast-root').replaceChildren(), 5000);
 }
@@ -861,7 +862,7 @@ function showModal(
   modalCleanup = cleanup;
   const modalRoot = document.querySelector('#modal-root');
   const content = typeof body === 'function' ? body(modalPagination.list) : body;
-  modalRoot.innerHTML = `<div class="modal-backdrop"><section role="dialog" aria-modal="true" aria-labelledby="modal-title" class="modal ${wide ? 'wide' : ''}" tabindex="-1"><div class="modal-header"><div><h2 id="modal-title">${title}</h2><p>${subtitle}</p></div><button class="icon-button" data-action="close-modal" aria-label="Close dialog">${icon('X')}</button></div><div class="modal-body">${content}</div></section></div>`;
+  modalRoot.innerHTML = `<div class="modal-backdrop"><section role="dialog" aria-modal="true" aria-labelledby="modal-title" class="modal workspace-dialog ${wide ? 'wide' : ''}" tabindex="-1"><div class="modal-header"><div><h2 id="modal-title">${title}</h2><p>${subtitle}</p></div><button class="icon-button" data-action="close-modal" aria-label="Close dialog">${icon('X')}</button></div><div class="modal-body">${content}</div></section></div>`;
   document.body.style.overflow = 'hidden';
   mountIcons();
   const form = document.querySelector('#modal-root form');

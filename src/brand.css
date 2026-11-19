@@ -1,11 +1,14 @@
 :root {
   --udd-paper: #f8fafc;
+  --udd-surface: #fff;
   --udd-ink: #263748;
   --udd-muted: #526174;
   --udd-rule: #dde7ee;
   --udd-blue: #0369a1;
+  --udd-blue-hover: #075985;
   --udd-tint: #e0f2fe;
   --udd-map: #f0f9ff;
+  --udd-body: 'DM Sans', system-ui, sans-serif;
   --udd-heading: 'Manrope', 'DM Sans', system-ui, sans-serif;
 }
 

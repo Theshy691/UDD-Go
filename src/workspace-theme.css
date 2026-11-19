@@ -1,0 +1,184 @@
+:is(.udd-console, .workspace-dialog, .workspace-toast) {
+  --ink: var(--udd-ink);
+  --muted: var(--udd-muted);
+  --line: var(--udd-rule);
+  --workspace-warning: #8b4513;
+  --workspace-warning-bg: #fff6e8;
+  --workspace-danger: #a12b25;
+  --workspace-danger-bg: #fff1ef;
+  --workspace-good: #21664f;
+  --workspace-good-bg: #eaf6ef;
+  color: var(--udd-ink);
+  font-family: var(--udd-body);
+  accent-color: var(--udd-blue);
+}
+
+:is(.udd-console, .workspace-dialog) :is(h1, h2, h3) {
+  font-family: var(--udd-heading);
+}
+
+:is(.udd-console, .workspace-dialog) :focus-visible {
+  outline-color: var(--udd-blue);
+}
+
+:is(.udd-console, .workspace-dialog)
+  :is(
+    .muted,
+    .small.muted,
+    .empty p,
+    .field small,
+    .table-person small,
+    .table-route,
+    .table-capacity,
+    .route-card p,
+    .route-meta span,
+    .activity-text p,
+    .activity-text time,
+    .setting-row p,
+    .modal-header p,
+    .stop-item small,
+    .summary-top,
+    .summary-foot,
+    .mileage-value small
+  ) {
+  color: var(--udd-muted);
+}
+
+.udd-console :is(.sidebar-profile, .campus-switch, .progress, .top-divider) {
+  border-color: var(--udd-rule);
+}
+
+.udd-console :is(.nav-separator, .top-divider) {
+  background: var(--udd-rule);
+}
+
+.udd-console .campus-switch {
+  background: var(--udd-paper);
+}
+
+:is(.udd-console, .workspace-dialog)
+  :is(.count, .avatar, .vehicle-icon, .campus-icon, .stat-icon, .setting-value, .activity-icon) {
+  background: var(--udd-map);
+  color: var(--udd-blue);
+}
+
+:is(.udd-console, .workspace-dialog)
+  :is(
+    .card,
+    .summary-card,
+    .button,
+    .global-search,
+    .map-filter,
+    .field input,
+    .field select,
+    .field textarea,
+    .table-search input,
+    .setting-row select
+  ) {
+  border-color: var(--udd-rule);
+}
+
+:is(.udd-console, .workspace-dialog) :is(.card, .summary-card) {
+  background: var(--udd-surface);
+}
+
+:is(.udd-console, .workspace-dialog) :is(th, .progress) {
+  background: var(--udd-paper);
+}
+
+:is(.udd-console, .workspace-dialog) :is(th, .filter-tab) {
+  color: var(--udd-muted);
+}
+
+:is(.udd-console, .workspace-dialog) td {
+  border-color: var(--udd-rule);
+}
+:is(.udd-console, .workspace-dialog) .progress > span {
+  background: var(--udd-blue);
+}
+:is(.udd-console, .workspace-dialog) .toggle:checked {
+  background: var(--udd-blue);
+}
+
+:is(.udd-console, .workspace-dialog)
+  :is(.note, .filter-tab.selected, .stop-item.current .stop-dot) {
+  background: var(--udd-map);
+  border-color: var(--udd-rule);
+  color: var(--udd-blue);
+}
+
+:is(.udd-console, .workspace-dialog)
+  :is(.link-button, .button.subtle, .map-filter > svg:first-child) {
+  color: var(--udd-blue);
+}
+
+:is(.udd-console, .workspace-dialog) .button:hover {
+  background: var(--udd-map);
+}
+
+:is(.udd-console, .workspace-dialog) .button.primary {
+  background: var(--udd-blue);
+  border-color: var(--udd-blue);
+  color: var(--udd-surface);
+}
+
+:is(.udd-console, .workspace-dialog) .button.primary:hover {
+  background: var(--udd-blue-hover);
+  border-color: var(--udd-blue-hover);
+}
+
+:is(.udd-console, .workspace-dialog)
+  :is(.nav-badge, .stat-icon.orange, .badge.due_soon, .badge.maintenance) {
+  background: var(--workspace-warning-bg);
+  color: var(--workspace-warning);
+}
+
+:is(.udd-console, .workspace-dialog)
+  :is(.badge.overdue, .badge.cancelled, .button.danger, .form-error),
+.workspace-toast.error {
+  background: var(--workspace-danger-bg);
+  color: var(--workspace-danger);
+  border-color: #f0d5d2;
+}
+
+:is(.udd-console, .workspace-dialog)
+  :is(.badge.active, .badge.boarded, .badge.healthy, .green-text) {
+  color: var(--workspace-good);
+}
+
+:is(.udd-console, .workspace-dialog) :is(.badge.active, .badge.boarded, .badge.healthy) {
+  background: var(--workspace-good-bg);
+}
+
+:is(.udd-console, .workspace-dialog) :is(.badge.idle, .badge.completed, .badge.alighted) {
+  background: var(--udd-paper);
+  color: var(--udd-muted);
+}
+
+:is(.udd-console, .workspace-dialog) :is(.badge.scheduled, .badge.assigned, .badge.expected) {
+  background: var(--udd-tint);
+  color: var(--udd-blue-hover);
+}
+
+.workspace-dialog,
+.workspace-toast:not(.error) {
+  background: var(--udd-surface);
+  border-color: var(--udd-rule);
+}
+
+.workspace-dialog .modal-header {
+  background: var(--udd-map);
+  border-bottom: 1px solid var(--udd-rule);
+}
+
+.workspace-dialog .modal-body {
+  padding-top: 16px;
+}
+
+/* Give the route overlays precedence over the basemap's color. */
+:is(.udd-console, .workspace-dialog)
+  .leaflet-container
+  :is(.osm-tiles, .udd-voyager)
+  .leaflet-tile {
+  filter: saturate(0.78);
+}

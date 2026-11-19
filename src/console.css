@@ -1,6 +1,6 @@
 .udd-console {
   --console-paper: var(--udd-paper);
-  --console-surface: #fff;
+  --console-surface: var(--udd-surface);
   --console-ink: var(--udd-ink);
   --console-muted: var(--udd-muted);
   --console-accent: var(--udd-blue);
@@ -127,7 +127,7 @@
 }
 
 .udd-console .nav-link:hover {
-  background: #eef6fb;
+  background: var(--udd-map);
 }
 
 .udd-console .nav-link.selected {
@@ -195,17 +195,6 @@
   border-color: var(--console-accent);
   outline: 2px solid var(--console-accent);
   outline-offset: 2px;
-}
-
-.udd-console .button.primary {
-  border-color: var(--console-accent);
-  background: var(--console-accent);
-  color: #fff;
-}
-
-.udd-console .button.primary:hover {
-  border-color: #075985;
-  background: #075985;
 }
 
 .udd-console :is(.page-intro p, .page-intro .date, .card-head p, .table-footer, .page-footer) {

@@ -9,7 +9,7 @@
   --landing-header-offset: 84px;
   background: var(--landing-paper);
   color: var(--landing-ink);
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: var(--udd-body);
   min-height: 100dvh;
   word-break: normal;
 }
@@ -24,7 +24,7 @@
 }
 
 .udd-landing :is(h1, h2, h3) {
-  font-family: 'Manrope', 'DM Sans', system-ui, sans-serif;
+  font-family: var(--udd-heading);
   font-weight: 800;
 }
 
