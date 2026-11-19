@@ -1214,7 +1214,7 @@ async function stopGPS() {
 
 async function handleAction(action, id, target) {
   if (await schedulingAction(action, id, tripUI())) return;
-  if (await tripAction(action, id, tripUI())) return;
+  if (await tripAction(action, id, tripUI(), { stopId: target.dataset.stopId })) return;
   switch (action) {
     case 'filter-dispatch': {
       dispatchAttentionOnly = id === 'attention';
@@ -1226,6 +1226,19 @@ async function handleAction(action, id, target) {
     case 'open-trips':
       navigate('trips');
       break;
+    case 'show-boarding-id': {
+      const trip = store.visibleTrips().find((item) => item.id === id);
+      const passenger = store.data.trip_passengers.find((item) =>
+        item.trip_id === id && item.student_id === store.profile.id);
+      const code = passenger?.student_code || store.profile.student_code;
+      if (store.profile.role !== 'student' || !['scheduled', 'active'].includes(trip?.status) || passenger?.status !== 'expected' || !code) {
+        throw new Error('Your boarding ID is no longer available for this trip.');
+      }
+      showModal('Boarding ID', 'Show this code to your driver when you board.', `
+        <div class="boarding-pass"><strong>${esc(code)}</strong><p>${esc(store.profile.name)}</p><p>${esc(passenger.pickup_name)} · ${esc(trip.bus_label)}</p></div>
+        <div class="modal-footer">${button('Close', 'close-modal')}</div>`);
+      break;
+    }
     case 'choose-portal-trip':
       portalTripId = id;
       render();

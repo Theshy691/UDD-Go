@@ -72,6 +72,58 @@
   font-variant-numeric: tabular-nums;
 }
 
+.journey-stop {
+  position: relative;
+  min-width: 0;
+  padding-inline-start: 23px;
+}
+
+.journey-stop::before {
+  position: absolute;
+  inset: 4px auto 3px 5px;
+  width: 2px;
+  background: var(--udd-tint);
+  content: '';
+}
+
+.journey-stop::after {
+  position: absolute;
+  inset: 4px auto auto 0;
+  width: 12px;
+  height: 12px;
+  border: 3px solid var(--udd-blue);
+  border-radius: 50%;
+  background: white;
+  content: '';
+}
+
+.journey-stop dd:first-of-type {
+  font: 800 clamp(20px, 3vw, 30px) / 1.15 var(--udd-heading);
+}
+
+.journey-stop .journey-stop-detail {
+  font-size: 13px;
+  color: var(--udd-muted);
+}
+
+.boarding-pass {
+  padding: clamp(16px, 4vw, 28px);
+  border: 1px solid var(--udd-rule);
+  border-radius: 10px;
+  background: var(--udd-map);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.boarding-pass strong {
+  color: var(--udd-blue);
+  font: 800 clamp(27px, 7vw, 54px) / 1.15 var(--udd-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.boarding-pass p { margin: 7px 0 0; color: var(--udd-ink); }
+.trip-passenger [data-trip-movement] { min-height: 44px; white-space: normal; }
+
 .journey-actions {
   display: flex;
   flex-wrap: wrap;

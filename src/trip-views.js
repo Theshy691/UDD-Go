@@ -72,7 +72,8 @@ export async function tripAction(action, id, ui, pages = {}) {
   }
   const cabinCheck = action === 'trip-cabin-check';
   const reviewAssignment = action === 'trip-review-assignment';
-  if (action !== 'trip-detail' && !cabinCheck && !reviewAssignment) return false;
+  const stopOnly = action === 'trip-stop-passengers';
+  if (action !== 'trip-detail' && !cabinCheck && !reviewAssignment && !stopOnly) return false;
   const trip =
     store.visibleTrips().find((t) => t.id === id) ||
     (historyOwner === store.profile.id ? history?.find((t) => t.id === id) : null);
@@ -84,6 +85,11 @@ export async function tripAction(action, id, ui, pages = {}) {
   const canDrive =
     store.profile.role === 'admin' ||
     (store.profile.role === 'driver' && trip.driver_id === store.profile.id);
+  const stop = stopOnly ? trip.stops.find((s) => s.id === pages.stopId) : null;
+  if (stopOnly && (!stop || !canDrive)) throw new Error('Passengers for this stop are unavailable.');
+  const visiblePassengers = stop ? passengers.filter((p) =>
+    (p.status === 'expected' && p.pickup_stop_id === stop.id) ||
+    (p.status === 'boarded' && p.dropoff_stop_id === stop.id)) : passengers;
   const operation_id = crypto.randomUUID();
   const movement = (p) =>
     trip.status === 'active' && canDrive
@@ -101,11 +107,15 @@ export async function tripAction(action, id, ui, pages = {}) {
       )
       .join('');
   const renderPassengers = (items) =>
-    `<div class="trip-passenger-list">${items.map((p) => `<article class="trip-passenger"><div><strong>${esc(p.student_name)}</strong><p class="small muted">${esc(p.student_code)}</p><p class="small">${esc(p.pickup_name)} → ${esc(p.dropoff_name)}</p></div><div>${ui.badge(p.status)}<p class="small muted">Boarded: ${esc(time(p.boarded_at))}</p><p class="small muted">Dropped off: ${esc(time(p.alighted_at))}</p>${movement(p)}</div></article>`).join('') || '<p class="note">No passengers reserved.</p>'}</div>`;
+    `<div class="trip-passenger-list">${items.map((p) => `<article class="trip-passenger"><div><strong>${esc(p.student_name)}</strong><p class="small muted">${esc(p.student_code)}</p><p class="small">${esc(p.pickup_name)} → ${esc(p.dropoff_name)}</p></div><div>${ui.badge(p.status)}${stop ? '' : `<p class="small muted">Boarded: ${esc(time(p.boarded_at))}</p><p class="small muted">Dropped off: ${esc(time(p.alighted_at))}</p>`}${movement(p)}</div></article>`).join('') || `<p class="note">${stop ? 'All boarding and drop-offs at this stop are recorded.' : 'No passengers reserved.'}</p>`}</div>`;
   const dialog = ui.showModal(
-    esc(trip.route_name),
-    `${esc(time(trip.planned_at))} · ${esc(trip.bus_label)} · ${esc(trip.driver_name)}`,
-    (paginate) => `
+    esc(stop?.stop_name || trip.route_name),
+    stop ? `${esc(trip.route_name)} · ${esc(trip.bus_label)}` : `${esc(time(trip.planned_at))} · ${esc(trip.bus_label)} · ${esc(trip.driver_name)}`,
+    (paginate) => stop ? `
+      ${paginate('manifest', visiblePassengers, renderPassengers, { label: 'Passengers at this stop', initialPage: pages.manifest })}
+      <div class="form-error" id="trip-action-error" role="alert"></div>
+      <div class="modal-footer">${ui.button('Close', 'close-modal')}${ui.button('View full manifest', 'trip-detail', { id })}</div>
+    ` : `
     <div class="between">${ui.badge(trip.status)}<span>${isStudent ? 'Your passenger record' : `${counts.expected} expected · ${counts.boarded} on board · ${counts.alighted} dropped off`}</span></div>
     ${trip.legacy_import ? '<p class="note">Imported demo journey. Original boarding/start timestamps are unknown.</p>' : ''}
     ${store.profile.role === 'admin' && ['scheduled', 'active'].includes(trip.status) ? ui.button(trip.status === 'active' ? 'Record handover' : 'Replace bus / driver', 'replace-trip-resources', { id: trip.id }) : ''}
@@ -189,7 +199,8 @@ export async function tripAction(action, id, ui, pages = {}) {
         operation_id: operation.id,
       });
       if (dialog.isConnected) {
-        await tripAction('trip-detail', id, ui, {
+        await tripAction(stop ? 'trip-stop-passengers' : 'trip-detail', id, ui, {
+          stopId: stop?.id,
           manifest: ui.modalPage('manifest'),
           handovers: ui.modalPage('handovers'),
         });
@@ -201,7 +212,7 @@ export async function tripAction(action, id, ui, pages = {}) {
       operation.pending = false;
     }
   });
-  document.querySelector('#export-trip').addEventListener('click', () => {
+  dialog.querySelector('#export-trip')?.addEventListener('click', () => {
     const rows = [
       [
         'Service date',
