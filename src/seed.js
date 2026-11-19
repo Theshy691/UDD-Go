@@ -1,7 +1,21 @@
 export const CAMPUS = [16.0436, 120.3417];
+export const SECOND_DEMO_ADMIN = { id: 'admin-2', name: 'Mariel Reyes', role: 'admin' };
+export const DEMO_PASSWORD = 'demo-password';
+export const DEMO_ACCOUNT_EMAILS = {
+  'admin-1': 'admin@udd.edu.ph',
+  'admin-2': 'admin-2@example.test',
+  'driver-1': 'driver@udd.edu.ph',
+  'driver-2': 'driver-2@example.test',
+  'driver-3': 'driver-3@example.test',
+  'UDD-0001': 'student@udd.edu.ph',
+  'UDD-0007': 'student-7@example.test',
+  'UDD-0013': 'student-13@example.test',
+};
+
 export function makeSeed() {
   const users = [
     { id: 'admin-1', name: 'Alex Morgan', role: 'admin', contact_number: '0917 555 0100' },
+    { ...SECOND_DEMO_ADMIN },
     ...['Roberto Santos', 'Miguel Dela Cruz', 'Antonio Reyes', 'Jose Garcia', 'Eduardo Ramos'].map(
       (name, i) => ({
         id: `driver-${i + 1}`,

@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
-import { makeSeed } from './seed.js';
+import { DEMO_ACCOUNT_EMAILS, DEMO_PASSWORD, makeSeed, SECOND_DEMO_ADMIN } from './seed.js';
 import { TRIP_ACTIONS, schoolDate, upgradeDemoTrips, applyDemoTripAction } from './trips.js';
 import {
   SCHEDULING_ACTIONS,
@@ -102,12 +102,9 @@ class FleetStore extends EventTarget {
       });
     } else {
       this.loadDemo();
-      if (preferences.demoRole) {
+      const restored = this.setDemoAccount(preferences.demoAccountId, false);
+      if (!restored && preferences.demoRole) {
         this.setDemoRole(preferences.demoRole, false);
-      } else if (preferences.demoRole === null) {
-        this.profile = null;
-      } else {
-        this.profile = null;
       }
       this.connected = true;
     }
@@ -119,34 +116,42 @@ class FleetStore extends EventTarget {
     } catch {
       this.data = makeSeed();
     }
+    if (!this.data.users.some((user) => user.id === SECOND_DEMO_ADMIN.id)) {
+      this.data.users.push({ ...SECOND_DEMO_ADMIN });
+    }
     upgradeDemoTrips(this.data);
     upgradeScheduling(this.data);
     localStorage.setItem(DATA_KEY, JSON.stringify(this.data));
   }
   setDemoRole(role, emit = true) {
-    if (this.mode !== 'demo' || !['admin', 'driver', 'student'].includes(role)) return;
-    this.profile = this.data.users.find((u) => u.role === role);
-    savePreferences({ demoRole: role });
+    const account = this.data.users.find((user) => user.role === role);
+    return this.setDemoAccount(account?.id, emit);
+  }
+  demoAccounts() {
+    if (this.mode !== 'demo') return [];
+    return Object.entries(DEMO_ACCOUNT_EMAILS).flatMap(([id, email]) => {
+      const user = this.data.users.find((candidate) => candidate.id === id);
+      return user ? [{ id, email, role: user.role, name: user.name }] : [];
+    });
+  }
+  setDemoAccount(id, emit = true) {
+    if (this.mode !== 'demo' || !id) return false;
+    const account = this.data.users.find((user) => user.id === id);
+    if (!account || !['admin', 'driver', 'student'].includes(account.role)) return false;
+    this.profile = account;
+    savePreferences({ demoRole: account.role, demoAccountId: account.id });
     if (emit) this.emit();
+    return true;
   }
   async login(email, password) {
     if (this.mode === 'demo') {
       const query = (email || '').toLowerCase().trim();
-      let matched = this.data.users.find((u) => u.email?.toLowerCase() === query);
-      if (!matched) {
-        if (query.includes('driver')) matched = this.data.users.find((u) => u.role === 'driver');
-        else if (query.includes('student'))
-          matched = this.data.users.find((u) => u.role === 'student');
-        else if (query.includes('admin')) matched = this.data.users.find((u) => u.role === 'admin');
+      const matched =
+        this.demoAccounts().find((account) => account.email === query) ??
+        this.data.users.find((user) => user.email?.toLowerCase() === query);
+      if (password !== DEMO_PASSWORD || !this.setDemoAccount(matched?.id)) {
+        throw new Error('Choose a sample account below or check the demo email and password.');
       }
-      if (!matched) {
-        throw new Error(
-          'User not found. Use admin@udd.edu.ph, driver@udd.edu.ph, or student@udd.edu.ph'
-        );
-      }
-      this.profile = matched;
-      savePreferences({ demoRole: matched.role });
-      this.emit();
       return;
     }
     const { error } = await this.client.auth.signInWithPassword({ email, password });
@@ -160,7 +165,7 @@ class FleetStore extends EventTarget {
       if (error) throw error;
     } else {
       this.profile = null;
-      savePreferences({ demoRole: null });
+      savePreferences({ demoRole: null, demoAccountId: null });
       this.emit();
     }
   }
