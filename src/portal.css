@@ -1,0 +1,127 @@
+.journey-workspace {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.journey-heading,
+.journey-summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.journey-heading h1 {
+  font-size: clamp(25px, 3vw, 36px);
+  line-height: 1.15;
+}
+
+.journey-summary {
+  padding: clamp(14px, 2vw, 22px);
+}
+
+.journey-summary-head > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.journey-summary-head h2 {
+  font-size: clamp(18px, 2vw, 24px);
+  line-height: 1.2;
+}
+
+.journey-summary-head p,
+.journey-facts dt,
+.journey-actions p {
+  color: var(--console-muted);
+  font-size: 13px;
+}
+
+.journey-summary-head p {
+  margin-top: 4px;
+}
+
+.journey-facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--console-paper);
+}
+
+.journey-facts dd {
+  margin: 3px 0 0;
+  color: var(--console-ink);
+  font-weight: 750;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.journey-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 14px;
+}
+
+.journey-workspace :is(.journey-heading, .journey-actions, .journey-picker, .portal-map) .button {
+  min-height: 44px;
+  white-space: normal;
+}
+
+.journey-picker {
+  padding: 12px;
+}
+
+.journey-workspace .portal-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 29%);
+  gap: 16px;
+}
+
+.journey-workspace .portal-grid.map-expanded {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.journey-workspace .portal-map .map-wrap {
+  height: clamp(270px, 39vw, 480px);
+}
+
+.journey-workspace .map-expanded .portal-map .map-wrap {
+  height: clamp(360px, 70vh, 680px);
+}
+
+.journey-workspace .portal-map .card-head {
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+@media (max-width: 1024px) {
+  .journey-workspace .portal-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 460px) {
+  .journey-workspace {
+    gap: 12px;
+  }
+
+  .journey-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 12px;
+  }
+
+  .journey-facts > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .journey-actions .primary {
+    width: 100%;
+  }
+}

@@ -1,8 +1,10 @@
 import './styles.css';
 import './console.css';
+import './portal.css';
 import { mountLanding } from './landing.js';
 import { mountLogin } from './login.js';
 import { createPagination } from './pagination.js';
+import { driverTripSummary, tripTime } from './portal-views.js';
 import {
   createIcons,
   LayoutDashboard,
@@ -662,72 +664,9 @@ function studentHUDCard(trip, myPassenger, counts) {
   </section>`;
 }
 
-function driverHUDCard(trip, counts, passengers) {
-  const stops = trip.stops || [];
-  const nextStop = stops.find((s, i) => i > 0 && i < stops.length - 1) || stops[1] || stops[0];
-  const waitingCount = passengers.filter(
-    (p) => p.pickup_stop_id === nextStop?.id && p.status === 'expected'
-  ).length;
-  const isSharing = gpsWatch !== null;
-
-  return `<section class="card driver-hud-card">
-    <div class="card-head">
-      <div>
-        <h2>Cockpit navigation & passenger manifest HUD</h2>
-        <p>Live route telematics, next stop advisory, and passenger boarding scanner.</p>
-      </div>
-      <span class="live-label" data-live-status>
-        <span class="live-dot"></span>
-        ${trip.status === 'active' ? 'Active telemetry' : trip.status === 'scheduled' ? 'Scheduled departure' : 'Trip completed'}
-      </span>
-    </div>
-    <div class="hud-body">
-      <div class="driver-cockpit-banner">
-        <div class="cockpit-icon">${icon('MapPin')}</div>
-        <div class="cockpit-info">
-          <span class="cockpit-tag">UPCOMING ROUTE STOP</span>
-          <h3>${esc(nextStop?.stop_name || 'UDD Main Campus')}</h3>
-          <p class="small muted">Stop ${nextStop?.stop_sequence || 1} of ${stops.length} · ${waitingCount} student${waitingCount === 1 ? '' : 's'} assigned to board at this stop.</p>
-        </div>
-        <div class="cockpit-quick-action">
-          ${button('Open Boarding Scanner', 'trip-detail', { id: trip.id, primary: true, iconName: 'UserRoundCheck' })}
-        </div>
-      </div>
-
-      <div class="driver-telemetry-grid">
-        <div class="telemetry-item">
-          <span class="telemetry-label">Passenger Load</span>
-          <strong>${counts.boarded} / ${trip.capacity}</strong>
-          <div class="progress" style="margin-top:6px"><span style="width:${Math.min(100, (counts.boarded / trip.capacity) * 100)}%"></span></div>
-        </div>
-        <div class="telemetry-item">
-          <span class="telemetry-label">Speed Advisory</span>
-          <strong>35 km/h</strong>
-          <small class="muted">Max 40 km/h school zone</small>
-        </div>
-        <div class="telemetry-item">
-          <span class="telemetry-label">GPS Precision</span>
-          <strong style="color:${isSharing ? '#059669' : '#0284c7'}">${isSharing ? '±2.4m High Acc.' : 'Simulated GPS'}</strong>
-          <small class="muted">${isSharing ? 'Device broadcasting' : 'Tap below to share'}</small>
-        </div>
-        <div class="telemetry-item">
-          <span class="telemetry-label">Vehicle Odometer</span>
-          <strong>${formatNumber(trip.start_mileage || trip.segment_start_mileage || 24320)} km</strong>
-          <small class="muted">Plate: ${esc(trip.plate_number)}</small>
-        </div>
-      </div>
-
-      <div class="hud-action-row">
-        ${trip.status === 'active' ? button(isSharing ? 'GPS broadcasting active' : 'Enable live GPS sharing', 'enable-gps', { primary: !isSharing, id: trip.id, iconName: 'LocateFixed' }) : ''}
-        ${button(trip.status === 'scheduled' ? 'Review & start trip' : 'Complete trip / cabin check', 'trip-detail', { id: trip.id, iconName: 'Check' })}
-        <a href="tel:0755222496" class="button" title="UDD Dispatch Center">${icon('Phone')}<span>Contact school dispatch</span></a>
-      </div>
-    </div>
-  </section>`;
-}
-
 function portal() {
   const isDriver = store.profile.role === 'driver';
+  const driverHeading = `<header class="journey-heading"><h1>My route</h1>${button('Trips & history', 'open-trips', { iconName: 'CalendarDays' })}</header>`;
   const choices = store
     .visibleTrips()
     .filter((t) => t.service_date === schoolDate() || t.status === 'active')
@@ -738,29 +677,50 @@ function portal() {
     );
   const trip = choices.find((t) => t.id === portalTripId) || choices[0];
   portalTripId = trip?.id || '';
-  if (!trip)
+  if (!trip) {
+    if (isDriver)
+      return `<div class="journey-workspace">${driverHeading}<section class="card">${empty('No trips prepared for today', 'Check Trips & history for assignments on other dates.', 'CalendarDays')}</section></div>`;
     return `${pageHeader(`Hello, ${esc(store.profile?.name?.split(' ')[0] || 'there')}.`, 'Your dated journeys appear here when prepared.', button('Trips & history', 'open-trips'))}<section class="card">${empty('No trips prepared for today', 'Your administrator can generate trips from the service calendar.', 'CalendarDays')}</section>`;
+  }
   const passengers = store.data.trip_passengers.filter((p) => p.trip_id === trip.id),
     myPassenger = passengers.find((p) => p.student_id === store.profile.id);
   const counts = store.routeSummaries.get(trip.id) || tripCounts(passengers);
   const journeyButtons = (rows) =>
-    `<div class="trip-actions">${rows.map((t) => button(`${t.direction === 'return' ? 'Return' : 'Outbound'} · ${departure(new Date(t.planned_at).toLocaleTimeString('en-GB', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit' }))} · ${t.route_name}`, 'choose-portal-trip', { id: t.id, primary: t.id === trip.id })).join('')}</div>`;
-  const picker = `<section class="card" style="padding:16px;margin-bottom:20px">${consolePagination.list('portal-trips', choices, journeyButtons, { label: 'Journey choices', size: 6 })}</section>`;
+    `<div class="trip-actions">${rows.map((t) => button(`${t.direction === 'return' ? 'Return' : 'Outbound'} · ${esc(tripTime(t.planned_at))} · ${esc(t.route_name)}`, 'choose-portal-trip', { id: t.id, primary: t.id === trip.id })).join('')}</div>`;
+  const picker =
+    choices.length > 1
+      ? `<section class="card journey-picker" aria-label="Choose a trip">${consolePagination.list('portal-trips', choices, journeyButtons, { label: 'Journey choices', size: 6 })}</section>`
+      : '';
   const expandButton = button(portalExpanded ? 'Normal view' : 'Enlarge map', 'toggle-portal-map', {
     iconName: portalExpanded ? 'Minimize2' : 'Maximize2',
     className: 'button subtle map-expand-btn',
   });
-  return `${pageHeader(isDriver ? `Hello, ${esc(store.profile?.name?.split(' ')[0] || 'there')}.` : 'Your school journeys, connected.', 'Choose your outbound or return trip.', button('Trips & history', 'open-trips', { iconName: 'CalendarDays' }))}${picker}
+  const heading = isDriver
+    ? driverHeading
+    : pageHeader(
+        'Your school journeys, connected.',
+        'Choose your outbound or return trip.',
+        button('Trips & history', 'open-trips', { iconName: 'CalendarDays' })
+      );
+  const driverSummary = isDriver
+    ? driverTripSummary(trip, passengers, counts, {
+        button,
+        badge,
+        demo: store.mode === 'demo',
+        sharing: gpsWatch !== null && gpsRouteId === trip.id,
+      })
+    : '';
+  return `<div class="journey-workspace">${heading}${picker}${driverSummary}
   <div class="portal-grid ${isDriver ? 'driver-portal' : 'student-portal'} ${portalExpanded ? 'map-expanded' : ''}">
     <div class="portal-main-col stack">
       <section class="card portal-map">
         <div class="card-head">
           <div>
-            <h2>${esc(trip.route_name)}</h2>
-            <span class="small muted">${isDriver ? 'Driver navigation HUD · live route telemetry' : 'Your school bus journey map'}</span>
+            <h2>${isDriver ? 'Route map' : esc(trip.route_name)}</h2>
+            ${isDriver ? '' : '<span class="small muted">Your school bus journey map</span>'}
           </div>
           <div class="flex gap-8">
-            ${badge(trip.status)}
+            ${isDriver ? '' : badge(trip.status)}
             ${expandButton}
           </div>
         </div>
@@ -769,30 +729,31 @@ function portal() {
           ${mapToolbar(false)}
         </div>
       </section>
-      ${isDriver ? driverHUDCard(trip, counts, passengers) : studentHUDCard(trip, myPassenger, counts)}
+      ${isDriver ? '' : studentHUDCard(trip, myPassenger, counts)}
     </div>
     <div class="portal-sidebar">
-      <section class="card trip-card">
+      ${
+        isDriver
+          ? ''
+          : `<section class="card trip-card">
         <h2>${esc(trip.direction === 'return' ? 'Return journey' : 'Outbound journey')}</h2>
         <div class="bus-title"><span class="vehicle-icon">${icon('BusFront')}</span><div><h3>${esc(trip.bus_label)}</h3><p>${esc(trip.plate_number)}</p></div></div>
         <div class="driver-mini"><span class="avatar peach">${esc(initials(trip.driver_name))}</span><div><strong>${esc(trip.driver_name)}</strong>${esc(person(trip.driver_id)?.contact_number || '')}</div></div>
         <div class="trip-info">
           <div class="between"><span>Service date</span><strong>${esc(trip.service_date)}</strong></div>
           <div class="between"><span>On board</span><strong>${counts.boarded} / ${trip.capacity}</strong></div>
-          ${!isDriver ? `<div class="between"><span>Your status</span>${badge(myPassenger?.status || 'expected')}</div>` : ''}
+          <div class="between"><span>Your status</span>${badge(myPassenger?.status || 'expected')}</div>
         </div>
-        ${
-          isDriver
-            ? `<div class="trip-actions">${trip.status === 'active' ? button('Enable GPS sharing', 'enable-gps', { primary: true, id: trip.id, iconName: 'LocateFixed' }) : ''}${button(trip.status === 'scheduled' ? 'Review and start trip' : 'View passengers / complete', 'trip-detail', { id: trip.id })}</div><p id="gps-status" class="muted small">${gpsWatch !== null ? 'Sharing this device’s location.' : store.mode === 'demo' ? 'Sample locations are simulated.' : 'Enable location sharing during your active trip.'}</p>`
-            : `<div class="student-pass"><span>Your boarding ID</span><strong>${esc(store.profile.student_code || store.profile.id)}</strong><p>${esc(myPassenger?.pickup_name || '')} → ${esc(myPassenger?.dropoff_name || '')}</p></div>${button('View my trip record', 'trip-detail', { id: trip.id })}`
-        }
-      </section>
+        <div class="student-pass"><span>Your boarding ID</span><strong>${esc(store.profile.student_code || store.profile.id)}</strong><p>${esc(myPassenger?.pickup_name || '')} → ${esc(myPassenger?.dropoff_name || '')}</p></div>${button('View my trip record', 'trip-detail', { id: trip.id })}
+      </section>`
+      }
       <section class="card trip-card">
         <h2>Trip stops</h2>
         <div class="stop-timeline">${timeline(trip.stops, myPassenger?.pickup_stop_id)}</div>
+        ${isDriver ? `<a href="tel:0755222496" class="button">${icon('Phone')} Contact dispatch</a>` : ''}
       </section>
     </div>
-  </div>`;
+  </div></div>`;
 }
 
 const tripUI = () => ({
@@ -936,7 +897,12 @@ function renderLogin({ prefill } = {}) {
   mountIcons();
 }
 
-function showModal(title, subtitle, body, { wide = false, onSubmit = null, cleanup = null } = {}) {
+function showModal(
+  title,
+  subtitle,
+  body,
+  { wide = false, onSubmit = null, cleanup = null, initialFocus = '' } = {}
+) {
   closeModal();
   modalReturnFocus = document.activeElement;
   modalCleanup = cleanup;
@@ -961,11 +927,13 @@ function showModal(title, subtitle, body, { wide = false, onSubmit = null, clean
         if (submit.isConnected) submit.disabled = false;
       }
     });
+  const dialog = modalRoot.querySelector('.modal');
   setTimeout(() => {
-    const first = document.querySelector('#modal-root input,#modal-root select,#modal-root .modal');
-    first?.focus();
+    if (!dialog.isConnected) return;
+    const preferred = initialFocus ? dialog.querySelector(initialFocus) : null;
+    (preferred || dialog).focus();
   }, 50);
-  return modalRoot.querySelector('.modal');
+  return dialog;
 }
 function closeModal() {
   modalMap?.destroy();
@@ -1265,7 +1233,7 @@ async function enableGPS(routeId) {
       }
       await store.publishPosition(routeId, position.coords);
       const status = document.querySelector('#gps-status');
-      if (status)
+      if (status?.dataset.tripId === routeId)
         status.textContent = `Sharing GPS · last update ${new Date().toLocaleTimeString('en-PH', { timeZone: 'Asia/Manila' })}`;
     } catch (e) {
       toast(e.message, true);

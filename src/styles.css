@@ -10138,9 +10138,6 @@ tr:last-child td {
         gap: 6px !important;
     }
 
-    .portal-map .map-wrap {
-        height: 310px !important;
-    }
 }
 
 /* Ultra-Narrow Screens (< 360px: iPhone SE 1st gen, small Androids) */
