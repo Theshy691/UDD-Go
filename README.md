@@ -30,6 +30,10 @@ Open the URL Vite prints, usually [localhost:5173](http://127.0.0.1:5173).
 
 The landing page uses animated ASCII route traces and a looping UDD Go wordmark. Visitors who prefer reduced motion see the still design. The route demo also moves stop by stop in reduced-motion mode.
 
+## Driver route traffic
+
+The driver demo includes sample delays and a map overlay. For a connected school workspace, set `TOMTOM_TRAFFIC_KEY` in `.env` and rebuild Docker, or set `VITE_TOMTOM_TRAFFIC_KEY` for a frontend build. Use a browser key restricted to the Routing product and your app’s domains. The app sends the assigned stop coordinates to TomTom for a full-route driving estimate. [TomTom key restrictions](https://docs.tomtom.com/platform/documentation/api-best-practices/api-key-management-best-practices)
+
 ## Documentation
 
 - [Full setup guide](md/README.md) for Supabase, Docker, and mobile builds
