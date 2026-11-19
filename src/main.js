@@ -9,6 +9,7 @@ import { createPagination } from './pagination.js';
 import { driverTripSummary, studentTripSummary, tripTime } from './portal-views.js';
 import { dispatchBoard } from './dispatch-views.js';
 import { portalAlerts } from './portal-alerts.js';
+import { reportAction, studentReports } from './report-views.js';
 import { driverTrafficPanel, mountDriverTraffic } from './traffic.js';
 import {
   createIcons,
@@ -410,6 +411,7 @@ function mapToolbar(allowFilter = true) {
 function todayDispatch(trips = store.visibleTrips()) {
   return dispatchBoard(trips, store.data.buses, store.data.users, {
     badge, paginate: consolePagination.list, attentionOnly: dispatchAttentionOnly,
+    reports: store.tripReports() ?? [],
   });
 }
 
@@ -661,6 +663,7 @@ function portal() {
         icon,
         boardingId: store.profile.student_code,
         phone: person(trip.driver_id)?.contact_number,
+        reports: myPassenger ? studentReports(trip.id, button) : '',
       });
   return `<div class="journey-workspace">${heading}${picker}${summary}
   <div class="portal-grid ${isDriver ? 'driver-portal' : 'student-portal'} ${portalExpanded ? 'map-expanded' : ''}">
@@ -1221,6 +1224,23 @@ async function stopGPS() {
 }
 
 async function handleAction(action, id, target) {
+  if (action.startsWith('report-') || action === 'review-report') {
+    target.disabled = true;
+    try {
+      if (action === 'report-view-trip') {
+        const trip = await store.tripForReport(id);
+        if (!trip) throw new Error('The affected trip could not be loaded.');
+        if (target.isConnected) {
+          await tripAction('trip-detail', trip.id, tripUI(), { trip, cancelled: () => !target.isConnected });
+        }
+      } else {
+        await reportAction(action, id, tripUI(), target);
+      }
+    } finally {
+      target.disabled = false;
+    }
+    return;
+  }
   if (await schedulingAction(action, id, tripUI())) return;
   if (['trip-detail', 'trip-stop-passengers', 'trip-review-assignment', 'trip-cabin-check'].includes(action)) {
     if (tripDetailsPending) return;
@@ -1244,6 +1264,7 @@ async function handleAction(action, id, target) {
     case 'filter-dispatch': {
       dispatchAttentionOnly = id === 'attention';
       consolePagination.reset('overview-today');
+      consolePagination.reset('dispatch-reports');
       target.closest('.dispatch-board').outerHTML = todayDispatch();
       document.querySelector('.dispatch-filters [aria-pressed="true"]')?.focus();
       break;

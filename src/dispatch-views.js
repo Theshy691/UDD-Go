@@ -1,8 +1,9 @@
 import { escapeHtml as esc } from './domain.js';
 import { tripTime } from './portal-views.js';
 import { schoolDate } from './trips.js';
+import { reportQueue } from './report-views.js';
 
-export function dispatchBoard(trips, buses, users, { badge, paginate, attentionOnly }) {
+export function dispatchBoard(trips, buses, users, { badge, paginate, attentionOnly, reports }) {
   const now = new Date();
   const today = schoolDate(now);
   const busesById = new Map(buses.map((bus) => [bus.id, bus]));
@@ -62,9 +63,10 @@ export function dispatchBoard(trips, buses, users, { badge, paginate, attentionO
     <div class="card-head"><h2 id="dispatch-title">Today’s trips <span class="count">${rows.length}</span></h2><span class="small muted">PHT</span></div>
     <div class="dispatch-filters" role="group" aria-label="Filter today’s trips">
       <button type="button" class="button" data-action="filter-dispatch" data-id="all" aria-pressed="${!attentionOnly}">All trips</button>
-      <button type="button" class="button" data-action="filter-dispatch" data-id="attention" aria-pressed="${attentionOnly}">Needs attention <span class="count">${attention.length}</span></button>
+      <button type="button" class="button" data-action="filter-dispatch" data-id="attention" aria-pressed="${attentionOnly}">Needs attention <span class="count">${attention.length + reports.length}</span></button>
     </div>
-    ${visible.length ? paginate('overview-today', visible, list, { label: 'Today’s trips', size: 5 }) : `<p class="dispatch-empty" role="status">${attentionOnly ? 'No trips need attention.' : 'No trips prepared for today. Prepare a trip from an active service.'}</p>`}
+    ${attentionOnly ? reportQueue(reports, paginate) : ''}
+    ${visible.length ? paginate('overview-today', visible, list, { label: 'Today’s trips', size: 5 }) : attentionOnly && reports.length ? '' : `<p class="dispatch-empty" role="status">${attentionOnly ? 'No trips need attention.' : 'No trips prepared for today. Prepare a trip from an active service.'}</p>`}
     <footer class="dispatch-footer"><button type="button" class="link-button" data-page="trips">Trips &amp; history</button></footer>
   </section>`;
 }

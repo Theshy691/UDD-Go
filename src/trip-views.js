@@ -1,6 +1,7 @@
 import { store } from './store.js';
 import { schoolDate, tripCounts } from './trips.js';
 import { escapeHtml as esc, csvCell } from './domain.js';
+import { studentReports } from './report-views.js';
 
 let from = schoolDate(new Date(Date.now() - 7 * 86400000)),
   to = schoolDate(new Date(Date.now() + 7 * 86400000));
@@ -75,6 +76,7 @@ export async function tripAction(action, id, ui, pages = {}) {
   const stopOnly = action === 'trip-stop-passengers';
   if (action !== 'trip-detail' && !cabinCheck && !reviewAssignment && !stopOnly) return false;
   const trip =
+    pages.trip ||
     store.visibleTrips().find((t) => t.id === id) ||
     (historyOwner === store.profile.id ? history?.find((t) => t.id === id) : null);
   if (!trip) throw new Error('Refresh the trip list and try again.');
@@ -127,6 +129,7 @@ export async function tripAction(action, id, ui, pages = {}) {
     <div class="stop-timeline">${trip.stops.map((s) => `<div class="stop-item"><span class="stop-dot"></span><div><strong>${esc(s.stop_name)}</strong><small>Stop ${s.stop_sequence}</small></div></div>`).join('')}</div>
     ${resources.length ? `<section class="note"><h3>Resource handovers</h3>${paginate('handovers', resources, renderResources, { label: 'Resource handovers', size: 5, initialPage: pages.handovers })}</section>` : ''}
     ${paginate('manifest', passengers, renderPassengers, { label: 'Trip passengers', initialPage: pages.manifest })}
+    ${isStudent && passengers.length ? studentReports(id, ui.button) : ''}
     ${
       trip.status === 'active' && canDrive
         ? `<form id="trip-complete-form">${ui.inputField('Final odometer (km)', 'mileage', { type: 'number', min: trip.segment_start_mileage ?? trip.start_mileage ?? 0, max: 10000000, value: trip.segment_start_mileage ?? trip.start_mileage ?? 0 })}<label class="setting-row"><span>I checked the cabin and confirmed no passengers remain.</span><input type="checkbox" name="cabin_checked" required></label>${ui.formFooter('Complete trip')}</form>`

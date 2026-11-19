@@ -72,7 +72,7 @@ export function driverTripSummary(
   </section>`;
 }
 
-export function studentTripSummary(trip, passenger, { button, badge, icon, boardingId, phone }) {
+export function studentTripSummary(trip, passenger, { button, badge, icon, boardingId, phone, reports = '' }) {
   let status = 'Passenger record unavailable';
   if (passenger?.status === 'alighted') status = 'Dropped off';
   if (passenger?.status === 'boarded') status = 'On board';
@@ -109,5 +109,6 @@ export function studentTripSummary(trip, passenger, { button, badge, icon, board
       ${button('View my trip record', 'trip-detail', { id: trip.id, iconName: 'CalendarDays' })}
       ${phone ? `<a href="tel:${esc(phone.replace(/[^+\d]/g, ''))}" class="button">${icon('Phone')} Call driver</a>` : ''}
     </div>
+    ${reports}
   </section>`;
 }

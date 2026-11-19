@@ -1,0 +1,110 @@
+.student-reports {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--udd-rule);
+}
+
+.student-reports .button {
+  min-height: 44px;
+}
+
+.student-report-list {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--udd-muted);
+  font-size: 13px;
+}
+
+.student-report-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-block: 5px;
+}
+
+.report-status {
+  flex-shrink: 0;
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--udd-tint);
+  color: var(--udd-blue-hover);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.report-status.resolved {
+  background: var(--workspace-good-bg);
+  color: var(--workspace-good);
+}
+
+.dispatch-reports h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--udd-rule);
+}
+
+.dispatch-report {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 14px;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.dispatch-report:hover {
+  background: var(--udd-map);
+}
+.dispatch-report:focus-visible {
+  outline-offset: -3px;
+}
+.dispatch-report small {
+  color: var(--udd-muted);
+}
+.dispatch-report .dispatch-next {
+  color: var(--udd-blue);
+  font-size: 12px;
+  font-weight: 700;
+}
+.report-summary {
+  display: grid;
+  gap: 6px;
+}
+.report-summary > p {
+  color: var(--udd-muted);
+}
+.report-note {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.trip-report-form select {
+  appearance: none;
+  height: 44px;
+  padding-inline-end: 28px;
+  background:
+    linear-gradient(45deg, transparent 50%, var(--udd-blue) 50%) right 16px center / 5px 5px
+      no-repeat,
+    linear-gradient(135deg, var(--udd-blue) 50%, transparent 50%) right 11px center / 5px 5px
+      no-repeat,
+    var(--udd-surface);
+}
+
+.report-help {
+  color: var(--udd-muted);
+  font-size: 13px;
+}
+.report-help a {
+  color: var(--udd-blue);
+  text-decoration: underline;
+}
