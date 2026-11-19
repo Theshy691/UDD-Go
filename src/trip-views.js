@@ -11,12 +11,15 @@ const time = (value) =>
 export const activeTrip = (routeId) =>
   store.data.trips.find((t) => t.route_id === routeId && t.status === 'active');
 export function tripPage(ui) {
-  const rows = historyOwner === store.profile.id && history ? history : store.visibleTrips();
+  const filtered = historyOwner === store.profile.id && history !== null;
+  const rows = filtered ? history : store.visibleTrips();
+  const table = (items) =>
+    `<div class="table-wrap"><table><thead><tr><th>Departure</th><th>Route</th><th>Bus / driver</th><th>Status</th><th>Details</th></tr></thead><tbody>${items.map((t) => `<tr><td>${esc(time(t.planned_at))}</td><td>${esc(t.route_name)}</td><td>${esc(t.bus_label)}<br><span class="small muted">${esc(t.driver_name)}</span></td><td>${ui.badge(t.status)}</td><td>${ui.button('View trip', 'trip-detail', { id: t.id })}</td></tr>`).join('') || '<tr><td colspan="5">No trips in this range. An administrator can prepare a trip from an existing route.</td></tr>'}</tbody></table></div>`;
   return `${ui.pageHeader('Every journey, recorded.', 'Prepare dated trips and keep passenger history for every school run.', store.profile.role === 'admin' ? ui.button('Prepare trip', 'prepare-trip', { primary: true, iconName: 'Plus' }) : '')}
     <section class="card"><div class="card-head"><h2>Trips & history</h2><span class="small muted">Times shown in Asia/Manila</span></div>
     <form id="trip-history-filter" class="table-toolbar"><label class="field">From<input type="date" name="from" value="${from}" required></label><label class="field">To<input type="date" name="to" value="${to}" required></label><button type="submit" class="button">Search history</button><button type="button" class="button" data-action="current-trips">Current trips</button></form>
-    <p class="small muted" style="padding:0 24px">${historyOwner === store.profile.id && history ? 'Filtered history. Choose Current trips to return to upcoming journeys.' : 'Current trips and the surrounding seven days. Active journeys are always included.'}</p>
-    <div class="table-wrap"><table><thead><tr><th>Departure</th><th>Route</th><th>Bus / driver</th><th>Status</th><th>Details</th></tr></thead><tbody>${rows.map((t) => `<tr><td>${esc(time(t.planned_at))}</td><td>${esc(t.route_name)}</td><td>${esc(t.bus_label)}<br><span class="small muted">${esc(t.driver_name)}</span></td><td>${ui.badge(t.status)}</td><td>${ui.button('View trip', 'trip-detail', { id: t.id })}</td></tr>`).join('') || '<tr><td colspan="5">No trips in this range. An administrator can prepare a trip from an existing route.</td></tr>'}</tbody></table></div></section>`;
+    <p class="small muted" style="padding:0 24px">${filtered ? 'Filtered history. Choose Current trips to return to upcoming journeys.' : 'Current trips and the surrounding seven days. Active journeys are always included.'}</p>
+    ${ui.paginate(filtered ? 'trip-history' : 'current-trips', rows, table, { label: 'Trips' })}</section>`;
 }
 export async function filterTripHistory(form) {
   const values = new FormData(form),
@@ -34,9 +37,10 @@ export function resetTripHistory() {
   historyOwner = null;
 }
 
-export async function tripAction(action, id, ui) {
+export async function tripAction(action, id, ui, pages = {}) {
   if (action === 'current-trips') {
     resetTripHistory();
+    ui.resetPage('current-trips');
     await store.refresh();
     return true;
   }
@@ -87,17 +91,26 @@ export async function tripAction(action, id, ui) {
           ? `<button class="button" type="button" data-trip-movement="record_alighting" data-student="${esc(p.student_code)}" data-stop="${esc(p.dropoff_stop_id)}">Confirm drop-off</button>`
           : ''
       : '';
-  ui.showModal(
+  const renderResources = (items) =>
+    items
+      .map(
+        (e) =>
+          `<p>${esc(time(e.created_at))} · ${esc(e.reason)}<br>${esc(store.data.buses.find((b) => b.id === e.old_bus_id)?.label || e.old_bus_id)} → ${esc(store.data.buses.find((b) => b.id === e.new_bus_id)?.label || e.new_bus_id)}<br>Outgoing odometer: ${esc(e.old_start_mileage ?? 'Not started')} → ${esc(e.old_final_mileage ?? 'Not recorded')} km · incoming: ${esc(e.new_start_mileage ?? 'Not started')} km</p>`
+      )
+      .join('');
+  const renderPassengers = (items) =>
+    `<div class="trip-passenger-list">${items.map((p) => `<article class="trip-passenger"><div><strong>${esc(p.student_name)}</strong><p class="small muted">${esc(p.student_code)}</p><p class="small">${esc(p.pickup_name)} → ${esc(p.dropoff_name)}</p></div><div>${ui.badge(p.status)}<p class="small muted">Boarded: ${esc(time(p.boarded_at))}</p><p class="small muted">Dropped off: ${esc(time(p.alighted_at))}</p>${movement(p)}</div></article>`).join('') || '<p class="note">No passengers reserved.</p>'}</div>`;
+  const dialog = ui.showModal(
     esc(trip.route_name),
     `${esc(time(trip.planned_at))} · ${esc(trip.bus_label)} · ${esc(trip.driver_name)}`,
-    `
+    (paginate) => `
     <div class="between">${ui.badge(trip.status)}<span>${isStudent ? 'Your passenger record' : `${counts.expected} expected · ${counts.boarded} on board · ${counts.alighted} dropped off`}</span></div>
     ${trip.legacy_import ? '<p class="note">Imported demo journey. Original boarding/start timestamps are unknown.</p>' : ''}
     ${store.profile.role === 'admin' && ['scheduled', 'active'].includes(trip.status) ? ui.button(trip.status === 'active' ? 'Record handover' : 'Replace bus / driver', 'replace-trip-resources', { id: trip.id }) : ''}
     ${trip.status === 'cancelled' ? `<p class="note">Cancellation: ${esc(trip.cancellation_reason)}</p>` : ''}
     <div class="stop-timeline">${trip.stops.map((s) => `<div class="stop-item"><span class="stop-dot"></span><div><strong>${esc(s.stop_name)}</strong><small>Stop ${s.stop_sequence}</small></div></div>`).join('')}</div>
-    ${resources.length ? `<section class="note"><h3>Resource handovers</h3>${resources.map((e) => `<p>${esc(time(e.created_at))} · ${esc(e.reason)}<br>${esc(store.data.buses.find((b) => b.id === e.old_bus_id)?.label || e.old_bus_id)} → ${esc(store.data.buses.find((b) => b.id === e.new_bus_id)?.label || e.new_bus_id)}<br>Outgoing odometer: ${esc(e.old_start_mileage ?? 'Not started')} → ${esc(e.old_final_mileage ?? 'Not recorded')} km · incoming: ${esc(e.new_start_mileage ?? 'Not started')} km</p>`).join('')}</section>` : ''}
-    <div class="trip-passenger-list">${passengers.map((p) => `<article class="trip-passenger"><div><strong>${esc(p.student_name)}</strong><p class="small muted">${esc(p.student_code)}</p><p class="small">${esc(p.pickup_name)} → ${esc(p.dropoff_name)}</p></div><div>${ui.badge(p.status)}<p class="small muted">Boarded: ${esc(time(p.boarded_at))}</p><p class="small muted">Dropped off: ${esc(time(p.alighted_at))}</p>${movement(p)}</div></article>`).join('') || '<p class="note">No passengers reserved.</p>'}</div>
+    ${resources.length ? `<section class="note"><h3>Resource handovers</h3>${paginate('handovers', resources, renderResources, { label: 'Resource handovers', size: 5, initialPage: pages.handovers })}</section>` : ''}
+    ${paginate('manifest', passengers, renderPassengers, { label: 'Trip passengers', initialPage: pages.manifest })}
     ${
       trip.status === 'active' && canDrive
         ? `<form id="trip-complete-form">${ui.inputField('Final odometer (km)', 'mileage', { type: 'number', min: trip.segment_start_mileage ?? trip.start_mileage ?? 0, max: 10000000, value: trip.segment_start_mileage ?? trip.start_mileage ?? 0 })}<label class="setting-row"><span>I checked the cabin and confirmed no passengers remain.</span><input type="checkbox" name="cabin_checked" required></label>${ui.formFooter('Complete trip')}</form>`
@@ -153,23 +166,36 @@ export async function tripAction(action, id, ui) {
       submit.disabled = false;
     }
   });
-  document.querySelectorAll('[data-trip-movement]').forEach((button) => {
-    const movementOperation = crypto.randomUUID();
-    button.addEventListener('click', async () => {
-      button.disabled = true;
-      try {
-        await store.action(button.dataset.tripMovement, {
-          trip_id: id,
-          student_code: button.dataset.student,
-          stop_id: button.dataset.stop,
-          operation_id: movementOperation,
+  const movementOperations = new Map();
+  dialog.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-trip-movement]');
+    if (!button) return;
+    const { tripMovement, student, stop } = button.dataset;
+    const key = JSON.stringify([tripMovement, student, stop]);
+    const operation = movementOperations.get(key) ?? { id: crypto.randomUUID() };
+    if (operation.pending) return;
+    operation.pending = true;
+    movementOperations.set(key, operation);
+    button.disabled = true;
+    try {
+      await store.action(tripMovement, {
+        trip_id: id,
+        student_code: student,
+        stop_id: stop,
+        operation_id: operation.id,
+      });
+      if (dialog.isConnected) {
+        await tripAction('trip-detail', id, ui, {
+          manifest: ui.modalPage('manifest'),
+          handovers: ui.modalPage('handovers'),
         });
-        await tripAction('trip-detail', id, ui);
-      } catch (error) {
-        document.querySelector('#trip-action-error').textContent = error.message;
-        button.disabled = false;
       }
-    });
+    } catch (error) {
+      dialog.querySelector('#trip-action-error').textContent = error.message;
+      button.disabled = false;
+    } finally {
+      operation.pending = false;
+    }
   });
   document.querySelector('#export-trip').addEventListener('click', () => {
     const rows = [
