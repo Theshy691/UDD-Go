@@ -32,7 +32,7 @@ The landing page uses animated ASCII route traces and a looping UDD Go wordmark.
 
 ## Landing page help chatbot
 
-**Ask UDD Go** answers public questions in English and Tagalog. The PHP backend retrieves matching entries from [`public/api/help-guide.php`](public/api/help-guide.php), and the local Ollama model selects from those entries. The app renders the approved text and its source link. It can return a matching guide entry if Ollama is busy or offline. The chat reads only the public guide and does not access accounts, live bus locations, or trip reports.
+Open **Ask UDD Go** from the bottom of the landing page. Auto detects English, Tagalog, and Taglish. The PHP backend retrieves matching entries from [`public/api/help-guide.php`](public/api/help-guide.php), and the local Ollama model selects from those entries. The app renders approved text and source links. Follow-ups use up to two topics from the last answer. Closing the panel keeps the conversation on the current page. The chat reads the public guide and cannot access private accounts, live bus locations, or student report contents. If Ollama is busy or offline, the app can return a matching guide entry.
 
 Run the demo with the local model, without an API key or per-message usage fees:
 
