@@ -905,12 +905,13 @@ function navigate(next) {
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
-function renderLogin({ prefill = false } = {}) {
+function renderLogin({ prefill } = {}) {
   mountLogin(app, {
     icon,
     demo: store.mode === 'demo',
     method: loginMethod,
     role: loginRole,
+    accounts: store.demoAccounts(),
     prefill,
   });
   mountIcons();
@@ -1282,7 +1283,7 @@ async function stopGPS() {
   gpsRouteId = null;
 }
 
-async function handleAction(action, id) {
+async function handleAction(action, id, target) {
   if (await schedulingAction(action, id, tripUI())) return;
   if (await tripAction(action, id, tripUI())) return;
   switch (action) {
@@ -1415,21 +1416,27 @@ async function handleAction(action, id) {
       renderLogin();
       app.querySelector('[data-action="set-login-method"][aria-pressed="true"]')?.focus();
       break;
-    case 'prefill-role':
-      loginRole = id;
-      renderLogin({ prefill: true });
+    case 'prefill-account': {
+      const account = store.demoAccounts().find((candidate) => candidate.id === id);
+      if (!account) break;
+      loginRole = account.role;
+      renderLogin({ prefill: account });
       app.querySelector('#login-email')?.focus();
       break;
+    }
     case 'quick-login': {
-      const targetRole = id || loginRole;
-      publicView = 'landing';
+      const picker = target.closest('[data-role-card]')?.querySelector('[data-demo-account]');
       await stopGPS();
-      store.setDemoRole(targetRole);
+      const signedIn = picker
+        ? store.setDemoAccount(picker.value, false)
+        : store.setDemoRole(id || loginRole, false);
+      if (!signedIn) throw new Error('This sample account is unavailable. Choose another account.');
+      publicView = 'landing';
       portalTripId = '';
-      page = targetRole === 'admin' ? 'overview' : targetRole;
+      page = store.profile.role === 'admin' ? 'overview' : store.profile.role;
       query = '';
       window.scrollTo({ top: 0, behavior: 'instant' });
-      render();
+      store.emit();
       break;
     }
     case 'logout':
@@ -1504,7 +1511,7 @@ document.addEventListener('click', async (event) => {
     event.preventDefault();
     if (target.disabled) return;
     try {
-      await handleAction(target.dataset.action, target.dataset.id);
+      await handleAction(target.dataset.action, target.dataset.id, target);
     } catch (e) {
       toast(e.message, true);
     }
@@ -1513,6 +1520,11 @@ document.addEventListener('click', async (event) => {
 });
 document.addEventListener('change', async (event) => {
   const target = event.target;
+  if (target.matches('[data-demo-account]')) {
+    loginRole = target.dataset.demoAccount;
+    renderLogin();
+    return;
+  }
   if (['demo-role', 'settings-role'].includes(target.id)) {
     await stopGPS();
     if (target.value === 'logout') {

@@ -1,11 +1,11 @@
 import './login.css';
+import { escapeHtml } from './domain.js';
+import { DEMO_PASSWORD } from './seed.js';
 
 const demoRoles = {
   admin: {
     label: 'Fleet admin',
     icon: 'LayoutDashboard',
-    name: 'Alex Morgan',
-    email: 'admin@udd.edu.ph',
     title: 'See which buses are ready to go.',
     description: 'Review assignments and prepare the morning trips from the fleet workspace.',
     panel: 'Morning dispatch',
@@ -18,12 +18,10 @@ const demoRoles = {
   driver: {
     label: 'Driver',
     icon: 'BusFront',
-    name: 'Roberto Santos',
-    email: 'driver@udd.edu.ph',
     title: 'Follow your route, stop by stop.',
     description:
       'Check the passenger list, record boarding and drop-offs, and finish with a cabin check.',
-    panel: 'Bonuan morning loop',
+    panel: 'Trip checklist',
     rows: [
       ['First pickup', 'Bonuan Tondaligan'],
       ['Campus stop', 'UDD main campus'],
@@ -33,8 +31,6 @@ const demoRoles = {
   student: {
     label: 'Student',
     icon: 'GraduationCap',
-    name: 'Isabella Santos',
-    email: 'student@udd.edu.ph',
     title: 'Know where to meet your bus.',
     description: 'Find your pickup stop, boarding ID, and trip status in your journey view.',
     panel: 'My journey',
@@ -88,42 +84,45 @@ function preview(icon, info, demo) {
 }
 
 const loginCopy = {
-  quick: 'Choose a workspace to try with sample trip data.',
+  quick: 'Choose a role and pick a sample account to try its workspace.',
   credentials: 'Enter your school email and password to open your workspace.',
 };
 
-function demoPanel(icon, role, quick) {
+function demoPanel(icon, role, quick, accounts) {
   return `<div class="udd-login-panel" id="login-demo-panel" ${quick ? '' : 'hidden'}>
     <div class="udd-login-demo">
       <p id="login-role-label">Choose a demo workspace</p>
       <div class="udd-login-role-cards" role="group" aria-labelledby="login-role-label">
         ${Object.entries(demoRoles)
-          .map(
-            ([
-              id,
-              item,
-            ]) => `<article class="udd-login-role-card" data-role-card="${id}" ${id === role ? 'data-selected="true"' : ''}>
+          .map(([id, item]) => {
+            const users = accounts.filter((account) => account.role === id);
+            return `<article class="udd-login-role-card" data-role-card="${id}" ${id === role ? 'data-selected="true"' : ''}>
               <button type="button" class="udd-login-role-card-heading" data-action="select-login-role" data-id="${id}" aria-pressed="${id === role}">
                 <span class="udd-login-role-card-icon">${icon(item.icon)}</span>
-                <span><strong>${item.label}</strong><small>${item.name}</small></span>
+                <span><strong>${item.label}</strong><small>${item.panel}</small></span>
               </button>
-              <div class="udd-login-role-card-sample">
-                <span>${item.panel}</span>
-                <strong>${item.email}</strong>
-              </div>
-              <button type="button" class="udd-login-role-card-action" data-action="quick-login" data-id="${id}">
-                Use demo ${icon('ArrowUpRight')}
+              <label class="udd-login-account-field">Sample account
+                <span class="udd-login-account-select">
+                  <select data-demo-account="${id}" aria-label="${item.label} sample account" ${users.length ? '' : 'disabled'}>
+                    ${users.map(({ id, name, email }) => `<option value="${escapeHtml(id)}" data-email="${escapeHtml(email)}">${escapeHtml(name)}</option>`).join('') || '<option>No sample accounts available</option>'}
+                  </select>
+                  ${icon('ChevronDown')}
+                </span>
+              </label>
+              <p class="udd-login-account-email">${escapeHtml(users[0]?.email ?? '')}</p>
+              <button type="button" class="udd-login-role-card-action" data-action="quick-login" data-id="${id}" aria-label="Open demo as ${item.label.toLowerCase()}" ${users.length ? '' : 'disabled'}>
+                Open demo ${icon('ArrowUpRight')}
               </button>
-            </article>`
-          )
+            </article>`;
+          })
           .join('')}
       </div>
-      <p class="udd-login-demo-note">Every sample account uses <code>demo-password</code>. Your demo changes stay in this browser.</p>
+      <p class="udd-login-demo-note">To try the sign-in form, use a sample email and <code>${DEMO_PASSWORD}</code>.</p>
     </div>
   </div>`;
 }
 
-function credentialsPanel(icon, demo, quick) {
+function credentialsPanel(icon, demo, quick, accounts) {
   return `<div class="udd-login-panel" id="login-credentials-panel" ${quick ? 'hidden' : ''}>
     <form id="login-form" class="udd-login-form">
       <div class="udd-login-field">
@@ -144,26 +143,31 @@ function credentialsPanel(icon, demo, quick) {
       demo
         ? `<details class="udd-login-demo-accounts">
             <summary>Demo accounts ${icon('ChevronDown')}</summary>
-            <p>Choose an account to fill in the sign-in form.</p>
-            <ul>
-              ${Object.entries(demoRoles)
-                .map(
-                  ([
-                    id,
-                    item,
-                  ]) => `<li><button type="button" data-action="prefill-role" data-id="${id}">
-                    <strong>${item.label}</strong><span>${item.email}</span>
+            <p>Choose a sample account to fill in the form.</p>
+            ${Object.entries(demoRoles)
+              .map(
+                ([role, item]) => `<p class="udd-login-account-group">${item.label}</p>
+                <ul>${accounts
+                  .filter((account) => account.role === role)
+                  .map(
+                    ({
+                      id,
+                      name,
+                      email,
+                    }) => `<li><button type="button" data-action="prefill-account" data-id="${escapeHtml(id)}">
+                    <strong>${escapeHtml(name)}</strong><span>${escapeHtml(email)}</span>
                   </button></li>`
-                )
-                .join('')}
-            </ul>
+                  )
+                  .join('')}</ul>`
+              )
+              .join('')}
           </details>`
         : ''
     }
   </div>`;
 }
 
-function loginView({ icon, demo, method, role }) {
+function loginView({ icon, demo, method, role, accounts }) {
   const quick = demo && method === 'quick';
   const current = demoRoles[role];
 
@@ -187,8 +191,8 @@ function loginView({ icon, demo, method, role }) {
               </div>`
             : ''
         }
-        ${demo ? demoPanel(icon, role, quick) : ''}
-        ${credentialsPanel(icon, demo, quick)}
+        ${demo ? demoPanel(icon, role, quick, accounts) : ''}
+        ${credentialsPanel(icon, demo, quick, accounts)}
         <button type="button" class="udd-login-help" data-action="help">${icon('CircleHelp')} Help &amp; guidelines</button>
       </main>
       <footer class="udd-login-footer">
@@ -211,8 +215,8 @@ function initControls(root) {
 
   root.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    if (!event.target.matches('.udd-login-switch button, .udd-login-role-card-heading')) return;
     const group = event.target.closest('.udd-login-switch, .udd-login-role-cards');
-    if (!group) return;
     const buttons = [
       ...group.querySelectorAll('.udd-login-switch button, .udd-login-role-card-heading'),
     ];
@@ -220,6 +224,14 @@ function initControls(root) {
     const next = (buttons.indexOf(event.target) + delta + buttons.length) % buttons.length;
     event.preventDefault();
     buttons[next].click();
+  });
+
+  root.addEventListener('change', (event) => {
+    const select = event.target;
+    if (!select.matches('[data-demo-account]')) return;
+    const card = select.closest('.udd-login-role-card');
+    card.querySelector('.udd-login-account-email').textContent =
+      select.selectedOptions[0]?.dataset.email ?? '';
   });
 }
 
@@ -265,8 +277,8 @@ export function mountLogin(app, options) {
   }
 
   if (prefill) {
-    root.querySelector('#login-email').value = demoRoles[role].email;
-    root.querySelector('#login-password').value = 'demo-password';
+    root.querySelector('#login-email').value = prefill.email;
+    root.querySelector('#login-password').value = DEMO_PASSWORD;
     root.querySelector('.form-error').textContent = '';
     root.querySelector('.udd-login-demo-accounts').open = true;
   }
