@@ -2,6 +2,7 @@ import './styles.css';
 import './console.css';
 import { mountLanding } from './landing.js';
 import { mountLogin } from './login.js';
+import { createPagination } from './pagination.js';
 import {
   createIcons,
   LayoutDashboard,
@@ -139,6 +140,9 @@ let routeDraft = [],
   portalExpanded = false,
   publicView = 'landing';
 let destroyLanding = null;
+const consolePagination = createPagination();
+const modalPagination = createPagination();
+let paginationOwner;
 const titles = {
   overview: 'Overview',
   trips: 'Trips & history',
@@ -451,7 +455,7 @@ function overview() {
       </section>
       <section class="card">
         <div class="card-head"><h2>Recent activity</h2><button type="button" class="link-button" data-page="activity">View activity ${icon('ArrowUpRight')}</button></div>
-        <div class="activity-list">${activityItems(4)}</div>
+        ${activityItems(store.data.activity.slice(0, 4))}
       </section>
     </div>
   </div>`;
@@ -494,16 +498,14 @@ function busTable(buses, full = false) {
       })
       .join('')}</tbody></table></div>`;
 }
-function activityItems(limit = 100) {
-  const events = store.data.activity.slice(0, limit);
-  if (!events.length)
-    return '<div class="empty"><p>Your fleet activity will appear here.</p></div>';
-  return events
+function activityItems(events, className = 'activity-list') {
+  const rows = events
     .map(
       (a) =>
         `<div class="activity-item"><span class="activity-icon ${esc(a.type)}">${icon(a.type === 'boarding' ? 'UserRoundCheck' : a.type === 'route' ? 'Route' : a.type === 'maintenance' ? 'Wrench' : 'CircleCheck')}</span><div class="activity-text"><strong>${esc(a.message)}</strong>${a.detail ? `<p>${esc(a.detail)}</p>` : ''}<time datetime="${esc(a.created_at)}">${timeAgo(a.created_at)}</time></div></div>`
     )
     .join('');
+  return `<div class="${className}">${rows || '<div class="empty"><p>Your fleet activity will appear here.</p></div>'}</div>`;
 }
 function fleet() {
   const buses = store.data.buses.filter(
@@ -531,11 +533,13 @@ function fleet() {
     )
     .join(
       ''
-    )}</div><label class="table-search">${icon('Search')}<input id="table-search" aria-label="Search buses" placeholder="Search buses…" value="${esc(query)}"/></label></div><div id="bus-table-results">${busTable(buses, true)}</div><div class="table-footer">${buses.length} ${buses.length === 1 ? 'bus' : 'buses'} found <span>Capacity is checked before assignment</span></div></section>`;
+    )}</div><label class="table-search">${icon('Search')}<input id="table-search" aria-label="Search buses" placeholder="Search buses…" value="${esc(query)}"/></label></div><div id="bus-table-results">${consolePagination.list('fleet', buses, (rows) => busTable(rows, true), { label: 'Vehicles' })}</div><div class="table-footer">${buses.length} ${buses.length === 1 ? 'bus' : 'buses'} found <span>Capacity is checked before assignment</span></div></section>`;
 }
 function routes() {
   const routes = store.data.routes.filter((r) => !r.archived);
-  return `${pageHeader('Better routes. Smoother mornings.', 'Publish stop versions; services determine daily departures and allocations.', button('Create route', 'add-route', { primary: true, iconName: 'Plus' }))}<div class="route-grid">${routes.map((route) => `<article class="card route-card" style="--route-color:${safeColor(route.color)}"><div class="between">${badge(route.status)}<span class="small muted">Version ${route.version_no} · ${stopsFor(route.id).length} stops</span></div><h3>${esc(route.route_name)}</h3><p>${esc(route.area || 'Dagupan City')}</p><div class="route-meta"><div><span>Active services</span>${store.data.service_schedules.filter((s) => s.route_id === route.id && s.active).length}</div><div><span>Prepared trips</span>${store.data.trips.filter((t) => t.route_id === route.id && t.status === 'scheduled').length}</div></div><div class="trip-actions">${button('View / edit route', 'route-detail', { id: route.id })}<button class="button" data-page="services">Services & calendar</button></div></article>`).join('')}</div>${!routes.length ? `<section class="card">${empty('Your first route starts here', 'Create an ordered set of stops, then add a service.', 'Route')}</section>` : ''}`;
+  const grid = (rows) =>
+    `<div class="route-grid">${rows.map((route) => `<article class="card route-card" style="--route-color:${safeColor(route.color)}"><div class="between">${badge(route.status)}<span class="small muted">Version ${route.version_no} · ${stopsFor(route.id).length} stops</span></div><h3>${esc(route.route_name)}</h3><p>${esc(route.area || 'Dagupan City')}</p><div class="route-meta"><div><span>Active services</span>${store.data.service_schedules.filter((s) => s.route_id === route.id && s.active).length}</div><div><span>Prepared trips</span>${store.data.trips.filter((t) => t.route_id === route.id && t.status === 'scheduled').length}</div></div><div class="trip-actions">${button('View / edit route', 'route-detail', { id: route.id })}<button class="button" data-page="services">Services & calendar</button></div></article>`).join('')}</div>`;
+  return `${pageHeader('Better routes. Smoother mornings.', 'Publish stop versions; services determine daily departures and allocations.', button('Create route', 'add-route', { primary: true, iconName: 'Plus' }))}${routes.length ? consolePagination.list('routes', routes, grid, { label: 'Routes', size: 9 }) : `<section class="card">${empty('Your first route starts here', 'Create an ordered set of stops, then add a service.', 'Route')}</section>`}`;
 }
 
 function people(role) {
@@ -548,42 +552,46 @@ function people(role) {
           .toLowerCase()
           .includes(query.toLowerCase())
     );
-  return `${pageHeader(students ? 'Every student, accounted for.' : 'The people behind every journey.', students ? 'Manage separate outbound and return service subscriptions.' : 'Drivers can serve multiple journeys when their allocations do not overlap.', button(students ? 'Add student' : 'Add driver', students ? 'add-student' : 'add-driver', { primary: true, iconName: 'Plus' }))}<section class="card"><div class="card-head"><h2>${students ? 'Student directory' : 'Driver directory'}</h2><label class="table-search"><input id="people-search" aria-label="Search ${role}s" placeholder="Search…" value="${esc(query)}"></label></div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Contact</th><th>Services</th><th>Current trip</th><th>Actions</th></tr></thead><tbody>${
-    users
-      .map((user) => {
-        const subscriptions = students
-          ? store.data.student_subscriptions.filter((a) => a.student_id === user.id)
-          : [];
-        const services = students
-          ? store.data.service_schedules.filter((s) =>
-              subscriptions.some((a) => a.schedule_id === s.id)
-            )
-          : store.data.service_schedules.filter((s) => s.driver_id === user.id);
-        const active = store.data.trips.find(
-          (t) =>
-            t.status === 'active' &&
-            (students
-              ? store.data.trip_passengers.some(
-                  (p) => p.trip_id === t.id && p.student_id === user.id
-                )
-              : t.driver_id === user.id)
-        );
-        return `<tr><td><strong>${esc(user.name)}</strong><br><small>${esc(user.student_code || '')}</small></td><td>${esc(user.contact_number || '—')}</td><td>${services.map((service) => `<p>${esc(service.name)} · ${esc(service.departure_time.slice(0, 5))}</p>`).join('') || 'No subscriptions'}</td><td>${active ? button(active.route_name, 'trip-detail', { id: active.id }) : '—'}</td><td>${students ? `${button('Add service', 'subscribe-service', { id: user.id })}${subscriptions.map((a) => `<p style="margin-top:8px">${button('Remove ' + (store.data.service_schedules.find((s) => s.id === a.schedule_id)?.name || 'service'), 'unsubscribe-service', { id: a.id })}</p>`).join('')}` : button('View driver', 'person-detail', { id: user.id })}</td></tr>`;
-      })
-      .join('') || '<tr><td colspan="5">No profiles found.</td></tr>'
-  }</tbody></table></div></section>`;
+  const tableRows = (rows) =>
+    `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Contact</th><th>Services</th><th>Current trip</th><th>Actions</th></tr></thead><tbody>${
+      rows
+        .map((user) => {
+          const subscriptions = students
+            ? store.data.student_subscriptions.filter((a) => a.student_id === user.id)
+            : [];
+          const services = students
+            ? store.data.service_schedules.filter((s) =>
+                subscriptions.some((a) => a.schedule_id === s.id)
+              )
+            : store.data.service_schedules.filter((s) => s.driver_id === user.id);
+          const active = store.data.trips.find(
+            (t) =>
+              t.status === 'active' &&
+              (students
+                ? store.data.trip_passengers.some(
+                    (p) => p.trip_id === t.id && p.student_id === user.id
+                  )
+                : t.driver_id === user.id)
+          );
+          return `<tr><td><strong>${esc(user.name)}</strong><br><small>${esc(user.student_code || '')}</small></td><td>${esc(user.contact_number || '—')}</td><td>${services.map((service) => `<p>${esc(service.name)} · ${esc(service.departure_time.slice(0, 5))}</p>`).join('') || 'No subscriptions'}</td><td>${active ? button(active.route_name, 'trip-detail', { id: active.id }) : '—'}</td><td>${students ? `${button('Add service', 'subscribe-service', { id: user.id })}${subscriptions.map((a) => `<p style="margin-top:8px">${button('Remove ' + (store.data.service_schedules.find((s) => s.id === a.schedule_id)?.name || 'service'), 'unsubscribe-service', { id: a.id })}</p>`).join('')}` : button('View driver', 'person-detail', { id: user.id })}</td></tr>`;
+        })
+        .join('') || '<tr><td colspan="5">No profiles found.</td></tr>'
+    }</tbody></table></div>`;
+  return `${pageHeader(students ? 'Every student, accounted for.' : 'The people behind every journey.', students ? 'Manage separate outbound and return service subscriptions.' : 'Drivers can serve multiple journeys when their allocations do not overlap.', button(students ? 'Add student' : 'Add driver', students ? 'add-student' : 'add-driver', { primary: true, iconName: 'Plus' }))}<section class="card"><div class="card-head"><h2>${students ? 'Student directory' : 'Driver directory'}</h2><label class="table-search"><input id="people-search" aria-label="Search ${role}s" placeholder="Search…" value="${esc(query)}"></label></div>${consolePagination.list(students ? 'students' : 'drivers', users, tableRows, { label: students ? 'Students' : 'Drivers' })}</section>`;
 }
 
 function maintenance() {
   const sorted = [...store.data.buses].sort(
     (a, b) => maintenanceStatus(a).remaining - maintenanceStatus(b).remaining
   );
-  return `${pageHeader('Ready for the road.', 'Stay ahead of service intervals with odometer-based alerts.')}${stats()}<div class="maintenance-grid">${sorted
-    .map((bus) => {
-      const { remaining, status } = maintenanceStatus(bus);
-      return `<article class="card maintenance-card"><div class="bus-title"><span class="vehicle-icon">${icon('Wrench')}</span><div><h3>${esc(bus.label)}</h3><p>${esc(bus.plate_number)}</p></div>${badge(status)}</div><span class="small muted">Current odometer</span><div class="mileage-value">${formatNumber(bus.current_mileage)} <small>km</small></div><div class="progress"><span style="width:${Math.min(100, (bus.current_mileage / bus.next_service_mileage) * 100)}%;background:${remaining <= 0 ? '#d6a56b' : remaining <= 500 ? '#debe80' : '#7cbaa7'}"></span></div><p class="muted small">${remaining <= 0 ? `${formatNumber(Math.abs(remaining))} km past service interval` : `${formatNumber(remaining)} km until next service`}<br/>Next service at ${formatNumber(bus.next_service_mileage)} km</p>${button('Record maintenance', 'service-bus', { id: bus.id, iconName: 'Check', className: 'full' })}</article>`;
-    })
-    .join('')}</div>`;
+  const grid = (rows) =>
+    `<div class="maintenance-grid">${rows
+      .map((bus) => {
+        const { remaining, status } = maintenanceStatus(bus);
+        return `<article class="card maintenance-card"><div class="bus-title"><span class="vehicle-icon">${icon('Wrench')}</span><div><h3>${esc(bus.label)}</h3><p>${esc(bus.plate_number)}</p></div>${badge(status)}</div><span class="small muted">Current odometer</span><div class="mileage-value">${formatNumber(bus.current_mileage)} <small>km</small></div><div class="progress"><span style="width:${Math.min(100, (bus.current_mileage / bus.next_service_mileage) * 100)}%;background:${remaining <= 0 ? '#d6a56b' : remaining <= 500 ? '#debe80' : '#7cbaa7'}"></span></div><p class="muted small">${remaining <= 0 ? `${formatNumber(Math.abs(remaining))} km past service interval` : `${formatNumber(remaining)} km until next service`}<br/>Next service at ${formatNumber(bus.next_service_mileage)} km</p>${button('Record maintenance', 'service-bus', { id: bus.id, iconName: 'Check', className: 'full' })}</article>`;
+      })
+      .join('')}</div>`;
+  return `${pageHeader('Ready for the road.', 'Stay ahead of service intervals with odometer-based alerts.')}${stats()}${consolePagination.list('maintenance', sorted, grid, { label: 'Maintenance', size: 9 })}`;
 }
 function settings() {
   return `${pageHeader('Make yourself at home.', 'Your workspace, connection, and notification preferences.')}<div class="settings-grid"><section class="card"><div class="card-head"><h2>Workspace</h2></div><div class="settings-body"><div class="setting-row"><div><strong>School</strong><p>Universidad de Dagupan</p></div><span class="setting-value">Main campus</span></div><div class="setting-row"><div><strong>Timezone</strong><p>All school times use Philippine Standard Time.</p></div><span class="setting-value">Asia/Manila</span></div><div class="setting-row"><div><strong>Signed in as</strong><p>${esc(store.profile.name)}</p></div><span class="setting-value">${esc(store.profile.role)}</span></div><div class="setting-row"><div><strong>Trip notifications</strong><p>Notify this device when your assigned trip starts or ends.</p></div><input id="notification-toggle" type="checkbox" class="toggle" aria-label="Trip notifications" ${preferences.notifications ? 'checked' : ''}/></div>${store.mode === 'demo' ? `<div class="setting-row"><div><strong>Preview another role</strong><p>Explore the driver or student experience.</p></div><select id="settings-role" aria-label="Switch demo role"><option value="admin" ${store.profile.role === 'admin' ? 'selected' : ''}>Administrator</option><option value="driver" ${store.profile.role === 'driver' ? 'selected' : ''}>Driver</option><option value="student" ${store.profile.role === 'student' ? 'selected' : ''}>Student</option></select></div><div class="setting-row"><div><strong>Restore sample data</strong><p>Clear demo changes and start fresh.</p></div>${button('Reset demo', 'reset-demo')}</div>` : ''}</div></section><div class="stack"><section class="card"><div class="card-head"><h2>Connection</h2>${store.mode === 'demo' ? '<span class="mode-pill">Demo mode</span>' : badge('healthy')}</div><div class="settings-body"><div class="note">${store.mode === 'demo' ? 'You are exploring sample records. Changes stay in this browser. Open a second tab to try live demo boarding and trip updates.' : 'Connected to Supabase. Your account role controls the records and location channels you can access.'}</div><div class="setting-row"><div><strong>${store.mode === 'demo' ? 'Connect your school' : 'Data refresh'}</strong><p>${store.mode === 'demo' ? 'Add your Supabase project keys to enable authentication and shared data.' : 'Fetch the latest shared records from your school.'}</p></div>${button(store.mode === 'demo' ? 'Setup guide' : 'Refresh', store.mode === 'demo' ? 'setup' : 'refresh', { iconName: store.mode === 'demo' ? 'ExternalLink' : 'RefreshCw' })}</div></div></section><section class="card"><div class="card-head"><h2>A little help goes a long way.</h2></div><div class="settings-body"><p class="muted small">Find your way around routes, boarding, and school transport.</p><div style="margin-top:18px">${button('Open help center', 'help', { iconName: 'CircleHelp' })}</div></div></section></div></div>`;
@@ -735,7 +743,9 @@ function portal() {
   const passengers = store.data.trip_passengers.filter((p) => p.trip_id === trip.id),
     myPassenger = passengers.find((p) => p.student_id === store.profile.id);
   const counts = store.routeSummaries.get(trip.id) || tripCounts(passengers);
-  const picker = `<section class="card" style="padding:16px;margin-bottom:20px"><div class="trip-actions">${choices.map((t) => button(`${t.direction === 'return' ? 'Return' : 'Outbound'} · ${departure(new Date(t.planned_at).toLocaleTimeString('en-GB', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit' }))} · ${t.route_name}`, 'choose-portal-trip', { id: t.id, primary: t.id === trip.id })).join('')}</div></section>`;
+  const journeyButtons = (rows) =>
+    `<div class="trip-actions">${rows.map((t) => button(`${t.direction === 'return' ? 'Return' : 'Outbound'} · ${departure(new Date(t.planned_at).toLocaleTimeString('en-GB', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit' }))} · ${t.route_name}`, 'choose-portal-trip', { id: t.id, primary: t.id === trip.id })).join('')}</div>`;
+  const picker = `<section class="card" style="padding:16px;margin-bottom:20px">${consolePagination.list('portal-trips', choices, journeyButtons, { label: 'Journey choices', size: 6 })}</section>`;
   const expandButton = button(portalExpanded ? 'Normal view' : 'Enlarge map', 'toggle-portal-map', {
     iconName: portalExpanded ? 'Minimize2' : 'Maximize2',
     className: 'button subtle map-expand-btn',
@@ -786,6 +796,9 @@ function portal() {
 }
 
 const tripUI = () => ({
+  paginate: consolePagination.list,
+  resetPage: consolePagination.reset,
+  modalPage: modalPagination.current,
   pageHeader,
   button,
   badge,
@@ -798,6 +811,11 @@ const tripUI = () => ({
 });
 
 function render() {
+  if (paginationOwner !== store.profile?.id) {
+    paginationOwner = store.profile?.id;
+    consolePagination.reset();
+  }
+  consolePagination.beginRender();
   destroyLanding?.();
   destroyLanding = null;
   fleetMap?.destroy();
@@ -831,7 +849,7 @@ function render() {
     driver: portal,
     student: portal,
     activity: () =>
-      `${pageHeader('The story of your school runs.', 'Boarding, trips, and fleet updates in one place.', button('Refresh', 'refresh', { iconName: 'RefreshCw' }))}<section class="card"><div class="card-head"><h2>Fleet activity <span class="count">${store.data.activity.length}</span></h2></div><div class="activity-list">${activityItems()}</div></section>`,
+      `${pageHeader('The story of your school runs.', 'Boarding, trips, and fleet updates in one place.', button('Refresh', 'refresh', { iconName: 'RefreshCw' }))}<section class="card"><div class="card-head"><h2>Fleet activity <span class="count">${store.data.activity.length}</span></h2></div>${consolePagination.list('activity', store.data.activity, activityItems, { label: 'Activity', size: 15 })}</section>`,
   };
   app.innerHTML = shell((views[page] || overview)());
   mountIcons();
@@ -897,6 +915,7 @@ function mountMap() {
 }
 
 function navigate(next) {
+  consolePagination.reset();
   page = next;
   query = '';
   busFilter = 'all';
@@ -921,8 +940,9 @@ function showModal(title, subtitle, body, { wide = false, onSubmit = null, clean
   closeModal();
   modalReturnFocus = document.activeElement;
   modalCleanup = cleanup;
-  document.querySelector('#modal-root').innerHTML =
-    `<div class="modal-backdrop"><section role="dialog" aria-modal="true" aria-labelledby="modal-title" class="modal ${wide ? 'wide' : ''}" tabindex="-1"><div class="modal-header"><div><h2 id="modal-title">${title}</h2><p>${subtitle}</p></div><button class="icon-button" data-action="close-modal" aria-label="Close dialog">${icon('X')}</button></div><div class="modal-body">${body}</div></section></div>`;
+  const modalRoot = document.querySelector('#modal-root');
+  const content = typeof body === 'function' ? body(modalPagination.list) : body;
+  modalRoot.innerHTML = `<div class="modal-backdrop"><section role="dialog" aria-modal="true" aria-labelledby="modal-title" class="modal ${wide ? 'wide' : ''}" tabindex="-1"><div class="modal-header"><div><h2 id="modal-title">${title}</h2><p>${subtitle}</p></div><button class="icon-button" data-action="close-modal" aria-label="Close dialog">${icon('X')}</button></div><div class="modal-body">${content}</div></section></div>`;
   document.body.style.overflow = 'hidden';
   mountIcons();
   const form = document.querySelector('#modal-root form');
@@ -945,12 +965,14 @@ function showModal(title, subtitle, body, { wide = false, onSubmit = null, clean
     const first = document.querySelector('#modal-root input,#modal-root select,#modal-root .modal');
     first?.focus();
   }, 50);
+  return modalRoot.querySelector('.modal');
 }
 function closeModal() {
   modalMap?.destroy();
   modalMap = null;
   modalCleanup?.();
   modalCleanup = null;
+  modalPagination.reset();
   document.querySelector('#modal-root').replaceChildren();
   document.body.style.overflow = '';
   if (modalReturnFocus?.isConnected) modalReturnFocus.focus();
@@ -1460,7 +1482,8 @@ async function handleAction(action, id, target) {
       showModal(
         'A little heads-up.',
         'The latest updates from your fleet.',
-        `<div class="activity-list notification-list">${activityItems(15)}</div><div class="modal-footer">${button('Close', 'close-modal')}</div>`
+        (paginate) =>
+          `${paginate('notifications', store.data.activity.slice(0, 15), (rows) => activityItems(rows, 'activity-list notification-list'), { label: 'Notifications', size: 8 })}<div class="modal-footer">${button('Close', 'close-modal')}</div>`
       );
       break;
     case 'add-campus':
@@ -1494,6 +1517,13 @@ async function handleAction(action, id, target) {
 }
 
 document.addEventListener('click', async (event) => {
+  const pageButton = event.target.closest('[data-page-step]');
+  if (pageButton) {
+    const pagination = pageButton.closest('#modal-root') ? modalPagination : consolePagination;
+    pagination.turn(pageButton);
+    mountIcons();
+    return;
+  }
   const nav = event.target.closest('[data-page]');
   if (nav) {
     event.preventDefault();
@@ -1503,6 +1533,7 @@ document.addEventListener('click', async (event) => {
   const filter = event.target.closest('[data-filter]');
   if (filter) {
     busFilter = filter.dataset.filter;
+    consolePagination.reset('fleet');
     render();
     return;
   }
@@ -1574,6 +1605,7 @@ document.addEventListener('input', (event) => {
     const caret = target.selectionStart;
     if (target.id === 'global-search' && !['fleet', 'students', 'drivers'].includes(page))
       page = 'fleet';
+    consolePagination.reset(page);
     const id = target.id;
     render();
     const input = document.getElementById(id);
@@ -1587,6 +1619,7 @@ document.addEventListener('submit', async (event) => {
     event.preventDefault();
     try {
       await filterTripHistory(form);
+      consolePagination.reset('trip-history');
       render();
     } catch (error) {
       toast(error.message, true);
