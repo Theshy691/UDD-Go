@@ -2,6 +2,7 @@ import './landing.css';
 import { mountRoutePreview, routePreview } from './landing-routes.js';
 import { mountLandingSignals } from './landing-signals.js';
 import { landingWordmark } from './landing-wordmark.js';
+import { helpChat, mountHelpChat } from './help-chat.js';
 
 const benefits = [
   {
@@ -212,7 +213,7 @@ export function mountLanding(app, { icon, demo }) {
           <a href="#routes">Routes</a>
           <a href="#guidelines">Guidelines</a>
           <a href="#workspaces">${demo ? 'Demos' : 'Workspaces'}</a>
-          <a href="#questions">FAQ</a>
+          <a href="#ask-udd-go">Help</a>
         </nav>
         ${portalButton(icon, 'udd-landing-portal')}
       </div>
@@ -244,6 +245,7 @@ export function mountLanding(app, { icon, demo }) {
         </div>
         <a href="https://github.com/Theshy691/UDD-Go/blob/main/md/README.md">Read project documentation ${icon('ExternalLink')}</a>
       </section>
+      ${helpChat(icon)}
       <section class="udd-landing-faq udd-landing-width" id="questions" aria-labelledby="questions-title">
         <h2 id="questions-title">Common questions</h2>
         <div>
@@ -275,8 +277,10 @@ export function mountLanding(app, { icon, demo }) {
   </div>`;
   const stopSignals = mountLandingSignals(app.querySelector('.udd-landing-signals'));
   const stopRoutePreview = mountRoutePreview(app.querySelector('#routes'));
+  const stopHelpChat = mountHelpChat(app.querySelector('#ask-udd-go'));
   return () => {
     stopSignals();
     stopRoutePreview();
+    stopHelpChat();
   };
 }

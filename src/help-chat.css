@@ -1,0 +1,213 @@
+.udd-help {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  gap: clamp(24px, 5vw, 70px);
+  align-items: start;
+  padding-block: clamp(34px, 6vw, 76px);
+  border-top: 1px solid var(--udd-rule);
+}
+
+.udd-help-intro {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+
+.udd-help-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  background: var(--udd-tint);
+  color: var(--udd-blue);
+  border-radius: 12px;
+}
+
+.udd-help-mark svg {
+  width: 21px;
+  height: 21px;
+}
+
+.udd-help-intro h2 {
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.08;
+}
+
+.udd-help-intro p {
+  max-width: 32ch;
+  color: var(--udd-muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.udd-help-intro > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  color: var(--udd-blue);
+  font-weight: 700;
+}
+
+.udd-help-intro > a svg {
+  width: 15px;
+  height: 15px;
+}
+
+.udd-help-panel {
+  min-width: 0;
+  background: var(--udd-surface);
+  border: 1px solid var(--udd-rule);
+  border-radius: 14px;
+}
+
+.udd-help-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 13px 13px 0 0;
+  border-bottom: 1px solid var(--udd-rule);
+  background: var(--udd-map);
+  color: var(--udd-ink);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.udd-help-bar select {
+  appearance: none;
+  height: 44px;
+  padding: 0 26px 0 10px;
+  border: 1px solid var(--udd-rule);
+  border-radius: 8px;
+  background:
+    linear-gradient(45deg, transparent 50%, var(--udd-blue) 50%) right 13px center / 5px 5px
+      no-repeat,
+    linear-gradient(135deg, var(--udd-blue) 50%, transparent 50%) right 8px center / 5px 5px
+      no-repeat,
+    var(--udd-surface);
+}
+
+.udd-help-thread {
+  display: grid;
+  gap: 12px;
+  max-height: min(440px, 54dvh);
+  padding: 14px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-bottom: 1px solid var(--udd-rule);
+}
+
+.udd-help-thread[hidden],
+.udd-help-status:empty {
+  display: none;
+}
+
+.udd-help-message {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  min-width: 0;
+  padding: 9px 11px;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.udd-help-message.question {
+  justify-self: end;
+  max-width: 90%;
+  background: var(--udd-tint);
+}
+
+.udd-help-message.answer {
+  justify-self: start;
+  border-inline-start: 3px solid var(--udd-blue);
+  background: var(--udd-paper);
+}
+
+.udd-help-message strong {
+  color: var(--udd-blue);
+  font-size: 12px;
+}
+.udd-help-message a {
+  color: var(--udd-blue);
+  text-decoration: underline;
+  font-size: 13px;
+}
+
+.udd-help-status {
+  padding: 12px 16px 0;
+  color: var(--udd-muted);
+  font-size: 13px;
+}
+
+.udd-help-form {
+  padding: 14px 16px 0;
+}
+.udd-help-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.udd-help-input input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--udd-rule);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--udd-ink);
+  background: var(--udd-paper);
+  font-size: 16px;
+}
+
+.udd-help-form small {
+  display: block;
+  margin-top: 6px;
+  color: var(--udd-muted);
+  font-size: 12px;
+}
+
+.udd-help-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 16px 16px;
+}
+
+.udd-help-suggestions button {
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--udd-rule);
+  border-radius: 8px;
+  color: var(--udd-blue);
+  font-size: 12px;
+  text-align: start;
+}
+
+.udd-help-suggestions button:hover {
+  background: var(--udd-map);
+}
+
+@media (max-width: 720px) {
+  .udd-help {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .udd-help-intro {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 400px) {
+  .udd-help-input .udd-landing-button {
+    padding-inline: 10px;
+  }
+  .udd-help-input .udd-landing-button svg {
+    display: none;
+  }
+}
