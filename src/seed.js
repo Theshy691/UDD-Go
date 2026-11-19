@@ -8,6 +8,7 @@ export const DEMO_ACCOUNT_EMAILS = {
   'driver-2': 'driver-2@example.test',
   'driver-3': 'driver-3@example.test',
   'UDD-0001': 'student@udd.edu.ph',
+  'UDD-0006': 'student-6@example.test',
   'UDD-0007': 'student-7@example.test',
   'UDD-0013': 'student-13@example.test',
 };
