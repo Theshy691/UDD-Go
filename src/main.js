@@ -4,7 +4,7 @@ import './portal.css';
 import { mountLanding } from './landing.js';
 import { mountLogin } from './login.js';
 import { createPagination } from './pagination.js';
-import { driverTripSummary, tripTime } from './portal-views.js';
+import { driverTripSummary, studentTripSummary, tripTime } from './portal-views.js';
 import {
   createIcons,
   LayoutDashboard,
@@ -598,75 +598,9 @@ function maintenance() {
 function settings() {
   return `${pageHeader('Make yourself at home.', 'Your workspace, connection, and notification preferences.')}<div class="settings-grid"><section class="card"><div class="card-head"><h2>Workspace</h2></div><div class="settings-body"><div class="setting-row"><div><strong>School</strong><p>Universidad de Dagupan</p></div><span class="setting-value">Main campus</span></div><div class="setting-row"><div><strong>Timezone</strong><p>All school times use Philippine Standard Time.</p></div><span class="setting-value">Asia/Manila</span></div><div class="setting-row"><div><strong>Signed in as</strong><p>${esc(store.profile.name)}</p></div><span class="setting-value">${esc(store.profile.role)}</span></div><div class="setting-row"><div><strong>Trip notifications</strong><p>Notify this device when your assigned trip starts or ends.</p></div><input id="notification-toggle" type="checkbox" class="toggle" aria-label="Trip notifications" ${preferences.notifications ? 'checked' : ''}/></div>${store.mode === 'demo' ? `<div class="setting-row"><div><strong>Preview another role</strong><p>Explore the driver or student experience.</p></div><select id="settings-role" aria-label="Switch demo role"><option value="admin" ${store.profile.role === 'admin' ? 'selected' : ''}>Administrator</option><option value="driver" ${store.profile.role === 'driver' ? 'selected' : ''}>Driver</option><option value="student" ${store.profile.role === 'student' ? 'selected' : ''}>Student</option></select></div><div class="setting-row"><div><strong>Restore sample data</strong><p>Clear demo changes and start fresh.</p></div>${button('Reset demo', 'reset-demo')}</div>` : ''}</div></section><div class="stack"><section class="card"><div class="card-head"><h2>Connection</h2>${store.mode === 'demo' ? '<span class="mode-pill">Demo mode</span>' : badge('healthy')}</div><div class="settings-body"><div class="note">${store.mode === 'demo' ? 'You are exploring sample records. Changes stay in this browser. Open a second tab to try live demo boarding and trip updates.' : 'Connected to Supabase. Your account role controls the records and location channels you can access.'}</div><div class="setting-row"><div><strong>${store.mode === 'demo' ? 'Connect your school' : 'Data refresh'}</strong><p>${store.mode === 'demo' ? 'Add your Supabase project keys to enable authentication and shared data.' : 'Fetch the latest shared records from your school.'}</p></div>${button(store.mode === 'demo' ? 'Setup guide' : 'Refresh', store.mode === 'demo' ? 'setup' : 'refresh', { iconName: store.mode === 'demo' ? 'ExternalLink' : 'RefreshCw' })}</div></div></section><section class="card"><div class="card-head"><h2>A little help goes a long way.</h2></div><div class="settings-body"><p class="muted small">Find your way around routes, boarding, and school transport.</p><div style="margin-top:18px">${button('Open help center', 'help', { iconName: 'CircleHelp' })}</div></div></section></div></div>`;
 }
-function studentHUDCard(trip, myPassenger, counts) {
-  const isBoarded = myPassenger?.status === 'boarded';
-  const isAlighted = myPassenger?.status === 'alighted';
-  const isActive = trip.status === 'active';
-  const pickupStop = myPassenger?.pickup_name || trip.stops?.[0]?.stop_name || 'Assigned Stop';
-  const dropoffStop =
-    myPassenger?.dropoff_name || trip.stops?.at(-1)?.stop_name || 'UDD Main Campus';
-  const driverPhone = person(trip.driver_id)?.contact_number || '';
-
-  return `<section class="card student-hud-card">
-    <div class="card-head">
-      <div>
-        <h2>Live journey & safety telemetry</h2>
-        <p>Real-time transit updates, your assigned pickup, and campus arrival tracking.</p>
-      </div>
-      <span class="live-label" data-live-status>
-        <span class="live-dot"></span>
-        ${isActive ? 'Bus on route' : trip.status === 'scheduled' ? 'Scheduled run' : 'Completed'}
-      </span>
-    </div>
-    <div class="hud-body">
-      <div class="hud-eta-banner ${isActive ? 'active' : ''}">
-        <div class="eta-icon">${icon('Navigation')}</div>
-        <div class="eta-info">
-          <span class="eta-tag">${isBoarded ? 'On board vehicle' : isAlighted ? 'Safe drop-off verified' : 'Awaiting boarding'}</span>
-          <strong>${isBoarded ? `En route to ${esc(dropoffStop)}` : isAlighted ? `Arrived at ${esc(dropoffStop)}` : `Pickup at ${esc(pickupStop)}`}</strong>
-          <p class="small muted">${isActive ? (isBoarded ? `Bus ${esc(trip.bus_label)} is traveling safely. Destination arrival in ~8–12 mins.` : `Bus ${esc(trip.bus_label)} is approaching. Please wait safely at your designated stop area.`) : trip.status === 'scheduled' ? `Scheduled departure at ${departure(trip.planned_at?.slice(11, 16))} · Driver: ${esc(trip.driver_name)}.` : 'This journey has safely concluded at the school campus.'}</p>
-        </div>
-        <div class="eta-pill">
-          <span>${isActive ? 'EST. TIME' : 'DEPARTURE'}</span>
-          <strong>${isActive ? (isBoarded ? '~10 min' : '~5 min') : departure(trip.planned_at?.slice(11, 16))}</strong>
-        </div>
-      </div>
-
-      <div class="hud-stats-grid">
-        <div class="hud-stat-chip">
-          <span class="stat-label">Assigned Vehicle</span>
-          <strong>${esc(trip.bus_label)}</strong>
-          <small class="muted">${esc(trip.plate_number)}</small>
-        </div>
-        <div class="hud-stat-chip">
-          <span class="stat-label">Official Driver</span>
-          <strong>${esc(trip.driver_name)}</strong>
-          <small class="muted">${esc(driverPhone || 'UDD Fleet')}</small>
-        </div>
-        <div class="hud-stat-chip">
-          <span class="stat-label">Your Status</span>
-          <strong style="color:${isBoarded ? '#059669' : isAlighted ? '#2563eb' : '#d97706'}">${isBoarded ? 'On Board' : isAlighted ? 'Alighted' : 'Reserved Seat'}</strong>
-          <small class="muted">${counts.boarded} / ${trip.capacity} passengers</small>
-        </div>
-        <div class="hud-stat-chip">
-          <span class="stat-label">School Destination</span>
-          <strong>UDD Campus</strong>
-          <small class="muted">Main Hub</small>
-        </div>
-      </div>
-
-      <div class="hud-action-row">
-        ${driverPhone ? `<a href="tel:${esc(driverPhone.replace(/\s+/g, ''))}" class="button" title="Call assigned driver">${icon('Phone')}<span>Call driver (${esc(driverPhone)})</span></a>` : ''}
-        <a href="tel:0755222496" class="button" title="Universidad de Dagupan Security Desk">${icon('ShieldCheck')}<span>UDD Security Hotline (075) 522-2496</span></a>
-        ${button('View my trip manifest', 'trip-detail', { id: trip.id, iconName: 'UserRoundCheck' })}
-      </div>
-    </div>
-  </section>`;
-}
-
 function portal() {
   const isDriver = store.profile.role === 'driver';
-  const driverHeading = `<header class="journey-heading"><h1>My route</h1>${button('Trips & history', 'open-trips', { iconName: 'CalendarDays' })}</header>`;
+  const heading = `<header class="journey-heading"><h1>${isDriver ? 'My route' : 'My journey'}</h1>${button('Trips & history', 'open-trips', { iconName: 'CalendarDays' })}</header>`;
   const choices = store
     .visibleTrips()
     .filter((t) => t.service_date === schoolDate() || t.status === 'active')
@@ -677,14 +611,10 @@ function portal() {
     );
   const trip = choices.find((t) => t.id === portalTripId) || choices[0];
   portalTripId = trip?.id || '';
-  if (!trip) {
-    if (isDriver)
-      return `<div class="journey-workspace">${driverHeading}<section class="card">${empty('No trips prepared for today', 'Check Trips & history for assignments on other dates.', 'CalendarDays')}</section></div>`;
-    return `${pageHeader(`Hello, ${esc(store.profile?.name?.split(' ')[0] || 'there')}.`, 'Your dated journeys appear here when prepared.', button('Trips & history', 'open-trips'))}<section class="card">${empty('No trips prepared for today', 'Your administrator can generate trips from the service calendar.', 'CalendarDays')}</section>`;
-  }
+  if (!trip)
+    return `<div class="journey-workspace">${heading}<section class="card">${empty('No trips prepared for today', 'Check Trips & history for journeys on other dates.', 'CalendarDays')}</section></div>`;
   const passengers = store.data.trip_passengers.filter((p) => p.trip_id === trip.id),
     myPassenger = passengers.find((p) => p.student_id === store.profile.id);
-  const counts = store.routeSummaries.get(trip.id) || tripCounts(passengers);
   const journeyButtons = (rows) =>
     `<div class="trip-actions">${rows.map((t) => button(`${t.direction === 'return' ? 'Return' : 'Outbound'} · ${esc(tripTime(t.planned_at))} · ${esc(t.route_name)}`, 'choose-portal-trip', { id: t.id, primary: t.id === trip.id })).join('')}</div>`;
   const picker =
@@ -695,64 +625,35 @@ function portal() {
     iconName: portalExpanded ? 'Minimize2' : 'Maximize2',
     className: 'button subtle map-expand-btn',
   });
-  const heading = isDriver
-    ? driverHeading
-    : pageHeader(
-        'Your school journeys, connected.',
-        'Choose your outbound or return trip.',
-        button('Trips & history', 'open-trips', { iconName: 'CalendarDays' })
-      );
-  const driverSummary = isDriver
-    ? driverTripSummary(trip, passengers, counts, {
+  const summary = isDriver
+    ? driverTripSummary(trip, passengers, tripCounts(passengers), {
         button,
         badge,
         demo: store.mode === 'demo',
         sharing: gpsWatch !== null && gpsRouteId === trip.id,
       })
-    : '';
-  return `<div class="journey-workspace">${heading}${picker}${driverSummary}
+    : studentTripSummary(trip, myPassenger, {
+        button,
+        badge,
+        icon,
+        boardingId: store.profile.student_code || (store.mode === 'demo' ? store.profile.id : ''),
+        phone: person(trip.driver_id)?.contact_number,
+      });
+  return `<div class="journey-workspace">${heading}${picker}${summary}
   <div class="portal-grid ${isDriver ? 'driver-portal' : 'student-portal'} ${portalExpanded ? 'map-expanded' : ''}">
-    <div class="portal-main-col stack">
-      <section class="card portal-map">
-        <div class="card-head">
-          <div>
-            <h2>${isDriver ? 'Route map' : esc(trip.route_name)}</h2>
-            ${isDriver ? '' : '<span class="small muted">Your school bus journey map</span>'}
-          </div>
-          <div class="flex gap-8">
-            ${isDriver ? '' : badge(trip.status)}
-            ${expandButton}
-          </div>
-        </div>
-        <div class="map-wrap">
-          <div id="fleet-map" class="fleet-map" aria-label="Your selected trip map"></div>
-          ${mapToolbar(false)}
-        </div>
-      </section>
-      ${isDriver ? '' : studentHUDCard(trip, myPassenger, counts)}
-    </div>
-    <div class="portal-sidebar">
-      ${
-        isDriver
-          ? ''
-          : `<section class="card trip-card">
-        <h2>${esc(trip.direction === 'return' ? 'Return journey' : 'Outbound journey')}</h2>
-        <div class="bus-title"><span class="vehicle-icon">${icon('BusFront')}</span><div><h3>${esc(trip.bus_label)}</h3><p>${esc(trip.plate_number)}</p></div></div>
-        <div class="driver-mini"><span class="avatar peach">${esc(initials(trip.driver_name))}</span><div><strong>${esc(trip.driver_name)}</strong>${esc(person(trip.driver_id)?.contact_number || '')}</div></div>
-        <div class="trip-info">
-          <div class="between"><span>Service date</span><strong>${esc(trip.service_date)}</strong></div>
-          <div class="between"><span>On board</span><strong>${counts.boarded} / ${trip.capacity}</strong></div>
-          <div class="between"><span>Your status</span>${badge(myPassenger?.status || 'expected')}</div>
-        </div>
-        <div class="student-pass"><span>Your boarding ID</span><strong>${esc(store.profile.student_code || store.profile.id)}</strong><p>${esc(myPassenger?.pickup_name || '')} → ${esc(myPassenger?.dropoff_name || '')}</p></div>${button('View my trip record', 'trip-detail', { id: trip.id })}
-      </section>`
-      }
-      <section class="card trip-card">
-        <h2>Trip stops</h2>
-        <div class="stop-timeline">${timeline(trip.stops, myPassenger?.pickup_stop_id)}</div>
-        ${isDriver ? `<a href="tel:0755222496" class="button">${icon('Phone')} Contact dispatch</a>` : ''}
-      </section>
-    </div>
+    <section class="card portal-map">
+      <div class="card-head"><div><h2>Route map</h2>${!isDriver && store.mode === 'demo' && trip.status === 'active' ? '<p class="small muted">Simulated bus location</p>' : ''}</div>${expandButton}</div>
+      <div class="map-wrap">
+        <div id="fleet-map" class="fleet-map" aria-label="Your selected trip map"></div>
+        ${mapToolbar(false)}
+      </div>
+    </section>
+    <section class="card trip-card">
+      <h2>Trip stops</h2>
+      ${isDriver ? '' : `<p class="small muted">${esc(trip.driver_name)} · ${esc(trip.plate_number)}</p>`}
+      <div class="stop-timeline">${timeline(trip.stops, myPassenger?.pickup_stop_id)}</div>
+      <a href="tel:0755222496" class="button">${icon(isDriver ? 'Phone' : 'ShieldCheck')} ${isDriver ? 'Contact dispatch' : 'Call UDD Security'}</a>
+    </section>
   </div></div>`;
 }
 

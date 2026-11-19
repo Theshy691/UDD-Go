@@ -58,3 +58,38 @@ export function driverTripSummary(trip, passengers, counts, { button, badge, dem
     </div>
   </section>`;
 }
+
+export function studentTripSummary(trip, passenger, { button, badge, icon, boardingId, phone }) {
+  let status = 'Passenger record unavailable';
+  if (passenger?.status === 'alighted') status = 'Dropped off';
+  if (passenger?.status === 'boarded') status = 'On board';
+  if (passenger?.status === 'expected') {
+    status =
+      {
+        scheduled: 'Seat reserved',
+        active: 'Waiting to board',
+        completed: 'Boarding not recorded',
+      }[trip.status] ?? status;
+  }
+
+  return `<section class="card journey-summary" aria-labelledby="journey-route-title">
+    <div class="journey-summary-head">
+      <div><h2 id="journey-route-title">${esc(trip.route_name)}</h2><p>${trip.direction === 'return' ? 'Return' : 'Outbound'} · Scheduled departure <time datetime="${esc(trip.planned_at)}">${esc(tripTime(trip.planned_at))} PHT</time></p></div>
+      ${badge(trip.status)}
+    </div>
+    <dl class="journey-facts">
+      <div><dt>Pickup stop</dt><dd>${esc(passenger?.pickup_name || 'Unavailable')}</dd></div>
+      <div><dt>Assigned bus</dt><dd>${esc(trip.bus_label)}</dd></div>
+      <div><dt>Boarding ID</dt><dd>${esc(passenger?.student_code || boardingId || 'Unavailable')}</dd></div>
+    </dl>
+    ${
+      trip.status === 'cancelled'
+        ? `<p class="journey-note"><strong>Trip cancelled.</strong>${trip.cancellation_reason ? ` ${esc(trip.cancellation_reason)}` : ''}</p>`
+        : `<p class="journey-note"><strong>${status}</strong>${passenger?.dropoff_name ? ` · Drop-off at ${esc(passenger.dropoff_name)}` : ''}</p>`
+    }
+    <div class="journey-actions">
+      ${button('View my trip record', 'trip-detail', { id: trip.id, iconName: 'CalendarDays' })}
+      ${phone ? `<a href="tel:${esc(phone.replace(/[^+\d]/g, ''))}" class="button">${icon('Phone')} Call driver</a>` : ''}
+    </div>
+  </section>`;
+}

@@ -34,9 +34,19 @@
 
 .journey-summary-head p,
 .journey-facts dt,
+.journey-note,
 .journey-actions p {
   color: var(--console-muted);
   font-size: 13px;
+}
+
+.journey-note {
+  margin-top: 12px;
+  overflow-wrap: anywhere;
+}
+
+.journey-note strong {
+  color: var(--console-ink);
 }
 
 .journey-summary-head p {
@@ -70,9 +80,15 @@
   margin-top: 14px;
 }
 
-.journey-workspace :is(.journey-heading, .journey-actions, .journey-picker, .portal-map) .button {
+.journey-workspace
+  :is(.journey-heading, .journey-actions, .journey-picker, .portal-map, .trip-card)
+  .button {
   min-height: 44px;
   white-space: normal;
+}
+
+.journey-workspace .trip-card > a {
+  margin-top: 12px;
 }
 
 .journey-picker {
