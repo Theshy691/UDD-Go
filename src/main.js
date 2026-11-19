@@ -355,7 +355,8 @@ function trackingDetail() {
       ? bus.position_at
       : null;
 
-  return `<div class="overview-bus-heading">
+  return `<div class="overview-selected-bus">
+    <div class="overview-bus-heading">
       <span class="vehicle-icon">${icon(bus ? 'BusFront' : 'Route')}</span>
       <div><h3>${esc(bus?.label ?? 'Unassigned bus')}</h3><p>${esc(trip?.route_name ?? route?.route_name ?? '')}</p></div>
       ${bus ? badge(trip ? 'active' : bus.status) : ''}
@@ -373,6 +374,7 @@ function trackingDetail() {
           : 'No active trip'
       }</span>
       ${bus ? button('View bus', 'bus-detail', { id: bus.id }) : ''}
+    </div>
     </div>
     ${
       stops.length
@@ -425,7 +427,7 @@ function overview() {
   ).length;
   const maintenanceStates = buses.map((bus) => maintenanceStatus(bus).status);
   const overdue = maintenanceStates.filter((status) => status === 'overdue').length;
-  const dueSoon = maintenanceStates.filter((status) => status === 'due_soon').length;
+  const due = maintenanceStates.filter((status) => status !== 'healthy').length;
   const stats = [
     [active.length, 'Trips running', 'Navigation'],
     [boarded, 'Students on board', 'GraduationCap'],
@@ -433,39 +435,31 @@ function overview() {
   ];
 
   return `<div class="fleet-overview">
-    <header class="overview-heading">
-      <div>
-        <p class="overview-date">${icon('CalendarDays')} ${date()}</p>
-        <h1>Fleet overview</h1>
+    <header class="overview-header">
+      <div class="overview-heading">
+        <div>
+          <h1>Fleet overview</h1>
+          <p class="overview-date">${icon('CalendarDays')} ${date()}</p>
+        </div>
+        <div class="overview-actions">
+          ${button('Prepare trip', 'prepare-trip', { primary: true, iconName: 'Plus' })}
+          ${button('Export report', 'export', { iconName: 'Download' })}
+        </div>
       </div>
-      <div class="overview-actions">
-        ${button('Prepare trip', 'prepare-trip', { primary: true, iconName: 'Plus' })}
-        ${button('Export report', 'export', { iconName: 'Download' })}
-      </div>
+      <ul class="overview-status" aria-label="Fleet at a glance">
+        ${stats.map(([value, label, glyph]) => `<li class="overview-metric">${icon(glyph)}<span class="overview-metric-copy"><span>${label}</span><strong>${value}</strong></span></li>`).join('')}
+        <li><button type="button" class="overview-metric overview-service" data-page="maintenance">
+          ${icon('Wrench')}<span class="overview-metric-copy"><span>Buses due for service</span><strong>${due}</strong>${overdue ? `<small>${overdue} overdue</small>` : ''}</span>${icon('ChevronRight')}
+        </button></li>
+      </ul>
     </header>
-    <ul class="overview-status" aria-label="Fleet at a glance">
-      ${stats.map(([value, label, glyph]) => `<li>${icon(glyph)}<div><strong>${value}</strong><span>${label}</span></div></li>`).join('')}
-    </ul>
-    ${
-      overdue || dueSoon
-        ? `<div class="overview-maintenance ${overdue ? 'has-overdue' : ''}">
-            ${icon('Wrench')}
-            <div>
-              <strong>${overdue ? `${overdue} ${overdue === 1 ? 'bus' : 'buses'} overdue for service` : `${dueSoon} ${dueSoon === 1 ? 'bus' : 'buses'} due for service soon`}</strong>
-              ${overdue && dueSoon ? `<p>${dueSoon} more due soon</p>` : ''}
-            </div>
-            <button type="button" class="link-button" data-page="maintenance">Review maintenance ${icon('ChevronRight')}</button>
-          </div>`
-        : ''
-    }
     <div class="overview-operations">
-    ${todayDispatch(trips)}
-    <section class="card overview-tracking" aria-labelledby="fleet-map-title">
-      <div class="card-head">
-        <h2 id="fleet-map-title">Fleet tracking</h2>
-        <span class="live-label" data-live-status role="status"><span class="live-dot"></span>${store.mode === 'demo' ? 'Demo simulation' : store.connected ? 'Connected' : 'Connecting…'}</span>
-      </div>
-      <div class="overview-tracking-layout">
+      ${todayDispatch(trips)}
+      <section class="overview-tracking" aria-labelledby="fleet-map-title">
+        <div class="card-head">
+          <h2 id="fleet-map-title">Fleet tracking</h2>
+          <span class="live-label" data-live-status role="status"><span class="live-dot"></span>${store.mode === 'demo' ? 'Demo simulation' : store.connected ? 'Connected' : 'Connecting…'}</span>
+        </div>
         <div class="map-wrap">
           <div id="fleet-map" class="fleet-map" aria-label="Interactive school bus route map"></div>
           ${mapToolbar()}
@@ -473,8 +467,7 @@ function overview() {
         <aside class="overview-bus-detail" id="tracking-detail" aria-label="Selected bus">
           ${trackingDetail()}
         </aside>
-      </div>
-    </section>
+      </section>
     </div>
     <div class="bottom-grid">
       <section class="card">

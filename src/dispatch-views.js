@@ -13,20 +13,24 @@ export function dispatchBoard(trips, buses, users, { badge, paginate, attentionO
     .map((trip) => {
       const departure = new Date(trip.planned_at);
       const bus = busesById.get(trip.bus_id);
-      let issue = '', action = 'View trip';
+      let issue = '';
+      let action = 'View trip';
+      let target = 'trip-detail';
       if (trip.status === 'scheduled') {
         if (!bus || bus.status === 'maintenance') {
           issue = bus ? 'Bus in maintenance' : 'Bus unavailable';
           action = 'Review bus assignment';
+          target = 'trip-review-assignment';
         } else if (!driverIds.has(trip.driver_id)) {
           issue = 'Driver unavailable';
           action = 'Review driver assignment';
+          target = 'trip-review-assignment';
         } else if (departure < now) {
           issue = 'Departure overdue';
           action = 'Review departure';
         }
       }
-      return { trip, issue, action, departure };
+      return { trip, issue, action, target, departure };
     })
     .sort(
       (a, b) =>
@@ -39,8 +43,8 @@ export function dispatchBoard(trips, buses, users, { badge, paginate, attentionO
   const list = (items) => `<ul class="dispatch-list" role="list">
     ${items
       .map(
-        ({ trip, issue, action }) => `<li>
-      <button type="button" class="dispatch-trip" data-action="${issue && action !== 'Review departure' ? 'trip-review-assignment' : 'trip-detail'}" data-id="${esc(trip.id)}">
+        ({ trip, issue, action, target }) => `<li>
+      <button type="button" class="dispatch-trip" data-action="${target}" data-id="${esc(trip.id)}">
         <time datetime="${esc(trip.planned_at)}">${esc(tripTime(trip.planned_at))}</time>
         <span class="dispatch-trip-info">
           <strong>${esc(trip.route_name)}</strong>
@@ -54,12 +58,13 @@ export function dispatchBoard(trips, buses, users, { badge, paginate, attentionO
       .join('')}
   </ul>`;
 
-  return `<section class="card dispatch-board" aria-labelledby="dispatch-title">
+  return `<section class="dispatch-board" aria-labelledby="dispatch-title">
     <div class="card-head"><h2 id="dispatch-title">Today’s trips <span class="count">${rows.length}</span></h2><span class="small muted">PHT</span></div>
     <div class="dispatch-filters" role="group" aria-label="Filter today’s trips">
       <button type="button" class="button" data-action="filter-dispatch" data-id="all" aria-pressed="${!attentionOnly}">All trips</button>
       <button type="button" class="button" data-action="filter-dispatch" data-id="attention" aria-pressed="${attentionOnly}">Needs attention <span class="count">${attention.length}</span></button>
     </div>
     ${visible.length ? paginate('overview-today', visible, list, { label: 'Today’s trips', size: 5 }) : `<p class="dispatch-empty" role="status">${attentionOnly ? 'No trips need attention.' : 'No trips prepared for today. Prepare a trip from an active service.'}</p>`}
+    <footer class="dispatch-footer"><button type="button" class="link-button" data-page="trips">Trips &amp; history</button></footer>
   </section>`;
 }
