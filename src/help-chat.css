@@ -1,64 +1,107 @@
 .udd-help {
-  display: grid;
-  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
-  gap: clamp(24px, 5vw, 70px);
-  align-items: start;
-  padding-block: clamp(34px, 6vw, 76px);
-  border-top: 1px solid var(--udd-rule);
+  --help-edge: clamp(12px, 2.5vw, 28px);
+  --help-bottom: max(var(--help-edge), env(safe-area-inset-bottom, 0px));
+  position: fixed;
+  z-index: 35;
+  inset: auto max(var(--help-edge), env(safe-area-inset-right, 0px)) var(--help-bottom) auto;
 }
 
-.udd-help-intro {
+.udd-help [hidden] {
+  display: none;
+}
+
+.udd-help-launcher {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 0 17px;
+  border: 1px solid var(--udd-blue-hover);
+  border-radius: 24px;
+  background: var(--udd-blue);
+  color: white;
+  font: 750 14px var(--udd-heading);
+  box-shadow: 0 3px 10px rgb(38 55 72 / 16%);
+}
+
+.udd-help-launcher:hover {
+  background: var(--udd-blue-hover);
+}
+.udd-help-launcher svg {
+  width: 18px;
+  height: 18px;
+}
+.udd-help-launcher[aria-expanded='true'] {
+  visibility: hidden;
+}
+
+.udd-help-panel {
+  position: absolute;
+  inset: auto 0 0 auto;
   display: grid;
-  gap: 12px;
-  justify-items: start;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  width: min(
+    390px,
+    calc(
+      100vw - var(--help-edge) * 2 - env(safe-area-inset-left, 0px) -
+        env(safe-area-inset-right, 0px)
+    )
+  );
+  max-height: min(
+    580px,
+    calc(100dvh - var(--help-bottom) - var(--help-edge) - env(safe-area-inset-top, 0px))
+  );
+  border: 1px solid var(--udd-rule);
+  border-radius: 16px;
+  background: var(--udd-surface);
+  box-shadow: 0 10px 34px rgb(38 55 72 / 20%);
+}
+
+.udd-help-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 13px;
+  border-radius: 15px 15px 0 0;
+  border-bottom: 1px solid var(--udd-rule);
+  background: var(--udd-map);
+}
+
+.udd-help-head h2 {
+  font-size: 17px;
 }
 
 .udd-help-mark {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   background: var(--udd-tint);
   color: var(--udd-blue);
-  border-radius: 12px;
+  border-radius: 9px;
 }
 
 .udd-help-mark svg {
-  width: 21px;
-  height: 21px;
+  width: 19px;
+  height: 19px;
 }
 
-.udd-help-intro h2 {
-  font-size: clamp(28px, 4vw, 42px);
-  line-height: 1.08;
-}
-
-.udd-help-intro p {
-  max-width: 32ch;
+.udd-help-close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   color: var(--udd-muted);
-  font-size: 15px;
-  line-height: 1.55;
 }
 
-.udd-help-intro > a {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 44px;
-  color: var(--udd-blue);
-  font-weight: 700;
+.udd-help-close:hover {
+  background: var(--udd-tint);
 }
-
-.udd-help-intro > a svg {
-  width: 15px;
-  height: 15px;
-}
-
-.udd-help-panel {
-  min-width: 0;
-  background: var(--udd-surface);
-  border: 1px solid var(--udd-rule);
-  border-radius: 14px;
+.udd-help-close svg {
+  width: 18px;
+  height: 18px;
 }
 
 .udd-help-bar {
@@ -66,40 +109,39 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 10px 16px;
-  border-radius: 13px 13px 0 0;
+  padding: 4px 13px;
   border-bottom: 1px solid var(--udd-rule);
-  background: var(--udd-map);
-  color: var(--udd-ink);
+  color: var(--udd-muted);
   font-size: 13px;
-  font-weight: 650;
 }
 
 .udd-help-bar select {
   appearance: none;
   height: 44px;
-  padding: 0 26px 0 10px;
-  border: 1px solid var(--udd-rule);
-  border-radius: 8px;
+  padding: 0 22px 0 8px;
+  color: var(--udd-blue);
   background:
-    linear-gradient(45deg, transparent 50%, var(--udd-blue) 50%) right 13px center / 5px 5px
+    linear-gradient(45deg, transparent 50%, var(--udd-blue) 50%) right 11px center / 5px 5px
       no-repeat,
-    linear-gradient(135deg, var(--udd-blue) 50%, transparent 50%) right 8px center / 5px 5px
-      no-repeat,
-    var(--udd-surface);
+    linear-gradient(135deg, var(--udd-blue) 50%, transparent 50%) right 6px center / 5px 5px
+      no-repeat;
 }
 
-.udd-help-thread {
-  display: grid;
-  gap: 12px;
-  max-height: min(440px, 54dvh);
-  padding: 14px 16px;
+.udd-help-scroll {
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-bottom: 1px solid var(--udd-rule);
+  padding: 12px 13px;
 }
 
-.udd-help-thread[hidden],
+.udd-help-welcome p {
+  font-size: 14px;
+  color: var(--udd-muted);
+}
+.udd-help-thread {
+  display: grid;
+  gap: 10px;
+}
 .udd-help-status:empty {
   display: none;
 }
@@ -113,12 +155,12 @@
   border-radius: 8px;
   overflow-wrap: anywhere;
   font-size: 14px;
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
 .udd-help-message.question {
   justify-self: end;
-  max-width: 90%;
+  max-width: 92%;
   background: var(--udd-tint);
 }
 
@@ -139,18 +181,19 @@
 }
 
 .udd-help-status {
-  padding: 12px 16px 0;
+  padding-top: 12px;
   color: var(--udd-muted);
   font-size: 13px;
 }
 
 .udd-help-form {
-  padding: 14px 16px 0;
+  padding: 10px 13px 12px;
+  border-top: 1px solid var(--udd-rule);
 }
 .udd-help-input {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  gap: 7px;
 }
 
 .udd-help-input input {
@@ -166,18 +209,25 @@
   font-size: 16px;
 }
 
+.udd-help-input .udd-landing-button {
+  padding-inline: 11px;
+}
+.udd-help-input .udd-landing-button svg {
+  display: none;
+}
+
 .udd-help-form small {
   display: block;
   margin-top: 6px;
   color: var(--udd-muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .udd-help-suggestions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 12px 16px 16px;
+  padding-top: 10px;
 }
 
 .udd-help-suggestions button {
@@ -192,22 +242,4 @@
 
 .udd-help-suggestions button:hover {
   background: var(--udd-map);
-}
-
-@media (max-width: 720px) {
-  .udd-help {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .udd-help-intro {
-    gap: 8px;
-  }
-}
-
-@media (max-width: 400px) {
-  .udd-help-input .udd-landing-button {
-    padding-inline: 10px;
-  }
-  .udd-help-input .udd-landing-button svg {
-    display: none;
-  }
 }

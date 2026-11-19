@@ -245,7 +245,6 @@ export function mountLanding(app, { icon, demo }) {
         </div>
         <a href="https://github.com/Theshy691/UDD-Go/blob/main/md/README.md">Read project documentation ${icon('ExternalLink')}</a>
       </section>
-      ${helpChat(icon)}
       <section class="udd-landing-faq udd-landing-width" id="questions" aria-labelledby="questions-title">
         <h2 id="questions-title">Common questions</h2>
         <div>
@@ -274,6 +273,7 @@ export function mountLanding(app, { icon, demo }) {
         <a href="#guidelines">School run guidelines ${icon('ArrowUpRight')}</a>
       </div>
     </footer>
+    ${helpChat(icon)}
   </div>`;
   const stopSignals = mountLandingSignals(app.querySelector('.udd-landing-signals'));
   const stopRoutePreview = mountRoutePreview(app.querySelector('#routes'));
