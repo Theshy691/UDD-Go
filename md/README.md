@@ -30,7 +30,7 @@ Try the driver view: `UDD-0005` and `UDD-0006` are assigned to the first route a
 | Maintenance | Odometer thresholds; overdue/due-soon alerts; record completed service |
 | Driver portal | Review/start a prepared dated trip, share device GPS, record boarding and individual drop-offs, complete cabin check and final odometer |
 | Trips & history | Prepare dated snapshots, inspect passenger records, search dates, cancel scheduled trips with a reason, export a passenger CSV |
-| Student portal | Assigned bus, driver contact, pickup stop, route map, boarding ID/status |
+| Student portal | Assigned bus, driver contact, pickup stop, route map, boarding ID/status, trip reports and their status |
 | Settings | Role preview in demo, trip notifications, connection guidance, refresh/reset |
 
 Routes are directed adjacency lists, connected in stop sequence. Lines connect stops and are **not turn-by-turn road directions**. Demo positions are visibly labeled simulations. Browsers need network access for map tiles and Google Fonts; system fonts remain available when fonts are blocked.
@@ -38,7 +38,7 @@ Routes are directed adjacency lists, connected in stop sequence. Lines connect s
 ## Connect Supabase
 
 1. Create your Supabase project.
-2. Run **`supabase/schema.sql` once**, then **`supabase/migrations/001_trip_history.sql`** and **`supabase/migrations/002_services_and_route_versions.sql`**, once each, in that order in the SQL editor on a new project. Together they create fleet/trip tables, indexes, RLS policies, guarded mutation functions, and private Broadcast authorization. For an existing installation, apply only migrations not previously installed, in numeric order. Roll out the matching frontend after the migrations; plan the upgrade between school runs. Do not rerun the fresh-install schema.
+2. Run **`supabase/schema.sql` once**, then the SQL files in **`supabase/migrations/`** once each in numeric order: `001_trip_history.sql`, `002_services_and_route_versions.sql`, and `003_trip_reports.sql`. Together they create fleet/trip tables, indexes, RLS policies, guarded mutation functions, and private Broadcast authorization. For an existing installation, apply only migrations not previously installed, in numeric order. Roll out the matching frontend after the migrations; plan the upgrade between school runs. Do not rerun the fresh-install schema. In a connected workspace, **Report a trip issue** becomes available after applying migration 003. Students can read their own reports, and fleet admins can review and update them.
 3. In Supabase Realtime settings, **disable “Allow public access.”** All fleet channels use `config: { private: true }`.
 4. Copy `.env.example` to `.env`. For Node development or static hosting, set:
 

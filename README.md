@@ -26,7 +26,7 @@ Open the URL Vite prints, usually [localhost:5173](http://127.0.0.1:5173).
 - **Landing page** — Try a sample Dagupan route, jump between stops, and open the school-run guidelines.
 - **Fleet overview** — Prepare a trip, review maintenance alerts, and select a bus on the map. On smaller screens, the fleet list keeps the route, status, and **View** action in sight.
 - **Driver workspace** — Review trip stops, record boarding and drop-offs, and confirm the cabin check.
-- **Student workspace** — Check your pickup stop, boarding ID, and trip status.
+- **Student workspace** — Check your pickup stop and boarding ID, then use **Report a trip issue** to send an optional note to dispatch. Admins review open reports under **Overview → Needs attention**. Students can see when dispatch receives and resolves a report.
 
 The landing page uses animated ASCII route traces and a looping UDD Go wordmark. Visitors who prefer reduced motion see the still design. The route demo also moves stop by stop in reduced-motion mode.
 
