@@ -41,9 +41,9 @@ check($mixed['language'] === 'tgl' && $mixed['passages'][0]['text'] === $guide['
 $follow = helpAnswer('And how do I know they got it?', 'auto', $guide,
     static function (string $question, string $preference, array $candidates): array {
         check($candidates['issue']['previous'] && !$candidates['issue-status']['previous'], 'Retrieve the previous topic and related passages.');
-        return ['language' => 'en', 'passages' => ['issue-status']];
+        return ['language' => 'en', 'passages' => ['issue', 'issue-status']];
     }, $answer['topics']);
-check($follow['topics'] === ['issue-status'] && $follow['passages'][0]['text'] === $guide['issue-status']['en'], 'Use followed-up content and return only the selected context.');
+check($follow['topics'] === ['issue-status'] && $follow['passages'][0]['text'] === $guide['issue-status']['en'], 'Use the relevant follow-up and omit a weakly matched passage.');
 $topicReset = helpAnswer('How much is tuition?', 'auto', $guide, static function (): array {
     throw new RuntimeException('Old context should not carry over to an unrelated question.');
 }, ['unknown-topic', 'issue']);

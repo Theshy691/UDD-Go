@@ -42,7 +42,10 @@ function helpAnswer(string $question, string $preference, array $guide, callable
         $decision = $predict($question, $languageHint ?? 'auto', $candidates);
         if (helpDecisionIsValid($decision, $candidates)) {
             $mode = 'model';
-            $selection = array_values(array_unique($decision['passages']));
+            // Keep weaker matches available to interpret the question without showing tangential answers.
+            $minimum = max($scores) - 3;
+            $selection = array_values(array_filter(array_unique($decision['passages']),
+                static fn (string $id): bool => $scores[$id] >= $minimum));
             $language = $languageHint ?? $decision['language'];
         } elseif (max($scores) >= 3 && (count($scores) === 1 || array_values($scores)[0] > array_values($scores)[1])) {
             $selection = [array_key_first($scores)];
