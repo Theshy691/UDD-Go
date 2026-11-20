@@ -19,6 +19,7 @@ The local Ollama model outputs `language` and up to two `passages` IDs. PHP vali
 | Question | Expected guide entry and behavior |
 | --- | --- |
 | “What is UDD Go?” | `about` explains the school project and its three roles. |
+| “Where is my route?” | `find-route` points students to My journey and drivers to My route. |
 | “How can I generate trips for the week?” | `prepare-trips` explains the difference between a service and a dated trip and the seven-day batch limit. |
 | “Paano gumawa ng ruta na may bagong stop?” | `route-editing` explains routes, ordered stops, and route versions. |
 | “How ko i-enable ang GPS sharing?” | `gps-sharing` explains the driver action and device permission in Taglish. |

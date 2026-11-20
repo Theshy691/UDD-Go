@@ -78,7 +78,7 @@ function helpLanguageHint(string $question): ?string
     if (preg_match('/\btaglish\b/u', $question)) return 'tgl';
     if (preg_match('/\b(tagalog|filipino)\b/u', $question)) return 'tl';
     if (!preg_match('/\b(paano|papaano|saan|nasaan|asan|ano|anong|bakit|kailan|gaano|ilan|ako|ko|mo|nila|puwede|pwede|po|kailangan|gusto|pakita|hindi|yung|nung|niya|naman|mga|nag|i check|na receive|mag)\b/u', $question)) return null;
-    return preg_match('/\b(check|track|find|show|open|report|submit|view|see|where|what|when|can|how|delay|schedule|pickup|missed|received|receive|resolved|help|feedback|login|sign in|follow|update|status)\b/u', $question)
+    return preg_match('/\b(check|track|find|show|open|report|submit|view|see|where|what|when|can|how|delay|schedule|pickup|route|missed|received|receive|resolved|help|feedback|login|sign in|follow|update|status)\b/u', $question)
         ? 'tgl' : 'tl';
 }
 

@@ -61,6 +61,14 @@ return [
         'tgl' => 'Open My journey sa student portal. Nandoon ang pickup stop, assigned bus, at scheduled departure mo. Wait sa assigned stop at ihanda ang boarding ID mo.',
         'related' => ['boarding', 'journey-status'],
     ],
+    'find-route' => [
+        'source' => ['label' => 'Student and driver workspaces', 'labelTl' => 'Mga workspace ng estudyante at driver', 'href' => '#workspaces'],
+        'terms' => ['where is my route', 'where can i see my route', 'where do i find my route', 'how do i find my route', 'what is my route', 'my route', 'my assigned route', 'assigned route', 'route map', 'saan ang ruta ko', 'nasaan ang ruta ko', 'saan makikita ang ruta', 'saan ang route ko', 'makita ang ruta ko', 'route ko', 'ruta ko'],
+        'en' => 'Open the school portal to find your assigned route. If you’re a student, open My journey, select your trip, and check Route map or Trip stops. If you’re a driver, open My route to see today’s assigned trip and its stops. For a trip on another date, check Trips & history.',
+        'tl' => 'Buksan ang school portal para makita ang nakatalagang ruta mo. Kung estudyante ka, buksan ang My journey, piliin ang biyahe, at tingnan ang Route map o Trip stops. Kung driver ka, buksan ang My route para makita ang biyahe at mga hinto ngayong araw. Para sa ibang petsa, tingnan ang Trips & history.',
+        'tgl' => 'Open the school portal para makita ang assigned route mo. If you’re a student, open My journey, select your trip, then check Route map or Trip stops. If you’re a driver, open My route para sa trip at stops mo today. For another date, check Trips & history.',
+        'related' => ['pickup', 'trip-history'],
+    ],
     'boarding' => [
         'source' => ['label' => 'Student workspace', 'labelTl' => 'Student workspace', 'href' => '#workspace-student'],
         'terms' => ['boarding id', 'boarding code', 'boarding pass', 'show boarding id', 'id sa pagsakay', 'ipakita ang id', 'paano mag board', 'code sa pagsakay', 'boarding'],
@@ -87,7 +95,7 @@ return [
     ],
     'tracking' => [
         'source' => ['label' => 'Landing page FAQ', 'labelTl' => 'Mga karaniwang tanong', 'href' => '#questions'],
-        'terms' => ['track', 'tracking', 'gps', 'live', 'bus location', 'where is my bus', 'where is the bus', 'is my bus late', 'bus arrival', 'nasaan', 'asan na ang bus', 'saan na ang bus', 'nandiyan na', 'malapit na ba', 'anong oras darating', 'lokasyon ng bus'],
+        'terms' => ['track', 'tracking', 'gps', 'live', 'bus location', 'where is my bus', 'where is the bus', 'is my bus late', 'bus arrival', 'nasaan na ang bus', 'nasaan ang bus', 'asan na ang bus', 'saan na ang bus', 'nandiyan na', 'malapit na ba', 'anong oras darating', 'lokasyon ng bus'],
         'en' => 'Open My journey to check your bus. A current location is available during an active trip when your driver shares GPS. The map on this landing page shows a sample route.',
         'tl' => 'Buksan ang My journey para tingnan ang bus mo. Makikita ang kasalukuyang lokasyon habang bumibiyahe ang bus at nagbabahagi ng GPS ang driver. Halimbawang ruta ang nasa mapa ng landing page.',
         'tgl' => 'Open My journey para i-check ang bus mo. Live location appears during an active trip kapag nag-share ng GPS ang driver. Sample route lang ang map sa landing page.',
@@ -181,7 +189,7 @@ return [
     ],
     'driver' => [
         'source' => ['label' => 'Driver workspace', 'labelTl' => 'Driver workspace', 'href' => '#workspace-driver'],
-        'terms' => ['my route', 'driver workspace', 'driver demo', 'driver see', 'assigned driver route', 'ruta ng driver', 'nakatalagang ruta'],
+        'terms' => ['driver workspace', 'driver demo', 'driver see', 'assigned driver route', 'ruta ng driver'],
         'en' => 'In My route, drivers can see assigned trips and the next passenger stop, share GPS, record boarding and drop-offs, and complete the cabin check at the end.',
         'tl' => 'Sa My route, makikita ng driver ang nakatalagang biyahe at susunod na sakayan o babaan. Dito rin puwedeng magbahagi ng GPS, magtala ng pagsakay at pagbaba, at kumpirmahing wala nang pasahero sa dulo ng biyahe.',
         'tgl' => 'Sa My route makikita ng driver ang assigned trips at next passenger stop. Dito puwedeng mag-share ng GPS, mag-record ng boarding at drop-off, at mag-cabin check pagkatapos ng trip.',

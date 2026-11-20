@@ -62,6 +62,9 @@ foreach ($guide as $id => $entry) {
 // Exercise the retriever independently of the local model with public workflow questions.
 $examples = [
     ['What is UDD Go?', 'about', 'en'],
+    ['Where is my route?', 'find-route', 'en'],
+    ['Nasaan ang ruta ko?', 'find-route', 'tl'],
+    ['Saan ang route ko?', 'find-route', 'tgl'],
     ['How can I generate trips for the week?', 'prepare-trips', 'en'],
     ['Paano gumawa ng ruta na may bagong stop?', 'route-editing', 'tl'],
     ['How ko i-enable ang GPS sharing?', 'gps-sharing', 'tgl'],
